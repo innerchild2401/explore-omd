@@ -35,7 +35,7 @@ export default function FooterSection({ section, omd }: FooterSectionProps) {
               {/* Default Register Business Link */}
               <li>
                 <a
-                  href={`/${omd.slug}/register-business`}
+                  href={`/${omd.slug}/business/signup`}
                   className="text-gray-400 transition-colors hover:text-white"
                 >
                   Register Your Business

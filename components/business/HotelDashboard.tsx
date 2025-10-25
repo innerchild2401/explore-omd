@@ -54,9 +54,16 @@ interface Amenity {
   icon: string | null;
 }
 
+interface OMD {
+  id: string;
+  name: string;
+  slug: string;
+}
+
 interface HotelDashboardProps {
   business: Business;
   hotel: Hotel;
+  omd: OMD;
   rooms?: Room[];
   amenities?: Amenity[];
 }
@@ -64,6 +71,7 @@ interface HotelDashboardProps {
 export default function HotelDashboard({
   business,
   hotel,
+  omd,
   rooms = [],
   amenities = [],
 }: HotelDashboardProps) {
@@ -73,7 +81,7 @@ export default function HotelDashboard({
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
-    router.push('/admin/login');
+    router.push(`/${omd.slug}/business/login`);
   };
 
   return (

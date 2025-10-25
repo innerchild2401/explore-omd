@@ -50,15 +50,19 @@ export default function SectionEditor({ section, onClose, onSave }: SectionEdito
         {section.type !== 'footer' && (
           <div>
             <label className="mb-2 block text-sm font-medium text-gray-700">
-              Title
+              Title {section.type === 'hero' ? '(2-6 words recommended)' : '(2-5 words recommended)'}
             </label>
             <input
               type="text"
               value={content.title || ''}
               onChange={(e) => updateField('title', e.target.value)}
-              className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:border-blue-500 focus:outline-none"
-              placeholder="Enter section title"
+              maxLength={section.type === 'hero' ? 60 : 50}
+              className="w-full rounded-lg border border-gray-300 px-4 py-2 text-gray-900 placeholder:text-gray-400 focus:border-blue-500 focus:outline-none"
+              placeholder={section.type === 'hero' ? 'e.g., Welcome to Constanta' : 'e.g., Where to Stay'}
             />
+            <p className="mt-1 text-xs text-gray-500">
+              {content.title?.length || 0}/{section.type === 'hero' ? 60 : 50} characters • Keep it short and impactful
+            </p>
           </div>
         )}
 
@@ -66,15 +70,19 @@ export default function SectionEditor({ section, onClose, onSave }: SectionEdito
         {['hero', 'stays', 'restaurants', 'experiences'].includes(section.type) && (
           <div>
             <label className="mb-2 block text-sm font-medium text-gray-700">
-              Subtitle
+              Subtitle {section.type === 'hero' ? '(1-2 sentences recommended)' : '(1 sentence recommended)'}
             </label>
             <textarea
               value={content.subtitle || ''}
               onChange={(e) => updateField('subtitle', e.target.value)}
               rows={3}
-              className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:border-blue-500 focus:outline-none"
-              placeholder="Enter section subtitle"
+              maxLength={section.type === 'hero' ? 150 : 100}
+              className="w-full rounded-lg border border-gray-300 px-4 py-2 text-gray-900 placeholder:text-gray-400 focus:border-blue-500 focus:outline-none"
+              placeholder={section.type === 'hero' ? 'e.g., Discover amazing places and unforgettable experiences in our beautiful destination' : 'e.g., Find the perfect accommodation for your visit'}
             />
+            <p className="mt-1 text-xs text-gray-500">
+              {content.subtitle?.length || 0}/{section.type === 'hero' ? 150 : 100} characters • Clear and engaging description
+            </p>
           </div>
         )}
 
@@ -82,15 +90,19 @@ export default function SectionEditor({ section, onClose, onSave }: SectionEdito
         {section.type === 'hero' && (
           <div>
             <label className="mb-2 block text-sm font-medium text-gray-700">
-              CTA Button Text
+              CTA Button Text (2-4 words recommended)
             </label>
             <input
               type="text"
               value={content.cta || ''}
               onChange={(e) => updateField('cta', e.target.value)}
-              className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:border-blue-500 focus:outline-none"
-              placeholder="e.g., Explore Now"
+              maxLength={30}
+              className="w-full rounded-lg border border-gray-300 px-4 py-2 text-gray-900 placeholder:text-gray-400 focus:border-blue-500 focus:outline-none"
+              placeholder="e.g., Explore Now, Discover More, Start Exploring"
             />
+            <p className="mt-1 text-xs text-gray-500">
+              {content.cta?.length || 0}/30 characters • Action-oriented and concise
+            </p>
           </div>
         )}
 
@@ -104,15 +116,23 @@ export default function SectionEditor({ section, onClose, onSave }: SectionEdito
               type="text"
               value={content.backgroundImage || ''}
               onChange={(e) => updateField('backgroundImage', e.target.value)}
-              className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:border-blue-500 focus:outline-none"
-              placeholder="https://..."
+              className="w-full rounded-lg border border-gray-300 px-4 py-2 text-gray-900 placeholder:text-gray-400 focus:border-blue-500 focus:outline-none"
+              placeholder="https://images.unsplash.com/..."
             />
+            <p className="mt-1 text-xs text-gray-500">
+              📐 <strong>Recommended:</strong> 1920×1080px (16:9 aspect ratio) minimum • Landscape orientation
+              <br />
+              💡 <strong>Tips:</strong> High-quality images work best • Use Unsplash or upload to Supabase Storage
+            </p>
             {content.backgroundImage && (
-              <img
-                src={content.backgroundImage}
-                alt="Preview"
-                className="mt-2 h-32 w-full rounded-lg object-cover"
-              />
+              <div className="mt-3">
+                <img
+                  src={content.backgroundImage}
+                  alt="Preview"
+                  className="h-40 w-full rounded-lg object-cover shadow"
+                />
+                <p className="mt-1 text-xs text-green-600">✓ Preview loaded successfully</p>
+              </div>
             )}
           </div>
         )}
@@ -132,7 +152,7 @@ export default function SectionEditor({ section, onClose, onSave }: SectionEdito
               }
             }}
             rows={10}
-            className="mt-4 w-full rounded-lg border border-gray-300 bg-gray-50 p-4 font-mono text-sm focus:border-blue-500 focus:outline-none"
+            className="mt-4 w-full rounded-lg border border-gray-300 bg-gray-50 p-4 font-mono text-sm text-gray-900 focus:border-blue-500 focus:outline-none"
           />
         </details>
       </div>

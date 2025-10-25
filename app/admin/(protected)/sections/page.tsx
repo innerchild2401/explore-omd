@@ -60,6 +60,28 @@ export default async function AdminSectionsPage() {
         </button>
       </div>
 
+      {/* Image Guidelines */}
+      <div className="mb-6 rounded-lg bg-blue-50 border border-blue-200 p-4">
+        <h3 className="mb-2 font-semibold text-blue-900">📸 Image Guidelines for Beautiful Homepage</h3>
+        <div className="grid gap-3 text-sm text-blue-800 md:grid-cols-2">
+          <div>
+            <strong>Hero Background:</strong> 1920×1080px minimum (16:9 landscape)
+          </div>
+          <div>
+            <strong>Business Images (Hotels/Restaurants/Experiences):</strong>
+          </div>
+          <div className="md:col-span-2 ml-4">
+            • <strong>Quantity:</strong> 3-8 images per business (first image is the main carousel thumbnail)
+            <br />
+            • <strong>Size:</strong> 1200×800px recommended (3:2 aspect ratio)
+            <br />
+            • <strong>Format:</strong> JPG or WebP for best quality and performance
+            <br />
+            • <strong>Tip:</strong> Mix exterior, interior, and detail shots for variety
+          </div>
+        </div>
+      </div>
+
       <SectionsList sections={sections || []} omdId={profile.omd_id} />
     </div>
   );

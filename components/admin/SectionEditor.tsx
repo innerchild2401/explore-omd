@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import type { Section } from '@/types';
+import ImageUpload from './ImageUpload';
 
 interface SectionEditorProps {
   section: Section;
@@ -110,30 +111,19 @@ export default function SectionEditor({ section, onClose, onSave }: SectionEdito
         {section.type === 'hero' && (
           <div>
             <label className="mb-2 block text-sm font-medium text-gray-700">
-              Background Image URL
+              Background Image
             </label>
-            <input
-              type="text"
+            <ImageUpload
               value={content.backgroundImage || ''}
-              onChange={(e) => updateField('backgroundImage', e.target.value)}
-              className="w-full rounded-lg border border-gray-300 px-4 py-2 text-gray-900 placeholder:text-gray-400 focus:border-blue-500 focus:outline-none"
-              placeholder="https://images.unsplash.com/..."
+              onChange={(url) => updateField('backgroundImage', url)}
+              bucket="images"
+              folder="hero"
+              maxSizeMB={10}
+              recommendedSize="1920×1080px (16:9 landscape)"
             />
-            <p className="mt-1 text-xs text-gray-500">
-              📐 <strong>Recommended:</strong> 1920×1080px (16:9 aspect ratio) minimum • Landscape orientation
-              <br />
-              💡 <strong>Tips:</strong> High-quality images work best • Use Unsplash or upload to Supabase Storage
+            <p className="mt-2 text-xs text-gray-500">
+              💡 <strong>Tips:</strong> Landscape orientation works best • High-quality images recommended
             </p>
-            {content.backgroundImage && (
-              <div className="mt-3">
-                <img
-                  src={content.backgroundImage}
-                  alt="Preview"
-                  className="h-40 w-full rounded-lg object-cover shadow"
-                />
-                <p className="mt-1 text-xs text-green-600">✓ Preview loaded successfully</p>
-              </div>
-            )}
           </div>
         )}
 

@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import type { Section } from '@/types';
 import ImageUpload from './ImageUpload';
+import { createClient } from '@/lib/supabase/client';
 
 interface SectionEditorProps {
   section: Section;
@@ -13,16 +14,30 @@ interface SectionEditorProps {
 export default function SectionEditor({ section, onClose, onSave }: SectionEditorProps) {
   const [content, setContent] = useState(section.content);
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
+  const supabase = createClient();
 
   const handleSave = async () => {
     setSaving(true);
-    // TODO: Implement save to Supabase
-    console.log('Saving section:', section.id, content);
+    setError('');
     
-    setTimeout(() => {
+    try {
+      const { error: updateError } = await supabase
+        .from('sections')
+        .update({ content })
+        .eq('id', section.id);
+
+      if (updateError) {
+        throw updateError;
+      }
+
+      onSave(); // Refresh the sections list
+    } catch (err: any) {
+      console.error('Failed to save section:', err);
+      setError(err.message || 'Failed to save changes');
+    } finally {
       setSaving(false);
-      onSave();
-    }, 1000);
+    }
   };
 
   const updateField = (key: string, value: any) => {
@@ -146,6 +161,13 @@ export default function SectionEditor({ section, onClose, onSave }: SectionEdito
           />
         </details>
       </div>
+
+      {/* Error Message */}
+      {error && (
+        <div className="mt-4 rounded-lg bg-red-50 border border-red-200 p-4 text-sm text-red-600">
+          <strong>Error:</strong> {error}
+        </div>
+      )}
 
       {/* Save/Cancel Actions */}
       <div className="mt-8 flex justify-end space-x-4">

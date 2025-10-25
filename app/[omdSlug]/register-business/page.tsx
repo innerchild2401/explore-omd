@@ -66,12 +66,20 @@ export default function RegisterBusinessPage() {
       });
 
       if (signUpError) throw signUpError;
-      if (!authData.user) throw new Error('User creation failed');
+      if (!authData.user || !authData.session) throw new Error('User creation failed');
 
-      // Update user profile to business_owner (profile is auto-created by trigger)
-      // Wait a moment for the trigger to complete
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Set the session explicitly to ensure auth context is established
+      const { error: sessionError } = await supabase.auth.setSession({
+        access_token: authData.session.access_token,
+        refresh_token: authData.session.refresh_token,
+      });
+
+      if (sessionError) throw sessionError;
+
+      // Wait for trigger to create user_profile
+      await new Promise(resolve => setTimeout(resolve, 1500));
       
+      // Update user profile to business_owner (profile is auto-created by trigger)
       const { error: profileError } = await supabase
         .from('user_profiles')
         .update({
@@ -87,7 +95,7 @@ export default function RegisterBusinessPage() {
 
       if (profileError) throw profileError;
 
-      // Create pending business
+      // Create pending business (auth session is now properly set)
       const { error: businessError } = await supabase
         .from('businesses')
         .insert({

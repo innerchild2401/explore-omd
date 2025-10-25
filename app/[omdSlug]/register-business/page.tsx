@@ -73,10 +73,9 @@ export default function RegisterBusinessPage() {
         .from('user_profiles')
         .insert({
           id: authData.user.id,
-          email: authData.user.email,
           role: 'business_owner',
           omd_id: omd.id,
-          metadata: {
+          profile: {
             status: 'pending',
             contact_name: contactName,
             phone: phone,

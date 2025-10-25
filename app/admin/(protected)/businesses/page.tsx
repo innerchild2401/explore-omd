@@ -31,8 +31,7 @@ export default async function BusinessesAdminPage() {
     .select(`
       *,
       user_profiles!businesses_owner_id_fkey (
-        email,
-        metadata
+        profile
       )
     `)
     .eq('omd_id', profile.omd_id)
@@ -45,8 +44,7 @@ export default async function BusinessesAdminPage() {
     .select(`
       *,
       user_profiles!businesses_owner_id_fkey (
-        email,
-        metadata
+        profile
       )
     `)
     .eq('omd_id', profile.omd_id)

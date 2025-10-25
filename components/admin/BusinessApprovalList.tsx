@@ -9,16 +9,19 @@ interface Business {
   name: string;
   type: string;
   description: string;
-  phone: string;
-  email: string;
   status: string;
   created_at: string;
   owner_id: string;
-  user_profiles: {
-    email: string;
-    metadata: {
+  contact?: {
+    name?: string;
+    phone?: string;
+    email?: string;
+  };
+  user_profiles?: {
+    profile?: {
       contact_name?: string;
       phone?: string;
+      status?: string;
     };
   };
 }
@@ -54,7 +57,7 @@ export default function BusinessApprovalList({
       const { error: profileError } = await supabase
         .from('user_profiles')
         .update({
-          metadata: { status: 'approved' }
+          profile: { status: 'approved' }
         })
         .eq('id', ownerId);
 
@@ -89,7 +92,7 @@ export default function BusinessApprovalList({
       const { error: profileError } = await supabase
         .from('user_profiles')
         .update({
-          metadata: { status: 'rejected' }
+          profile: { status: 'rejected' }
         })
         .eq('id', ownerId);
 
@@ -158,13 +161,13 @@ export default function BusinessApprovalList({
                     <strong>Description:</strong> {business.description}
                   </p>
                   <p className="text-gray-700">
-                    <strong>Contact:</strong> {business.user_profiles.metadata?.contact_name || 'N/A'}
+                    <strong>Contact:</strong> {business.contact?.name || 'N/A'}
                   </p>
                   <p className="text-gray-700">
-                    <strong>Email:</strong> {business.email}
+                    <strong>Email:</strong> {business.contact?.email || 'N/A'}
                   </p>
                   <p className="text-gray-700">
-                    <strong>Phone:</strong> {business.phone}
+                    <strong>Phone:</strong> {business.contact?.phone || 'N/A'}
                   </p>
                   <p className="text-gray-500 text-xs">
                     Applied: {new Date(business.created_at).toLocaleDateString()}
@@ -224,8 +227,9 @@ export default function BusinessApprovalList({
                 </div>
 
                 <div className="space-y-1 text-xs text-gray-600">
-                  <p><strong>Email:</strong> {business.email}</p>
-                  <p><strong>Phone:</strong> {business.phone}</p>
+                  <p><strong>Contact:</strong> {business.contact?.name || 'N/A'}</p>
+                  <p><strong>Email:</strong> {business.contact?.email || 'N/A'}</p>
+                  <p><strong>Phone:</strong> {business.contact?.phone || 'N/A'}</p>
                   <p className="text-gray-400">
                     Approved: {new Date(business.created_at).toLocaleDateString()}
                   </p>

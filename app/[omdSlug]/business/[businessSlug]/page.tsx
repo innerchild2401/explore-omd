@@ -119,12 +119,28 @@ export default async function BusinessDashboardPage({ params }: PageProps) {
       hotel = newHotel;
     }
 
+    // Get rooms
+    const { data: rooms } = await supabase
+      .from('rooms')
+      .select('*')
+      .eq('hotel_id', hotel!.id)
+      .order('created_at', { ascending: true });
+
+    // Get OMD amenities
+    const { data: amenities } = await supabase
+      .from('omd_amenities')
+      .select('*')
+      .eq('omd_id', business.omd_id)
+      .order('category', { ascending: true });
+
     return (
       <div className="min-h-screen bg-gray-50">
         <HotelDashboard 
           business={business} 
           hotel={hotel} 
           omd={omd}
+          rooms={rooms || []}
+          amenities={amenities || []}
         />
       </div>
     );

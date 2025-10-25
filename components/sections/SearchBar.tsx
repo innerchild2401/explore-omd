@@ -2,14 +2,26 @@
 
 import { useState } from 'react';
 import { motion } from 'framer-motion';
+import { useRouter } from 'next/navigation';
 
 interface SearchBarProps {
   omdSlug: string;
 }
 
 export default function SearchBar({ omdSlug }: SearchBarProps) {
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState<'stay' | 'eat' | 'do'>('stay');
-  const [searchQuery, setSearchQuery] = useState('');
+  
+  // Hotel dates
+  const [checkIn, setCheckIn] = useState('');
+  const [checkOut, setCheckOut] = useState('');
+  
+  // Restaurant reservation
+  const [reservationDate, setReservationDate] = useState('');
+  const [reservationTime, setReservationTime] = useState('');
+  
+  // Experience date
+  const [experienceDate, setExperienceDate] = useState('');
 
   const tabs = [
     { id: 'stay' as const, label: 'Stay', icon: '🏨' },
@@ -17,10 +29,24 @@ export default function SearchBar({ omdSlug }: SearchBarProps) {
     { id: 'do' as const, label: 'Do', icon: '🎟️' },
   ];
 
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    // TODO: Implement search functionality
-    console.log('Searching:', activeTab, searchQuery);
+  const handleStaySearch = () => {
+    const params = new URLSearchParams();
+    if (checkIn) params.set('checkIn', checkIn);
+    if (checkOut) params.set('checkOut', checkOut);
+    router.push(`/${omdSlug}/hotels?${params.toString()}`);
+  };
+
+  const handleRestaurantSearch = () => {
+    const params = new URLSearchParams();
+    if (reservationDate) params.set('date', reservationDate);
+    if (reservationTime) params.set('time', reservationTime);
+    router.push(`/${omdSlug}/restaurants?${params.toString()}`);
+  };
+
+  const handleExperienceSearch = () => {
+    const params = new URLSearchParams();
+    if (experienceDate) params.set('date', experienceDate);
+    router.push(`/${omdSlug}/experiences?${params.toString()}`);
   };
 
   return (
@@ -47,32 +73,112 @@ export default function SearchBar({ omdSlug }: SearchBarProps) {
           ))}
         </div>
 
-        {/* Search Form */}
-        <form onSubmit={handleSearch} className="relative">
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder={`Search for ${activeTab === 'stay' ? 'hotels' : activeTab === 'eat' ? 'restaurants' : 'experiences'}...`}
-            className="w-full rounded-full border-2 border-gray-200 px-6 py-4 pr-14 text-lg outline-none transition-all focus:border-blue-600"
-          />
-          <button
-            type="submit"
-            className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full bg-blue-600 p-3 text-white transition-colors hover:bg-blue-700"
+        {/* Hotels Search */}
+        {activeTab === 'stay' && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="flex flex-col gap-3 md:flex-row md:items-center"
           >
-            <svg
-              className="h-6 w-6"
-              fill="none"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth="2"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
+            <div className="flex-1">
+              <label className="mb-1 block text-sm font-medium text-gray-600">
+                Check-in
+              </label>
+              <input
+                type="date"
+                value={checkIn}
+                onChange={(e) => setCheckIn(e.target.value)}
+                min={new Date().toISOString().split('T')[0]}
+                className="w-full rounded-lg border-2 border-gray-200 px-4 py-3 outline-none transition-all focus:border-blue-600"
+              />
+            </div>
+            <div className="flex-1">
+              <label className="mb-1 block text-sm font-medium text-gray-600">
+                Check-out
+              </label>
+              <input
+                type="date"
+                value={checkOut}
+                onChange={(e) => setCheckOut(e.target.value)}
+                min={checkIn || new Date().toISOString().split('T')[0]}
+                className="w-full rounded-lg border-2 border-gray-200 px-4 py-3 outline-none transition-all focus:border-blue-600"
+              />
+            </div>
+            <button
+              onClick={handleStaySearch}
+              className="mt-auto rounded-lg bg-blue-600 px-8 py-3 font-semibold text-white transition-colors hover:bg-blue-700"
             >
-              <path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
-            </svg>
-          </button>
-        </form>
+              Explore Stays
+            </button>
+          </motion.div>
+        )}
+
+        {/* Restaurants Search */}
+        {activeTab === 'eat' && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="flex flex-col gap-3 md:flex-row md:items-center"
+          >
+            <div className="flex-1">
+              <label className="mb-1 block text-sm font-medium text-gray-600">
+                Date
+              </label>
+              <input
+                type="date"
+                value={reservationDate}
+                onChange={(e) => setReservationDate(e.target.value)}
+                min={new Date().toISOString().split('T')[0]}
+                className="w-full rounded-lg border-2 border-gray-200 px-4 py-3 outline-none transition-all focus:border-blue-600"
+              />
+            </div>
+            <div className="flex-1">
+              <label className="mb-1 block text-sm font-medium text-gray-600">
+                Time
+              </label>
+              <input
+                type="time"
+                value={reservationTime}
+                onChange={(e) => setReservationTime(e.target.value)}
+                className="w-full rounded-lg border-2 border-gray-200 px-4 py-3 outline-none transition-all focus:border-blue-600"
+              />
+            </div>
+            <button
+              onClick={handleRestaurantSearch}
+              className="mt-auto rounded-lg bg-blue-600 px-8 py-3 font-semibold text-white transition-colors hover:bg-blue-700"
+            >
+              Explore Restaurants
+            </button>
+          </motion.div>
+        )}
+
+        {/* Experiences Search */}
+        {activeTab === 'do' && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="flex flex-col gap-3 md:flex-row md:items-center"
+          >
+            <div className="flex-1">
+              <label className="mb-1 block text-sm font-medium text-gray-600">
+                Date
+              </label>
+              <input
+                type="date"
+                value={experienceDate}
+                onChange={(e) => setExperienceDate(e.target.value)}
+                min={new Date().toISOString().split('T')[0]}
+                className="w-full rounded-lg border-2 border-gray-200 px-4 py-3 outline-none transition-all focus:border-blue-600"
+              />
+            </div>
+            <button
+              onClick={handleExperienceSearch}
+              className="mt-auto rounded-lg bg-blue-600 px-8 py-3 font-semibold text-white transition-colors hover:bg-blue-700 md:ml-auto"
+            >
+              Explore Experiences
+            </button>
+          </motion.div>
+        )}
       </div>
     </section>
   );

@@ -29,14 +29,21 @@ export default function AdminLogin() {
       }
 
       if (data.user) {
-        // Check if user has admin role
-        const { data: profile } = await supabase
+        // Check if user has a profile
+        const { data: profile, error: profileError } = await supabase
           .from('user_profiles')
-          .select('role')
+          .select('role, omd_id')
           .eq('id', data.user.id)
-          .single();
+          .maybeSingle();
 
-        if (!profile || !['super_admin', 'omd_admin'].includes(profile.role)) {
+        // If no profile, redirect to onboarding
+        if (!profile) {
+          router.push('/admin/onboarding');
+          return;
+        }
+
+        // Check if user has admin role
+        if (!['super_admin', 'omd_admin'].includes(profile.role)) {
           setError('You do not have admin access');
           await supabase.auth.signOut();
           return;

@@ -33,10 +33,13 @@ export default function AdminSignup() {
     }
 
     try {
-      // Sign up the user
+      // Sign up the user with email confirmation disabled for admin signup
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
+        options: {
+          emailRedirectTo: `${window.location.origin}/admin/onboarding`,
+        },
       });
 
       if (error) {
@@ -45,8 +48,14 @@ export default function AdminSignup() {
       }
 
       if (data.user) {
-        // Redirect to onboarding to create their OMD
-        router.push('/admin/onboarding');
+        // Check if email confirmation is required
+        if (data.session) {
+          // User is already confirmed, go to onboarding
+          router.push('/admin/onboarding');
+        } else {
+          // Email confirmation required, redirect to confirmation page
+          router.push('/admin/confirm-email');
+        }
       }
     } catch (err: any) {
       setError('An error occurred during signup');

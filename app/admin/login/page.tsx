@@ -42,14 +42,34 @@ export default function AdminLogin() {
           return;
         }
 
-        // Check if user has admin role
-        if (!['super_admin', 'omd_admin'].includes(profile.role)) {
-          setError('You do not have admin access');
-          await supabase.auth.signOut();
+        // Route based on role
+        if (profile.role === 'business_owner') {
+          // Check if they have a business registered
+          const { data: business } = await supabase
+            .from('businesses')
+            .select('id, status, type')
+            .eq('owner_id', data.user.id)
+            .single();
+
+          if (!business) {
+            // No business yet, redirect to registration
+            router.push('/business/register');
+          } else {
+            // Has business, redirect to dashboard
+            router.push('/business/dashboard');
+          }
           return;
         }
 
-        router.push('/admin');
+        // Check if user has admin role
+        if (['super_admin', 'omd_admin'].includes(profile.role)) {
+          router.push('/admin');
+          return;
+        }
+
+        // Visitor role or unknown - show error
+        setError('You do not have access. Please contact an administrator.');
+        await supabase.auth.signOut();
       }
     } catch (err: any) {
       setError('An error occurred during login');

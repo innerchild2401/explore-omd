@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import { slugify } from '@/lib/utils';
-import Link from 'next/link';
 
 export default function AdminOnboarding() {
   const [destinationName, setDestinationName] = useState('');
@@ -12,7 +11,6 @@ export default function AdminOnboarding() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [checkingAuth, setCheckingAuth] = useState(true);
-  const [isSuperAdmin, setIsSuperAdmin] = useState(false);
   const router = useRouter();
   const supabase = createClient();
 
@@ -28,7 +26,7 @@ export default function AdminOnboarding() {
       return;
     }
 
-    // Check if user already has a profile
+    // Check if user already has a profile with an OMD
     const { data: profile } = await supabase
       .from('user_profiles')
       .select('role, omd_id')
@@ -45,17 +43,7 @@ export default function AdminOnboarding() {
       return;
     }
 
-    // Check if this is a super admin (you can hardcode your email or check a special flag)
-    // For now, we'll assume only the FIRST user ever created can create OMDs
-    // Or you need to manually set role='super_admin' in the database
-    
-    if (profile?.role === 'super_admin') {
-      setIsSuperAdmin(true);
-      setCheckingAuth(false);
-    } else {
-      // Not a super admin, redirect to business registration
-      setCheckingAuth(false);
-    }
+    setCheckingAuth(false);
   };
 
   const handleDestinationNameChange = (value: string) => {
@@ -134,40 +122,6 @@ export default function AdminOnboarding() {
         <div className="text-center">
           <div className="mx-auto h-12 w-12 animate-spin rounded-full border-4 border-gray-200 border-t-blue-600"></div>
           <p className="mt-4 text-gray-600">Loading...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (!isSuperAdmin) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-gray-100">
-        <div className="w-full max-w-md">
-          <div className="rounded-lg border border-red-200 bg-white px-8 py-10 text-center shadow-lg">
-            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-red-100">
-              <svg className="h-8 w-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-              </svg>
-            </div>
-            <h1 className="mb-4 text-2xl font-bold text-gray-900">Access Restricted</h1>
-            <p className="mb-6 text-gray-600">
-              Only super administrators can create new OMD destinations. If you&apos;re a business owner, please register your business instead.
-            </p>
-            <div className="space-y-3">
-              <Link
-                href="/business/register"
-                className="block w-full rounded-lg bg-blue-600 px-6 py-3 font-semibold text-white transition-colors hover:bg-blue-700"
-              >
-                Register Your Business
-              </Link>
-              <Link
-                href="/admin/login"
-                className="block w-full rounded-lg border border-gray-300 px-6 py-3 font-semibold text-gray-700 transition-colors hover:bg-gray-50"
-              >
-                Back to Login
-              </Link>
-            </div>
-          </div>
         </div>
       </div>
     );

@@ -412,14 +412,14 @@ CREATE OR REPLACE FUNCTION initialize_room_availability(
 )
 RETURNS void AS $$
 DECLARE
-  current_date DATE;
+  loop_date DATE;
 BEGIN
-  current_date := p_start_date;
-  WHILE current_date <= p_end_date LOOP
+  loop_date := p_start_date;
+  WHILE loop_date <= p_end_date LOOP
     INSERT INTO room_availability (room_id, date, available_quantity)
-    VALUES (p_room_id, current_date, p_quantity)
+    VALUES (p_room_id, loop_date, p_quantity)
     ON CONFLICT (room_id, date) DO NOTHING;
-    current_date := current_date + INTERVAL '1 day';
+    loop_date := loop_date + INTERVAL '1 day';
   END LOOP;
 END;
 $$ LANGUAGE plpgsql;

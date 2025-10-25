@@ -142,6 +142,104 @@ export default function SectionEditor({ section, onClose, onSave }: SectionEdito
           </div>
         )}
 
+        {/* Footer Fields */}
+        {section.type === 'footer' && (
+          <>
+            {/* Description */}
+            <div>
+              <label className="mb-2 block text-sm font-medium text-gray-700">
+                Description
+              </label>
+              <textarea
+                value={content.description || ''}
+                onChange={(e) => updateField('description', e.target.value)}
+                rows={2}
+                maxLength={150}
+                className="w-full rounded-lg border border-gray-300 px-4 py-2 text-gray-900 placeholder:text-gray-400 focus:border-blue-500 focus:outline-none"
+                placeholder="Your gateway to discovering amazing local experiences"
+              />
+              <p className="mt-1 text-xs text-gray-500">
+                {content.description?.length || 0}/150 characters
+              </p>
+            </div>
+
+            {/* Quick Links */}
+            <div>
+              <label className="mb-2 block text-sm font-medium text-gray-700">
+                Quick Links (JSON Array)
+              </label>
+              <textarea
+                value={JSON.stringify(content.links || [], null, 2)}
+                onChange={(e) => {
+                  try {
+                    const links = JSON.parse(e.target.value);
+                    updateField('links', links);
+                  } catch (err) {
+                    // Invalid JSON
+                  }
+                }}
+                rows={8}
+                className="w-full rounded-lg border border-gray-300 bg-gray-50 px-4 py-2 font-mono text-sm text-gray-900 placeholder:text-gray-400 focus:border-blue-500 focus:outline-none"
+                placeholder={`[\n  { "text": "About Us", "url": "/about" },\n  { "text": "Contact", "url": "/contact" }\n]`}
+              />
+              <p className="mt-1 text-xs text-gray-500">
+                Format: [{'{'}&#34;text&#34;: &#34;Link Text&#34;, &#34;url&#34;: &#34;/path&#34;{'}'}]
+              </p>
+            </div>
+
+            {/* Social Media */}
+            <div className="space-y-3">
+              <label className="block text-sm font-medium text-gray-700">
+                Social Media Links
+              </label>
+              <div>
+                <label className="mb-1 block text-xs text-gray-600">Facebook URL</label>
+                <input
+                  type="url"
+                  value={content.socials?.facebook || ''}
+                  onChange={(e) => updateField('socials', { ...content.socials, facebook: e.target.value })}
+                  className="w-full rounded-lg border border-gray-300 px-4 py-2 text-gray-900 placeholder:text-gray-400 focus:border-blue-500 focus:outline-none"
+                  placeholder="https://facebook.com/your-page"
+                />
+              </div>
+              <div>
+                <label className="mb-1 block text-xs text-gray-600">Instagram URL</label>
+                <input
+                  type="url"
+                  value={content.socials?.instagram || ''}
+                  onChange={(e) => updateField('socials', { ...content.socials, instagram: e.target.value })}
+                  className="w-full rounded-lg border border-gray-300 px-4 py-2 text-gray-900 placeholder:text-gray-400 focus:border-blue-500 focus:outline-none"
+                  placeholder="https://instagram.com/your-profile"
+                />
+              </div>
+              <div>
+                <label className="mb-1 block text-xs text-gray-600">Twitter/X URL</label>
+                <input
+                  type="url"
+                  value={content.socials?.twitter || ''}
+                  onChange={(e) => updateField('socials', { ...content.socials, twitter: e.target.value })}
+                  className="w-full rounded-lg border border-gray-300 px-4 py-2 text-gray-900 placeholder:text-gray-400 focus:border-blue-500 focus:outline-none"
+                  placeholder="https://twitter.com/your-handle"
+                />
+              </div>
+            </div>
+
+            {/* Copyright */}
+            <div>
+              <label className="mb-2 block text-sm font-medium text-gray-700">
+                Copyright Text
+              </label>
+              <input
+                type="text"
+                value={content.copyright || ''}
+                onChange={(e) => updateField('copyright', e.target.value)}
+                className="w-full rounded-lg border border-gray-300 px-4 py-2 text-gray-900 placeholder:text-gray-400 focus:border-blue-500 focus:outline-none"
+                placeholder={`© ${new Date().getFullYear()} Your Organization. All rights reserved.`}
+              />
+            </div>
+          </>
+        )}
+
         {/* JSON Editor for Advanced Users */}
         <details className="rounded-lg border border-gray-200 p-4">
           <summary className="cursor-pointer font-medium text-gray-700">

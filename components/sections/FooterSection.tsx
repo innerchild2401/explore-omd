@@ -7,7 +7,7 @@ interface FooterSectionProps {
 }
 
 export default function FooterSection({ section, omd }: FooterSectionProps) {
-  const { links, copyright, socials } = section.content;
+  const { links, copyright, socials, description } = section.content;
 
   return (
     <footer className="bg-gray-900 text-white">
@@ -24,7 +24,7 @@ export default function FooterSection({ section, omd }: FooterSectionProps) {
             )}
             <h3 className="mb-2 text-2xl font-bold">{omd.name}</h3>
             <p className="text-gray-400">
-              Your gateway to discovering amazing local experiences.
+              {description || 'Your gateway to discovering amazing local experiences.'}
             </p>
           </div>
 

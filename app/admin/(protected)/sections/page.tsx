@@ -50,12 +50,12 @@ export default async function AdminSectionsPage() {
     <div>
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Manage Sections</h1>
+          <h1 className="text-3xl font-bold text-gray-900">Manage Sections</h1>
           <p className="mt-2 text-gray-600">
             {omd?.name} - Edit, reorder, and toggle visibility of homepage sections
           </p>
         </div>
-        <button className="rounded-lg bg-blue-600 px-6 py-3 font-semibold text-white transition-colors hover:bg-blue-700">
+        <button className="rounded-lg bg-blue-600 px-6 py-3 font-semibold text-white transition-colors hover:bg-blue-700 shadow-sm">
           + Add Section
         </button>
       </div>

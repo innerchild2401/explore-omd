@@ -29,10 +29,10 @@ export default function SectionEditor({ section, onClose, onSave }: SectionEdito
   };
 
   return (
-    <div className="rounded-lg bg-white p-8 shadow-lg">
+    <div className="rounded-lg bg-white p-8 shadow-lg border border-gray-200">
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold">Edit Section</h2>
+          <h2 className="text-2xl font-bold text-gray-900">Edit Section</h2>
           <p className="mt-1 text-gray-600">
             {section.type} • ID: {section.id}
           </p>

@@ -68,7 +68,7 @@ export default function SectionsList({ sections: initialSections, omdId }: Secti
             <Reorder.Item
               key={section.id}
               value={section}
-              className="rounded-lg bg-white p-6 shadow"
+              className="rounded-lg bg-white p-6 shadow border border-gray-200"
             >
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-4">
@@ -91,7 +91,7 @@ export default function SectionsList({ sections: initialSections, omdId }: Secti
                   <div>
                     <div className="flex items-center space-x-2">
                       <span className="text-2xl">{getSectionIcon(section.type)}</span>
-                      <h3 className="text-xl font-semibold">
+                      <h3 className="text-xl font-semibold text-gray-900">
                         {getSectionTitle(section)}
                       </h3>
                       {!section.is_visible && (

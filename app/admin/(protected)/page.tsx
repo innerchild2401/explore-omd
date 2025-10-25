@@ -56,11 +56,11 @@ export default async function AdminDashboard() {
 
   return (
     <div>
-      <h1 className="mb-6 text-3xl font-bold">Dashboard</h1>
+      <h1 className="mb-6 text-3xl font-bold text-gray-900">Dashboard</h1>
 
       {/* Welcome Message */}
-      <div className="mb-8 rounded-lg bg-white p-6 shadow">
-        <h2 className="mb-2 text-2xl font-semibold">
+      <div className="mb-8 rounded-lg bg-white p-6 shadow border border-gray-200">
+        <h2 className="mb-2 text-2xl font-semibold text-gray-900">
           Welcome back, {user.email}!
         </h2>
         <p className="text-gray-600">
@@ -72,14 +72,14 @@ export default async function AdminDashboard() {
 
       {/* Stats Grid */}
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-        <div className="rounded-lg bg-white p-6 shadow">
+        <div className="rounded-lg bg-white p-6 shadow border border-gray-200">
           <div className="mb-2 text-sm font-medium text-gray-600">
             Total Businesses
           </div>
-          <div className="text-3xl font-bold">{stats.totalBusinesses}</div>
+          <div className="text-3xl font-bold text-gray-900">{stats.totalBusinesses}</div>
         </div>
 
-        <div className="rounded-lg bg-white p-6 shadow">
+        <div className="rounded-lg bg-white p-6 shadow border border-gray-200">
           <div className="mb-2 text-sm font-medium text-gray-600">
             Pending Approval
           </div>
@@ -88,24 +88,24 @@ export default async function AdminDashboard() {
           </div>
         </div>
 
-        <div className="rounded-lg bg-white p-6 shadow">
+        <div className="rounded-lg bg-white p-6 shadow border border-gray-200">
           <div className="mb-2 text-sm font-medium text-gray-600">
             Total Reservations
           </div>
-          <div className="text-3xl font-bold">{stats.totalReservations}</div>
+          <div className="text-3xl font-bold text-gray-900">{stats.totalReservations}</div>
         </div>
 
-        <div className="rounded-lg bg-white p-6 shadow">
+        <div className="rounded-lg bg-white p-6 shadow border border-gray-200">
           <div className="mb-2 text-sm font-medium text-gray-600">
             Total Reviews
           </div>
-          <div className="text-3xl font-bold">{stats.totalReviews}</div>
+          <div className="text-3xl font-bold text-gray-900">{stats.totalReviews}</div>
         </div>
       </div>
 
       {/* Quick Actions */}
       <div className="mt-8">
-        <h3 className="mb-4 text-xl font-semibold">Quick Actions</h3>
+        <h3 className="mb-4 text-xl font-semibold text-gray-900">Quick Actions</h3>
         <div className="grid gap-4 md:grid-cols-3">
           <a
             href="/admin/sections"

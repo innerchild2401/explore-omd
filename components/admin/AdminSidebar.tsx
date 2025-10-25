@@ -29,6 +29,11 @@ export default function AdminSidebar({ userRole, omdId }: AdminSidebarProps) {
       icon: '🏢',
     },
     {
+      label: 'Amenities',
+      href: '/admin/amenities',
+      icon: '✨',
+    },
+    {
       label: 'Reservations',
       href: '/admin/reservations',
       icon: '📅',

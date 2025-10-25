@@ -11,7 +11,7 @@ interface Business {
   description: string;
   phone: string;
   email: string;
-  is_active: boolean;
+  status: string;
   created_at: string;
   owner_id: string;
   user_profiles: {
@@ -45,7 +45,7 @@ export default function BusinessApprovalList({
       // Approve the business
       const { error: businessError } = await supabase
         .from('businesses')
-        .update({ is_active: true })
+        .update({ status: 'active' })
         .eq('id', businessId);
 
       if (businessError) throw businessError;

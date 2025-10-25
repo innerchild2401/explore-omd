@@ -36,7 +36,7 @@ export default async function BusinessesAdminPage() {
       )
     `)
     .eq('omd_id', profile.omd_id)
-    .eq('is_active', false)
+    .eq('status', 'pending')
     .order('created_at', { ascending: false });
 
   // Get approved businesses for this OMD
@@ -50,7 +50,7 @@ export default async function BusinessesAdminPage() {
       )
     `)
     .eq('omd_id', profile.omd_id)
-    .eq('is_active', true)
+    .eq('status', 'active')
     .order('created_at', { ascending: false });
 
   return (

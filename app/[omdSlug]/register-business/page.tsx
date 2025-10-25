@@ -97,7 +97,7 @@ export default function RegisterBusinessPage() {
           owner_id: authData.user.id,
           phone: phone,
           email: email,
-          is_active: false, // Inactive until approved
+          status: 'pending', // Pending until approved
         });
 
       if (businessError) throw businessError;

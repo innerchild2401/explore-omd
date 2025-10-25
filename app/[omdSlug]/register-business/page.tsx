@@ -66,8 +66,30 @@ export default function RegisterBusinessPage() {
       });
 
       if (signUpError) throw signUpError;
-      if (!authData.user || !authData.session) throw new Error('User creation failed');
+      if (!authData.user) throw new Error('User creation failed');
 
+      // Check if email confirmation is required (no session returned)
+      if (!authData.session) {
+        // Email confirmation required - use database function to bypass RLS
+        const { data: businessId, error: functionError } = await supabase.rpc('register_business', {
+          p_omd_id: omd.id,
+          p_owner_id: authData.user.id,
+          p_business_type: businessType,
+          p_business_name: businessName,
+          p_description: description,
+          p_contact_name: contactName,
+          p_contact_phone: phone,
+          p_contact_email: email,
+        });
+
+        if (functionError) throw functionError;
+        
+        // Success - email confirmation required
+        setSuccess(true);
+        return;
+      }
+
+      // Session exists - proceed with normal flow
       // Set the session explicitly to ensure auth context is established
       const { error: sessionError } = await supabase.auth.setSession({
         access_token: authData.session.access_token,

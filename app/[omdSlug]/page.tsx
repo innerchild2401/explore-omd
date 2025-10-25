@@ -4,7 +4,7 @@ import HeroSection from '@/components/sections/HeroSection';
 import SearchBar from '@/components/sections/SearchBar';
 import FooterSection from '@/components/sections/FooterSection';
 
-export const revalidate = 0; // Disable caching for testing (change to 60 in production)
+export const revalidate = 60; // Revalidate every 60 seconds
 
 interface PageProps {
   params: {

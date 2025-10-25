@@ -20,9 +20,9 @@ export default function HotelBasicInfo({ business, hotel, amenities }: HotelBasi
   // Business fields
   const [name, setName] = useState(business.name || '');
   const [description, setDescription] = useState(business.description || '');
-  const [phone, setPhone] = useState(business.phone || '');
-  const [email, setEmail] = useState(business.email || '');
-  const [address, setAddress] = useState(business.address || '');
+  const [phone, setPhone] = useState(business.contact?.phone || '');
+  const [email, setEmail] = useState(business.contact?.email || '');
+  const [address, setAddress] = useState(business.location?.address || '');
   const [images, setImages] = useState<string[]>(business.images || []);
   
   // Hotel fields
@@ -47,9 +47,15 @@ export default function HotelBasicInfo({ business, hotel, amenities }: HotelBasi
         .update({
           name,
           description,
-          phone,
-          email,
-          address,
+          contact: {
+            ...business.contact,
+            phone,
+            email,
+          },
+          location: {
+            ...business.location,
+            address,
+          },
           images,
         })
         .eq('id', business.id);

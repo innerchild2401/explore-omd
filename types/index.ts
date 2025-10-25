@@ -24,6 +24,7 @@ export interface Section {
 
 export type SectionType = 
   | 'hero'
+  | 'explore'
   | 'stays'
   | 'restaurants'
   | 'experiences'

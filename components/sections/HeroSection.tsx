@@ -78,8 +78,9 @@ export default function HeroSection({ section, omd }: HeroSectionProps) {
 
           {/* CTA Button */}
           {cta && (
-            <motion.button
-              className="rounded-full px-8 py-4 text-lg font-semibold text-white transition-all hover:scale-105"
+            <motion.a
+              href={`/${omd.slug}/explore`}
+              className="inline-block rounded-full px-8 py-4 text-lg font-semibold text-white transition-all hover:scale-105"
               style={{ backgroundColor: omd.colors.primary }}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -88,7 +89,7 @@ export default function HeroSection({ section, omd }: HeroSectionProps) {
               whileTap={{ scale: 0.95 }}
             >
               {cta}
-            </motion.button>
+            </motion.a>
           )}
         </motion.div>
 

@@ -1,9 +1,7 @@
 import { notFound } from 'next/navigation';
-import { getOMDBySlug, getSectionsByOMD, getBusinessesByOMD } from '@/lib/supabase/queries';
+import { getOMDBySlug, getSectionsByOMD } from '@/lib/supabase/queries';
 import HeroSection from '@/components/sections/HeroSection';
 import SearchBar from '@/components/sections/SearchBar';
-import BusinessCarousel from '@/components/sections/BusinessCarousel';
-import MapSection from '@/components/sections/MapSection';
 import FooterSection from '@/components/sections/FooterSection';
 
 export const revalidate = 60; // Revalidate every 60 seconds
@@ -26,18 +24,9 @@ export default async function OMDHomePage({ params }: PageProps) {
 
   // Fetch all visible sections
   const sections = await getSectionsByOMD(omd.id);
-  
-  // Fetch businesses by type
-  const hotels = await getBusinessesByOMD(omd.id, 'hotel', 10);
-  const restaurants = await getBusinessesByOMD(omd.id, 'restaurant', 10);
-  const experiences = await getBusinessesByOMD(omd.id, 'experience', 10);
 
   // Find specific sections
   const heroSection = sections.find(s => s.type === 'hero');
-  const staysSection = sections.find(s => s.type === 'stays');
-  const restaurantsSection = sections.find(s => s.type === 'restaurants');
-  const experiencesSection = sections.find(s => s.type === 'experiences');
-  const mapSection = sections.find(s => s.type === 'map');
   const footerSection = sections.find(s => s.type === 'footer');
 
   return (
@@ -47,44 +36,6 @@ export default async function OMDHomePage({ params }: PageProps) {
 
       {/* Search Bar */}
       <SearchBar omdSlug={omdSlug} />
-
-      {/* Where to Stay */}
-      {staysSection && hotels.length > 0 && (
-        <BusinessCarousel
-          section={staysSection}
-          businesses={hotels}
-          omdSlug={omdSlug}
-          type="hotel"
-        />
-      )}
-
-      {/* Where to Eat */}
-      {restaurantsSection && restaurants.length > 0 && (
-        <BusinessCarousel
-          section={restaurantsSection}
-          businesses={restaurants}
-          omdSlug={omdSlug}
-          type="restaurant"
-        />
-      )}
-
-      {/* Things to Do */}
-      {experiencesSection && experiences.length > 0 && (
-        <BusinessCarousel
-          section={experiencesSection}
-          businesses={experiences}
-          omdSlug={omdSlug}
-          type="experience"
-        />
-      )}
-
-      {/* Map View */}
-      {mapSection && (
-        <MapSection
-          section={mapSection}
-          businesses={[...hotels, ...restaurants, ...experiences]}
-        />
-      )}
 
       {/* Footer */}
       {footerSection && <FooterSection section={footerSection} omd={omd} />}

@@ -32,6 +32,16 @@ export default function FooterSection({ section, omd }: FooterSectionProps) {
           <div>
             <h4 className="mb-4 text-lg font-semibold">Quick Links</h4>
             <ul className="space-y-2">
+              {/* Default Register Business Link */}
+              <li>
+                <a
+                  href={`/${omd.slug}/register-business`}
+                  className="text-gray-400 transition-colors hover:text-white"
+                >
+                  Register Your Business
+                </a>
+              </li>
+              {/* Custom Links */}
               {links?.map((link: any, index: number) => (
                 <li key={index}>
                   <a

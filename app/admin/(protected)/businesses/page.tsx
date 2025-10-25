@@ -26,7 +26,7 @@ export default async function BusinessesAdminPage() {
   }
 
   // Get pending businesses for this OMD
-  const { data: pendingBusinesses } = await supabase
+  const { data: pendingBusinesses, error: pendingError } = await supabase
     .from('businesses')
     .select(`
       *,
@@ -37,6 +37,14 @@ export default async function BusinessesAdminPage() {
     .eq('omd_id', profile.omd_id)
     .eq('status', 'pending')
     .order('created_at', { ascending: false });
+
+  // Debug logging
+  console.log('Fetching pending businesses for OMD:', profile.omd_id);
+  console.log('Pending businesses count:', pendingBusinesses?.length || 0);
+  console.log('Pending businesses error:', pendingError);
+  if (pendingBusinesses && pendingBusinesses.length > 0) {
+    console.log('First pending business:', pendingBusinesses[0]);
+  }
 
   // Get approved businesses for this OMD
   const { data: approvedBusinesses } = await supabase

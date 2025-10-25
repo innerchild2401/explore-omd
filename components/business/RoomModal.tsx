@@ -30,6 +30,8 @@ export default function RoomModal({ hotelId, room, amenities, onClose }: RoomMod
   const [isActive, setIsActive] = useState(room?.is_active ?? true);
 
   const handleSave = async () => {
+    console.log('RoomModal - handleSave called');
+    
     if (!name || !basePrice) {
       setError('Please fill in all required fields');
       return;
@@ -53,22 +55,30 @@ export default function RoomModal({ hotelId, room, amenities, onClose }: RoomMod
         is_active: isActive,
       };
 
+      console.log('RoomModal - Saving room data:', roomData);
+      console.log('RoomModal - Is update?', !!room);
+
       if (room) {
         // Update existing room
-        const { error: updateError } = await supabase
+        console.log('RoomModal - Updating room:', room.id);
+        const { data: updatedData, error: updateError } = await supabase
           .from('rooms')
           .update(roomData)
-          .eq('id', room.id);
+          .eq('id', room.id)
+          .select();
 
+        console.log('RoomModal - Update result:', { updatedData, updateError });
         if (updateError) throw updateError;
       } else {
         // Create new room
+        console.log('RoomModal - Creating new room');
         const { data: newRoom, error: createError } = await supabase
           .from('rooms')
           .insert(roomData)
           .select()
           .single();
 
+        console.log('RoomModal - Create result:', { newRoom, createError });
         if (createError) throw createError;
 
         // Initialize availability for next 365 days

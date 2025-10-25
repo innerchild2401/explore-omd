@@ -3,22 +3,38 @@
 import { useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 
-export default function AdminLogin() {
+export default function AdminSignup() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const router = useRouter();
   const supabase = createClient();
 
-  const handleLogin = async (e: React.FormEvent) => {
+  const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setLoading(true);
 
+    // Validation
+    if (password !== confirmPassword) {
+      setError('Passwords do not match');
+      setLoading(false);
+      return;
+    }
+
+    if (password.length < 6) {
+      setError('Password must be at least 6 characters');
+      setLoading(false);
+      return;
+    }
+
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
+      // Sign up the user
+      const { data, error } = await supabase.auth.signUp({
         email,
         password,
       });
@@ -29,23 +45,11 @@ export default function AdminLogin() {
       }
 
       if (data.user) {
-        // Check if user has admin role
-        const { data: profile } = await supabase
-          .from('user_profiles')
-          .select('role')
-          .eq('id', data.user.id)
-          .single();
-
-        if (!profile || !['super_admin', 'omd_admin'].includes(profile.role)) {
-          setError('You do not have admin access');
-          await supabase.auth.signOut();
-          return;
-        }
-
-        router.push('/admin');
+        // Redirect to onboarding to create their OMD
+        router.push('/admin/onboarding');
       }
     } catch (err: any) {
-      setError('An error occurred during login');
+      setError('An error occurred during signup');
     } finally {
       setLoading(false);
     }
@@ -55,7 +59,10 @@ export default function AdminLogin() {
     <div className="flex min-h-screen items-center justify-center bg-gray-100">
       <div className="w-full max-w-md">
         <div className="rounded-lg bg-white px-8 py-10 shadow-lg">
-          <h1 className="mb-6 text-center text-3xl font-bold">Admin Login</h1>
+          <h1 className="mb-2 text-center text-3xl font-bold">Create OMD Admin Account</h1>
+          <p className="mb-6 text-center text-gray-600">
+            Sign up to create and manage your destination
+          </p>
 
           {error && (
             <div className="mb-4 rounded-lg bg-red-50 p-4 text-sm text-red-600">
@@ -63,7 +70,7 @@ export default function AdminLogin() {
             </div>
           )}
 
-          <form onSubmit={handleLogin} className="space-y-4">
+          <form onSubmit={handleSignup} className="space-y-4">
             <div>
               <label
                 htmlFor="email"
@@ -95,6 +102,26 @@ export default function AdminLogin() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
+                minLength={6}
+                className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:border-blue-500 focus:outline-none"
+                placeholder="••••••••"
+              />
+            </div>
+
+            <div>
+              <label
+                htmlFor="confirmPassword"
+                className="mb-2 block text-sm font-medium text-gray-700"
+              >
+                Confirm Password
+              </label>
+              <input
+                id="confirmPassword"
+                type="password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                required
+                minLength={6}
                 className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:border-blue-500 focus:outline-none"
                 placeholder="••••••••"
               />
@@ -105,15 +132,15 @@ export default function AdminLogin() {
               disabled={loading}
               className="w-full rounded-lg bg-blue-600 py-3 font-semibold text-white transition-colors hover:bg-blue-700 disabled:bg-blue-300"
             >
-              {loading ? 'Signing in...' : 'Sign In'}
+              {loading ? 'Creating Account...' : 'Sign Up'}
             </button>
           </form>
 
           <p className="mt-6 text-center text-sm text-gray-600">
-            Don&apos;t have an account?{' '}
-            <a href="/admin/signup" className="font-medium text-blue-600 hover:underline">
-              Sign Up
-            </a>
+            Already have an account?{' '}
+            <Link href="/admin/login" className="font-medium text-blue-600 hover:underline">
+              Sign In
+            </Link>
           </p>
         </div>
       </div>

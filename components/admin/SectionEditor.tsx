@@ -142,6 +142,29 @@ export default function SectionEditor({ section, onClose, onSave }: SectionEdito
           </div>
         )}
 
+        {/* Explore Section Fields */}
+        {section.type === 'explore' && (
+          <>
+            {/* Description (longer welcome text) */}
+            <div>
+              <label className="mb-2 block text-sm font-medium text-gray-700">
+                Welcome Description (2-3 sentences recommended)
+              </label>
+              <textarea
+                value={content.description || ''}
+                onChange={(e) => updateField('description', e.target.value)}
+                rows={4}
+                maxLength={400}
+                className="w-full rounded-lg border border-gray-300 px-4 py-2 text-gray-900 placeholder:text-gray-400 focus:border-blue-500 focus:outline-none"
+                placeholder="Welcome to Constanta! From luxury hotels along the coast to hidden dining gems in the old town, from thrilling water sports to peaceful cultural experiences..."
+              />
+              <p className="mt-1 text-xs text-gray-500">
+                {content.description?.length || 0}/400 characters • Paint a picture of your destination
+              </p>
+            </div>
+          </>
+        )}
+
         {/* Footer Fields */}
         {section.type === 'footer' && (
           <>

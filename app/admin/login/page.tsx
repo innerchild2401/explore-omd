@@ -36,8 +36,14 @@ export default function AdminLogin() {
           .eq('id', data.user.id)
           .maybeSingle();
 
+        // Debug logging
+        console.log('Login - User ID:', data.user.id);
+        console.log('Login - Profile:', profile);
+        console.log('Login - Profile Error:', profileError);
+
         // If no profile, redirect to onboarding
         if (!profile) {
+          console.log('No profile found, redirecting to onboarding');
           router.push('/admin/onboarding');
           return;
         }

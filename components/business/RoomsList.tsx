@@ -2,6 +2,8 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import RoomModal from './RoomModal';
+import PricingCalendarModal from './PricingCalendarModal';
 
 interface RoomsListProps {
   hotelId: string;
@@ -10,6 +12,26 @@ interface RoomsListProps {
 }
 
 export default function RoomsList({ hotelId, rooms, amenities }: RoomsListProps) {
+  const [showRoomModal, setShowRoomModal] = useState(false);
+  const [showPricingModal, setShowPricingModal] = useState(false);
+  const [editingRoom, setEditingRoom] = useState<any>(null);
+  const [pricingRoom, setPricingRoom] = useState<any>(null);
+
+  const handleAddRoom = () => {
+    setEditingRoom(null);
+    setShowRoomModal(true);
+  };
+
+  const handleEditRoom = (room: any) => {
+    setEditingRoom(room);
+    setShowRoomModal(true);
+  };
+
+  const handleManagePricing = (room: any) => {
+    setPricingRoom(room);
+    setShowPricingModal(true);
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -17,7 +39,10 @@ export default function RoomsList({ hotelId, rooms, amenities }: RoomsListProps)
           <h2 className="text-2xl font-bold text-gray-900">Rooms</h2>
           <p className="text-gray-600">Manage your room types and pricing</p>
         </div>
-        <button className="rounded-lg bg-blue-600 px-6 py-3 font-semibold text-white hover:bg-blue-700">
+        <button
+          onClick={handleAddRoom}
+          className="rounded-lg bg-blue-600 px-6 py-3 font-semibold text-white hover:bg-blue-700"
+        >
           + Add Room Type
         </button>
       </div>
@@ -31,7 +56,10 @@ export default function RoomsList({ hotelId, rooms, amenities }: RoomsListProps)
           </div>
           <h3 className="mb-2 text-xl font-semibold text-gray-900">No rooms yet</h3>
           <p className="mb-6 text-gray-600">Add your first room type to start accepting bookings</p>
-          <button className="rounded-lg bg-blue-600 px-6 py-3 font-semibold text-white hover:bg-blue-700">
+          <button
+            onClick={handleAddRoom}
+            className="rounded-lg bg-blue-600 px-6 py-3 font-semibold text-white hover:bg-blue-700"
+          >
             + Add Room Type
           </button>
         </div>
@@ -59,16 +87,45 @@ export default function RoomsList({ hotelId, rooms, amenities }: RoomsListProps)
               </div>
 
               <div className="flex gap-2">
-                <button className="flex-1 rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">
+                <button
+                  onClick={() => handleEditRoom(room)}
+                  className="flex-1 rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                >
                   Edit
                 </button>
-                <button className="flex-1 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700">
+                <button
+                  onClick={() => handleManagePricing(room)}
+                  className="flex-1 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+                >
                   Manage Pricing
                 </button>
               </div>
             </div>
           ))}
         </div>
+      )}
+
+      {/* Modals */}
+      {showRoomModal && (
+        <RoomModal
+          hotelId={hotelId}
+          room={editingRoom}
+          amenities={amenities}
+          onClose={() => {
+            setShowRoomModal(false);
+            setEditingRoom(null);
+          }}
+        />
+      )}
+
+      {showPricingModal && pricingRoom && (
+        <PricingCalendarModal
+          room={pricingRoom}
+          onClose={() => {
+            setShowPricingModal(false);
+            setPricingRoom(null);
+          }}
+        />
       )}
     </div>
   );

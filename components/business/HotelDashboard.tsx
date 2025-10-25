@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import HotelBasicInfo from './HotelBasicInfo';
 import RoomsList from './RoomsList';
+import ReservationsList from './ReservationsList';
 
 interface Business {
   id: string;
@@ -155,10 +156,7 @@ export default function HotelDashboard({
         )}
 
         {activeTab === 'reservations' && (
-          <div className="rounded-lg bg-white p-8 text-center shadow">
-            <h3 className="text-lg font-semibold text-gray-900">Reservations</h3>
-            <p className="mt-2 text-gray-600">Coming soon...</p>
-          </div>
+          <ReservationsList hotelId={hotel.id} />
         )}
 
         {activeTab === 'analytics' && (

@@ -24,9 +24,33 @@ export default function SearchBar({ omdSlug }: SearchBarProps) {
   const [experienceDate, setExperienceDate] = useState('');
 
   const tabs = [
-    { id: 'stay' as const, label: 'Stay', icon: '🏨' },
-    { id: 'eat' as const, label: 'Eat', icon: '🍽️' },
-    { id: 'do' as const, label: 'Do', icon: '🎟️' },
+    { 
+      id: 'stay' as const, 
+      label: 'Stay', 
+      icon: (
+        <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+        </svg>
+      )
+    },
+    { 
+      id: 'eat' as const, 
+      label: 'Eat', 
+      icon: (
+        <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+        </svg>
+      )
+    },
+    { 
+      id: 'do' as const, 
+      label: 'Do', 
+      icon: (
+        <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z" />
+        </svg>
+      )
+    },
   ];
 
   const handleStaySearch = () => {
@@ -53,15 +77,19 @@ export default function SearchBar({ omdSlug }: SearchBarProps) {
     <section className="sticky top-0 z-40 bg-white shadow-md">
       <div className="mx-auto max-w-6xl px-4 py-4">
         {/* Tabs */}
-        <div className="mb-4 flex justify-center space-x-4">
+        <div className="mb-4 flex justify-center space-x-2 sm:space-x-4">
           {tabs.map((tab) => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className="relative px-6 py-2 text-lg font-medium transition-colors"
+              className={`relative flex items-center justify-center gap-2 px-4 py-2.5 text-base font-semibold transition-colors sm:px-6 sm:text-lg ${
+                activeTab === tab.id
+                  ? 'text-blue-600'
+                  : 'text-gray-700 hover:text-gray-900'
+              }`}
             >
-              <span className="mr-2">{tab.icon}</span>
-              {tab.label}
+              <span className="flex-shrink-0">{tab.icon}</span>
+              <span>{tab.label}</span>
               {activeTab === tab.id && (
                 <motion.div
                   className="absolute bottom-0 left-0 right-0 h-1 bg-blue-600"

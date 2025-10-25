@@ -97,8 +97,11 @@ export default function RegisterBusinessPage() {
           slug: businessName.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
           description: description,
           owner_id: authData.user.id,
-          phone: phone,
-          email: email,
+          contact: {
+            name: contactName,
+            phone: phone,
+            email: email,
+          },
           status: 'pending', // Pending until approved
         });
 

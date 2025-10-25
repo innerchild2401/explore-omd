@@ -14,12 +14,12 @@ export default function BusinessRegisterPage() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
+  const [omds, setOmds] = useState<any[]>([]);
 
   // Form fields
-  const [omdSlug, setOmdSlug] = useState('');
+  const [selectedOmdId, setSelectedOmdId] = useState('');
   const [businessName, setBusinessName] = useState('');
   const [businessType, setBusinessType] = useState<'hotel' | 'restaurant' | 'experience'>('hotel');
-  const [description, setDescription] = useState('');
   const [contactName, setContactName] = useState('');
   const [phone, setPhone] = useState('');
 
@@ -47,12 +47,27 @@ export default function BusinessRegisterPage() {
 
       if (existingBusiness) {
         // Already has a business, redirect to appropriate dashboard
-        if (existingBusiness.status === 'active') {
-          router.push('/business/dashboard');
-        } else {
-          router.push('/business/dashboard'); // Will show pending message
-        }
+        router.push('/business/dashboard');
         return;
+      }
+
+      // Fetch all available OMDs
+      const { data: omdsList } = await supabase
+        .from('omds')
+        .select('id, name, slug')
+        .order('name');
+
+      setOmds(omdsList || []);
+
+      // Check if OMD is specified in URL params
+      const params = new URLSearchParams(window.location.search);
+      const omdParam = params.get('omd');
+      
+      if (omdParam && omdsList) {
+        const matchedOmd = omdsList.find((o: any) => o.slug === omdParam);
+        if (matchedOmd) {
+          setSelectedOmdId(matchedOmd.id);
+        }
       }
 
       setLoading(false);
@@ -69,27 +84,17 @@ export default function BusinessRegisterPage() {
 
     try {
       if (!user) throw new Error('Not authenticated');
-
-      // Get OMD by slug
-      const { data: omd, error: omdError } = await supabase
-        .from('omds')
-        .select('id')
-        .eq('slug', omdSlug)
-        .single();
-
-      if (omdError || !omd) {
-        throw new Error('Destination not found. Please check the slug.');
-      }
+      if (!selectedOmdId) throw new Error('Please select a destination');
 
       // Create business (RLS will allow because user is authenticated and owner_id matches auth.uid())
       const { error: businessError } = await supabase
         .from('businesses')
         .insert({
-          omd_id: omd.id,
+          omd_id: selectedOmdId,
           type: businessType,
           name: businessName,
           slug: businessName.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
-          description: description,
+          description: '', // Optional, can be added later in dashboard
           owner_id: user.id,
           contact: {
             name: contactName,
@@ -106,7 +111,7 @@ export default function BusinessRegisterPage() {
         .from('user_profiles')
         .update({
           role: 'business_owner',
-          omd_id: omd.id,
+          omd_id: selectedOmdId,
           profile: {
             status: 'pending',
             contact_name: contactName,
@@ -179,31 +184,36 @@ export default function BusinessRegisterPage() {
           </p>
 
           <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Destination */}
+            {/* Destination Selection */}
             <div className="rounded-lg border border-gray-200 p-6">
-              <h2 className="mb-4 text-xl font-semibold text-gray-800">Destination</h2>
+              <h2 className="mb-4 text-xl font-semibold text-gray-800">1. Select Destination</h2>
               <div>
-                <label htmlFor="omdSlug" className="mb-2 block text-sm font-medium text-gray-700">
-                  OMD Slug *
+                <label htmlFor="omdSelect" className="mb-2 block text-sm font-medium text-gray-700">
+                  Destination *
                 </label>
-                <input
-                  type="text"
-                  id="omdSlug"
-                  value={omdSlug}
-                  onChange={(e) => setOmdSlug(e.target.value)}
+                <select
+                  id="omdSelect"
+                  value={selectedOmdId}
+                  onChange={(e) => setSelectedOmdId(e.target.value)}
                   required
-                  className="w-full rounded-lg border border-gray-300 px-4 py-2 text-gray-900 placeholder:text-gray-400 focus:border-blue-500 focus:outline-none"
-                  placeholder="e.g., constanta, mangalia"
-                />
+                  className="w-full rounded-lg border border-gray-300 px-4 py-2 text-gray-900 focus:border-blue-500 focus:outline-none"
+                >
+                  <option value="">Select a destination...</option>
+                  {omds.map((omd) => (
+                    <option key={omd.id} value={omd.id}>
+                      {omd.name}
+                    </option>
+                  ))}
+                </select>
                 <p className="mt-1 text-xs text-gray-500">
-                  The destination slug (check the URL: yoursite.com/<strong>slug</strong>)
+                  Choose the destination where your business is located
                 </p>
               </div>
             </div>
 
             {/* Business Information */}
             <div className="rounded-lg border border-gray-200 p-6">
-              <h2 className="mb-4 text-xl font-semibold text-gray-800">Business Information</h2>
+              <h2 className="mb-4 text-xl font-semibold text-gray-800">2. Business Details</h2>
               <div className="space-y-4">
                 <div>
                   <label htmlFor="businessName" className="mb-2 block text-sm font-medium text-gray-700">
@@ -216,13 +226,13 @@ export default function BusinessRegisterPage() {
                     onChange={(e) => setBusinessName(e.target.value)}
                     required
                     className="w-full rounded-lg border border-gray-300 px-4 py-2 text-gray-900 placeholder:text-gray-400 focus:border-blue-500 focus:outline-none"
-                    placeholder="e.g., Grand Hotel Constanta"
+                    placeholder="e.g., Grand Hotel"
                   />
                 </div>
                 
                 <div>
                   <label htmlFor="businessType" className="mb-2 block text-sm font-medium text-gray-700">
-                    Business Type *
+                    Business Category *
                   </label>
                   <select
                     id="businessType"
@@ -236,35 +246,16 @@ export default function BusinessRegisterPage() {
                     <option value="experience">Experience / Activity</option>
                   </select>
                 </div>
-
-                <div>
-                  <label htmlFor="description" className="mb-2 block text-sm font-medium text-gray-700">
-                    Short Description *
-                  </label>
-                  <textarea
-                    id="description"
-                    value={description}
-                    onChange={(e) => setDescription(e.target.value)}
-                    rows={3}
-                    maxLength={300}
-                    required
-                    className="w-full rounded-lg border border-gray-300 px-4 py-2 text-gray-900 placeholder:text-gray-400 focus:border-blue-500 focus:outline-none"
-                    placeholder="A brief description of your business..."
-                  />
-                  <p className="mt-1 text-xs text-gray-500">
-                    {description.length}/300 characters
-                  </p>
-                </div>
               </div>
             </div>
 
-            {/* Contact Person */}
+            {/* Contact Information */}
             <div className="rounded-lg border border-gray-200 p-6">
-              <h2 className="mb-4 text-xl font-semibold text-gray-800">Contact Information</h2>
+              <h2 className="mb-4 text-xl font-semibold text-gray-800">3. Contact Information</h2>
               <div className="space-y-4">
                 <div>
                   <label htmlFor="contactName" className="mb-2 block text-sm font-medium text-gray-700">
-                    Contact Name *
+                    Your Name *
                   </label>
                   <input
                     type="text"

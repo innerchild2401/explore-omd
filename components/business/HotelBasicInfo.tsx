@@ -169,6 +169,45 @@ export default function HotelBasicInfo({ business, hotel, amenities }: HotelBasi
               className="w-full rounded-lg border border-gray-300 px-4 py-2 text-gray-900 focus:border-blue-500 focus:outline-none"
             />
           </div>
+
+          {/* Hotel Images */}
+          <div>
+            <label className="mb-2 block text-sm font-medium text-gray-700">Hotel Photos</label>
+            <p className="mb-3 text-xs text-gray-500">
+              Upload 5-15 photos showing your property (exterior, lobby, facilities, common areas). First image will be the main thumbnail.
+            </p>
+            <div className="space-y-3">
+              {images.map((img, idx) => (
+                <div key={idx} className="relative">
+                  <div className="flex items-center justify-between rounded-lg border border-gray-200 bg-gray-50 p-2">
+                    <div className="flex items-center gap-3">
+                      <img src={img} alt={`Hotel ${idx + 1}`} className="h-20 w-32 rounded object-cover" />
+                      <span className="text-sm font-medium text-gray-700">
+                        {idx === 0 ? 'Main Photo' : `Photo ${idx + 1}`}
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setImages(images.filter((_, i) => i !== idx))}
+                      className="rounded-lg bg-red-50 px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-100"
+                    >
+                      Remove
+                    </button>
+                  </div>
+                </div>
+              ))}
+              {images.length < 15 && (
+                <ImageUpload
+                  value=""
+                  onChange={(url) => setImages([...images, url])}
+                  bucket="images"
+                  folder="hotels"
+                  maxSizeMB={5}
+                  recommendedSize="1200×800px (3:2 aspect ratio)"
+                />
+              )}
+            </div>
+          </div>
         </div>
       </div>
 

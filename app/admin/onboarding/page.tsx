@@ -93,15 +93,15 @@ export default function AdminOnboarding() {
         return;
       }
 
-      // Create user profile
+      // Update user profile (profile is auto-created by trigger on signup)
       const { error: profileError } = await supabase
         .from('user_profiles')
-        .insert({
-          id: user.id,
+        .update({
           role: 'omd_admin',
           omd_id: newOMD.id,
           profile: { name: user.email?.split('@')[0] || 'Admin' },
-        });
+        })
+        .eq('id', user.id);
 
       if (profileError) {
         setError('Failed to create profile: ' + profileError.message);

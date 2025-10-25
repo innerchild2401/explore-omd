@@ -68,11 +68,13 @@ export default function RegisterBusinessPage() {
       if (signUpError) throw signUpError;
       if (!authData.user) throw new Error('User creation failed');
 
-      // Create user profile as business_owner (pending)
+      // Update user profile to business_owner (profile is auto-created by trigger)
+      // Wait a moment for the trigger to complete
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
       const { error: profileError } = await supabase
         .from('user_profiles')
-        .insert({
-          id: authData.user.id,
+        .update({
           role: 'business_owner',
           omd_id: omd.id,
           profile: {
@@ -80,7 +82,8 @@ export default function RegisterBusinessPage() {
             contact_name: contactName,
             phone: phone,
           },
-        });
+        })
+        .eq('id', authData.user.id);
 
       if (profileError) throw profileError;
 

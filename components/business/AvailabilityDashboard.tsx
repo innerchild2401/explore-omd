@@ -492,9 +492,11 @@ export default function AvailabilityDashboard({ hotelId, onClose }: Availability
                       return (
                         <div
                           key={`${room.id}-${dateStr}`}
-                          className={`p-2 border rounded-lg min-h-[60px] transition-colors ${
-                            isDragOver ? 'bg-blue-100 border-blue-400' : ''
-                          } ${getStatusColor(status)}`}
+                          className={`p-2 rounded-lg min-h-[60px] transition-colors ${
+                            isDragOver 
+                              ? 'bg-blue-100 border-2 border-blue-400' 
+                              : getStatusColor(status)
+                          }`}
                           onDragOver={(e) => handleDragOver(e, room.id, dateStr)}
                           onDragLeave={handleDragLeave}
                           onDrop={(e) => handleDrop(e, room.id, dateStr)}
@@ -505,7 +507,7 @@ export default function AvailabilityDashboard({ hotelId, onClose }: Availability
                               {status === 'blocked' && (
                                 <button
                                   onClick={() => handleUnblockRoom(room.id, dateStr)}
-                                  className="text-xs text-gray-500 hover:text-gray-700"
+                                  className="text-xs text-gray-700 hover:text-gray-900"
                                 >
                                   ✕
                                 </button>
@@ -513,7 +515,12 @@ export default function AvailabilityDashboard({ hotelId, onClose }: Availability
                             </div>
                             
                             {/* Show actual availability quantity */}
-                            <div className="text-xs font-medium text-gray-700">
+                            <div className={`text-xs font-medium ${
+                              status === 'available' ? 'text-green-800' :
+                              status === 'booked' ? 'text-red-800' :
+                              status === 'blocked' ? 'text-yellow-800' :
+                              'text-gray-800'
+                            }`}>
                               {avail?.available_quantity !== undefined ? 
                                 `${avail.available_quantity}/${room.quantity}` : 
                                 `${room.quantity}/${room.quantity}`
@@ -522,23 +529,23 @@ export default function AvailabilityDashboard({ hotelId, onClose }: Availability
                             
                             {reservation && (
                               <div 
-                                className="text-xs bg-white/80 rounded px-1 py-0.5 cursor-move"
+                                className="text-xs bg-white/90 rounded px-1 py-0.5 cursor-move mt-1 border border-gray-300"
                                 draggable
                                 onDragStart={(e) => handleDragStart(e, reservation)}
                               >
-                                <div className="font-medium">{reservation.confirmation_number}</div>
-                                <div className="text-gray-600">{reservation.guest_name}</div>
-                                <div className="text-gray-500">{reservation.adults}p</div>
+                                <div className="font-semibold text-gray-900">{reservation.confirmation_number}</div>
+                                <div className="text-gray-700">{reservation.guest_name}</div>
+                                <div className="text-gray-600">{reservation.adults}p</div>
                               </div>
                             )}
                             
-                            {status === 'available' && (
+                            {status === 'available' && !reservation && (
                               <button
                                 onClick={() => {
                                   const reason = prompt('Reason for blocking:');
                                   if (reason) handleBlockRoom(room.id, dateStr, reason);
                                 }}
-                                className="text-xs text-gray-500 hover:text-gray-700 mt-auto"
+                                className="text-xs text-gray-700 hover:text-gray-900 mt-auto"
                               >
                                 Block
                               </button>

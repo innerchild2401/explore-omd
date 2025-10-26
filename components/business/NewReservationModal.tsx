@@ -237,16 +237,16 @@ export default function NewReservationModal({ hotelId, rooms, onClose, onSuccess
         hotel_id: hotelId,
         guest_id: guestProfile.id,
         channel_id: directChannel.id,
-        check_in_date: bookingData.check_in_date,
-        check_out_date: bookingData.check_out_date,
-        adults: bookingData.adults,
-        children: bookingData.children,
-        infants: bookingData.infants,
+        check_in_date: bookingData.check_in_date, // Keep as string, PostgreSQL will handle conversion
+        check_out_date: bookingData.check_out_date, // Keep as string, PostgreSQL will handle conversion
+        adults: parseInt(bookingData.adults.toString()),
+        children: parseInt(bookingData.children.toString()),
+        infants: parseInt(bookingData.infants.toString()),
         room_id: bookingData.room_id,
-        base_rate: pricingData.base_rate,
-        taxes: pricingData.taxes,
-        fees: pricingData.fees,
-        total_amount: pricingData.total_amount,
+        base_rate: parseFloat(pricingData.base_rate.toString()),
+        taxes: parseFloat(pricingData.taxes.toString()),
+        fees: parseFloat(pricingData.fees.toString()),
+        total_amount: parseFloat(pricingData.total_amount.toString()),
         currency: pricingData.currency,
         reservation_status: confirmationData.reservation_status,
         payment_status: confirmationData.payment_status,
@@ -259,6 +259,11 @@ export default function NewReservationModal({ hotelId, rooms, onClose, onSuccess
       console.log('Creating reservation with data:', reservationData);
       console.log('Room ID being sent:', bookingData.room_id);
       console.log('Room ID type:', typeof bookingData.room_id);
+      console.log('Check-in date:', bookingData.check_in_date, 'Type:', typeof bookingData.check_in_date);
+      console.log('Check-out date:', bookingData.check_out_date, 'Type:', typeof bookingData.check_out_date);
+      console.log('Adults:', bookingData.adults, 'Type:', typeof bookingData.adults);
+      console.log('Children:', bookingData.children, 'Type:', typeof bookingData.children);
+      console.log('Infants:', bookingData.infants, 'Type:', typeof bookingData.infants);
 
       const { data: reservation, error: reservationError } = await supabase
         .from('reservations')

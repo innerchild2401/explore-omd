@@ -289,6 +289,7 @@ export default function AvailabilityDashboard({ hotelId, onClose }: Availability
         .upsert({
           room_id: roomId,
           date: date,
+          available_quantity: 0, // Required field - 0 means blocked
           availability_status: 'blocked',
           blocked_reason: reason
         });
@@ -305,11 +306,16 @@ export default function AvailabilityDashboard({ hotelId, onClose }: Availability
 
   const handleUnblockRoom = async (roomId: string, date: string) => {
     try {
+      // Get the room's quantity to set proper available_quantity
+      const room = rooms.find(r => r.id === roomId);
+      const availableQuantity = room?.quantity || 1;
+
       const { error } = await supabase
         .from('room_availability')
         .upsert({
           room_id: roomId,
           date: date,
+          available_quantity: availableQuantity, // Set to room quantity when available
           availability_status: 'available',
           blocked_reason: null
         });

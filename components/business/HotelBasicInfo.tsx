@@ -84,9 +84,15 @@ export default function HotelBasicInfo({ business, hotel, amenities }: HotelBasi
 
       if (hotelError) throw hotelError;
 
-      router.refresh();
-      alert('Saved successfully!');
+      // Debug: Check what we're saving
+      console.log('Saved images:', images);
+      
+      alert('Saved successfully! The page will reload to show your changes.');
+      
+      // Force a full page reload to ensure fresh data
+      window.location.reload();
     } catch (err: any) {
+      console.error('Save error:', err);
       setError(err.message || 'Failed to save');
     } finally {
       setSaving(false);

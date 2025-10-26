@@ -146,20 +146,20 @@ CREATE OR REPLACE FUNCTION calculate_room_price(
   p_date DATE
 ) RETURNS DECIMAL(10,2) AS $$
 DECLARE
-  base_price DECIMAL(10,2);
+  room_base_price DECIMAL(10,2);
   final_price DECIMAL(10,2);
   pricing_rule RECORD;
 BEGIN
   -- Get base price from rooms table
-  SELECT base_price INTO base_price
+  SELECT rooms.base_price INTO room_base_price
   FROM rooms
-  WHERE id = p_room_id;
+  WHERE rooms.id = p_room_id;
   
-  IF base_price IS NULL THEN
+  IF room_base_price IS NULL THEN
     RETURN NULL;
   END IF;
   
-  final_price := base_price;
+  final_price := room_base_price;
   
   -- Check for specific pricing rules for this date
   SELECT * INTO pricing_rule

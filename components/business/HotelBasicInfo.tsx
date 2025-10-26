@@ -205,38 +205,65 @@ export default function HotelBasicInfo({ business, hotel, amenities }: HotelBasi
             <div className="space-y-3">
               {images.map((img, idx) => (
                 <div key={idx} className="relative">
-                  <div className="rounded-lg border border-gray-200 bg-gray-50 p-3">
-                    <div className="mb-2 flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <img src={img.url} alt={`Hotel ${idx + 1}`} className="h-20 w-32 rounded object-cover" />
+                  <div className="flex items-start gap-3 rounded-lg border border-gray-200 bg-gray-50 p-3">
+                    {/* Thumbnail */}
+                    <img src={img.url} alt={`Hotel ${idx + 1}`} className="h-20 w-32 flex-shrink-0 rounded object-cover" />
+                    
+                    {/* Info */}
+                    <div className="flex-1">
+                      <div className="mb-2 flex items-center justify-between">
                         <span className="text-sm font-medium text-gray-700">
-                          {idx === 0 ? 'Main Photo' : `Photo ${idx + 1}`}
+                          {idx === 0 ? '⭐ Main Photo' : `Photo ${idx + 1}`}
                         </span>
+                        <button
+                          type="button"
+                          onClick={() => setImages(images.filter((_, i) => i !== idx))}
+                          className="rounded-lg bg-red-50 px-3 py-1.5 text-sm font-medium text-red-600 hover:bg-red-100"
+                        >
+                          Remove
+                        </button>
                       </div>
-                      <button
-                        type="button"
-                        onClick={() => setImages(images.filter((_, i) => i !== idx))}
-                        className="rounded-lg bg-red-50 px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-100"
-                      >
-                        Remove
-                      </button>
-                    </div>
-                    <div>
-                      <label className="mb-1 block text-xs font-medium text-gray-600">
-                        Photo Label (1-3 words, e.g., &quot;Pool&quot;, &quot;Lobby&quot;, &quot;Restaurant&quot;)
-                      </label>
-                      <input
-                        type="text"
-                        value={img.description}
-                        onChange={(e) => {
-                          const newImages = [...images];
-                          newImages[idx] = { ...newImages[idx], description: e.target.value };
-                          setImages(newImages);
-                        }}
-                        maxLength={30}
-                        placeholder="e.g., Outdoor Pool, Gym, Spa"
-                        className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-blue-500 focus:outline-none"
-                      />
+                      
+                      {/* Label Input with Clear Button */}
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="text"
+                          value={img.description}
+                          onChange={(e) => {
+                            const newImages = [...images];
+                            newImages[idx] = { ...newImages[idx], description: e.target.value };
+                            setImages(newImages);
+                          }}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              e.preventDefault();
+                              (e.target as HTMLInputElement).blur();
+                            }
+                          }}
+                          maxLength={30}
+                          placeholder="Add label (e.g., Pool, Gym, Lobby)"
+                          className="flex-1 rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                        />
+                        {img.description && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const newImages = [...images];
+                              newImages[idx] = { ...newImages[idx], description: '' };
+                              setImages(newImages);
+                            }}
+                            className="rounded-lg bg-gray-200 p-2 text-gray-600 hover:bg-gray-300"
+                            title="Clear label"
+                          >
+                            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                          </button>
+                        )}
+                      </div>
+                      <p className="mt-1 text-xs text-gray-500">
+                        💡 Press Enter or click outside to finish. Label will appear on photo.
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -396,7 +423,12 @@ export default function HotelBasicInfo({ business, hotel, amenities }: HotelBasi
       {/* Save Button */}
       <div className="flex justify-end">
         <button
-          onClick={handleSave}
+          type="button"
+          onClick={(e) => {
+            e.preventDefault();
+            console.log('=== SAVE BUTTON CLICKED ===');
+            handleSave();
+          }}
           disabled={saving}
           className="rounded-lg bg-blue-600 px-8 py-3 font-semibold text-white hover:bg-blue-700 disabled:bg-blue-300"
         >

@@ -256,14 +256,6 @@ export default function NewReservationModal({ hotelId, rooms, onClose, onSuccess
         corporate_code: bookingData.corporate_code || null
       };
 
-      console.log('Creating reservation with data:', reservationData);
-      console.log('Room ID being sent:', bookingData.room_id);
-      console.log('Room ID type:', typeof bookingData.room_id);
-      console.log('Check-in date:', bookingData.check_in_date, 'Type:', typeof bookingData.check_in_date);
-      console.log('Check-out date:', bookingData.check_out_date, 'Type:', typeof bookingData.check_out_date);
-      console.log('Adults:', bookingData.adults, 'Type:', typeof bookingData.adults);
-      console.log('Children:', bookingData.children, 'Type:', typeof bookingData.children);
-      console.log('Infants:', bookingData.infants, 'Type:', typeof bookingData.infants);
 
       const { data: reservation, error: reservationError } = await supabase
         .from('reservations')
@@ -544,9 +536,6 @@ export default function NewReservationModal({ hotelId, rooms, onClose, onSuccess
                             : 'border-gray-200 hover:border-gray-300'
                         }`}
                         onClick={() => {
-                          console.log('Room selected:', room);
-                          console.log('Room ID:', room.id);
-                          console.log('Room ID type:', typeof room.id);
                           setSelectedRoom(room);
                           setBookingData({...bookingData, room_id: room.id});
                         }}

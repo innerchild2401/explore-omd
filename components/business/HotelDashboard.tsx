@@ -6,7 +6,8 @@ import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import HotelBasicInfo from './HotelBasicInfo';
 import RoomsList from './RoomsList';
-import ReservationsList from './ReservationsList';
+import AvailabilityDashboard from './AvailabilityDashboard';
+import BookingManagement from './BookingManagement';
 
 interface Business {
   id: string;
@@ -77,7 +78,7 @@ export default function HotelDashboard({
 }: HotelDashboardProps) {
   const router = useRouter();
   const supabase = createClient();
-  const [activeTab, setActiveTab] = useState<'info' | 'rooms' | 'reservations' | 'analytics'>('info');
+  const [activeTab, setActiveTab] = useState<'info' | 'rooms' | 'availability' | 'bookings' | 'reservations' | 'analytics'>('info');
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
@@ -120,7 +121,9 @@ export default function HotelDashboard({
             {[
               { id: 'info', label: 'Basic Info', icon: '📋' },
               { id: 'rooms', label: 'Rooms', icon: '🛏️', badge: rooms.length },
-              { id: 'reservations', label: 'Reservations', icon: '📅' },
+              { id: 'availability', label: 'Availability', icon: '📅' },
+              { id: 'bookings', label: 'Bookings', icon: '📝' },
+              { id: 'reservations', label: 'Reservations', icon: '📋' },
               { id: 'analytics', label: 'Analytics', icon: '📊' },
             ].map((tab) => (
               <button
@@ -163,8 +166,46 @@ export default function HotelDashboard({
           />
         )}
 
-        {activeTab === 'reservations' && (
-          <ReservationsList hotelId={hotel.id} />
+        {activeTab === 'availability' && (
+          <div className="space-y-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-2xl font-bold text-gray-900">Availability Dashboard</h2>
+                <p className="text-gray-600">Manage room availability and bookings with drag & drop</p>
+              </div>
+              <button
+                onClick={() => setActiveTab('availability')}
+                className="rounded-lg bg-blue-600 px-6 py-3 font-semibold text-white hover:bg-blue-700"
+              >
+                Open Calendar
+              </button>
+            </div>
+            <div className="rounded-lg bg-white p-8 text-center shadow">
+              <h3 className="text-lg font-semibold text-gray-900">Visual Availability Calendar</h3>
+              <p className="mt-2 text-gray-600">Click &quot;Open Calendar&quot; to access the drag & drop availability dashboard</p>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'bookings' && (
+          <div className="space-y-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-2xl font-bold text-gray-900">Booking Management</h2>
+                <p className="text-gray-600">Manage reservations, payments, and guest communications</p>
+              </div>
+              <button
+                onClick={() => setActiveTab('bookings')}
+                className="rounded-lg bg-green-600 px-6 py-3 font-semibold text-white hover:bg-green-700"
+              >
+                Open Bookings
+              </button>
+            </div>
+            <div className="rounded-lg bg-white p-8 text-center shadow">
+              <h3 className="text-lg font-semibold text-gray-900">Booking Management System</h3>
+              <p className="mt-2 text-gray-600">Click &quot;Open Bookings&quot; to access the comprehensive booking management dashboard</p>
+            </div>
+          </div>
         )}
 
         {activeTab === 'analytics' && (
@@ -174,6 +215,21 @@ export default function HotelDashboard({
           </div>
         )}
       </main>
+
+      {/* Modals */}
+      {activeTab === 'availability' && (
+        <AvailabilityDashboard
+          hotelId={hotel.id}
+          onClose={() => setActiveTab('info')}
+        />
+      )}
+
+      {activeTab === 'bookings' && (
+        <BookingManagement
+          hotelId={hotel.id}
+          onClose={() => setActiveTab('info')}
+        />
+      )}
     </div>
   );
 }

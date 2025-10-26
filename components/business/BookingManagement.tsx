@@ -73,6 +73,15 @@ export default function BookingManagement({ hotelId, rooms, onClose }: BookingMa
     try {
       setLoading(true);
       
+      // First, get the hotel record associated with this business
+      const { data: hotelData, error: hotelError } = await supabase
+        .from('hotels')
+        .select('id')
+        .eq('business_id', hotelId)
+        .single();
+
+      if (hotelError) throw hotelError;
+      
       let query = supabase
         .from('reservations')
         .select(`
@@ -81,7 +90,7 @@ export default function BookingManagement({ hotelId, rooms, onClose }: BookingMa
           rooms!inner(name, room_type),
           booking_channels!inner(name, display_name, channel_type)
         `)
-        .eq('hotel_id', hotelId)
+        .eq('hotel_id', hotelData.id)
         .order('check_in_date', { ascending: true });
 
       // Apply filters
@@ -115,7 +124,7 @@ export default function BookingManagement({ hotelId, rooms, onClose }: BookingMa
       const { data: roomsData } = await supabase
         .from('rooms')
         .select('quantity')
-        .eq('hotel_id', hotelId)
+        .eq('hotel_id', hotelData.id)
         .eq('is_active', true);
       
       const totalRooms = roomsData?.reduce((sum, r) => sum + (r.quantity || 0), 0) || 1;

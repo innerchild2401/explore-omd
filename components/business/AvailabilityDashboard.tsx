@@ -129,6 +129,11 @@ export default function AvailabilityDashboard({ hotelId, onClose }: Availability
       setRooms(roomsData || []);
       setAvailability(availabilityData || []);
       setReservations(Array.from(reservationsMap.values()));
+      
+      // Debug logging
+      console.log('AvailabilityDashboard - Rooms:', roomsData?.length, roomsData);
+      console.log('AvailabilityDashboard - Availability:', availabilityData?.length, availabilityData);
+      console.log('AvailabilityDashboard - Reservations:', Array.from(reservationsMap.values()).length);
     } catch (err: any) {
       console.error('Error fetching data:', err);
       setError(err.message);

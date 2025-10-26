@@ -227,6 +227,7 @@ export default function HotelDashboard({
       {activeTab === 'bookings' && (
         <BookingManagement
           hotelId={hotel.id}
+          rooms={rooms}
           onClose={() => setActiveTab('info')}
         />
       )}

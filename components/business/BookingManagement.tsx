@@ -3,9 +3,11 @@
 import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
+import NewReservationModal from './NewReservationModal';
 
 interface BookingManagementProps {
   hotelId: string;
+  rooms: any[];
   onClose: () => void;
 }
 
@@ -50,7 +52,7 @@ interface BookingStats {
   occupancy_rate: number;
 }
 
-export default function BookingManagement({ hotelId, onClose }: BookingManagementProps) {
+export default function BookingManagement({ hotelId, rooms, onClose }: BookingManagementProps) {
   const router = useRouter();
   const supabase = createClient();
   
@@ -61,6 +63,7 @@ export default function BookingManagement({ hotelId, onClose }: BookingManagemen
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [filterChannel, setFilterChannel] = useState<string>('all');
   const [searchTerm, setSearchTerm] = useState('');
+  const [showNewReservationModal, setShowNewReservationModal] = useState(false);
 
   useEffect(() => {
     fetchReservations();
@@ -226,11 +229,19 @@ export default function BookingManagement({ hotelId, onClose }: BookingManagemen
               <h2 className="text-2xl font-bold text-gray-900">Booking Management</h2>
               <p className="text-sm text-gray-600">Manage reservations and guest bookings</p>
             </div>
-            <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
-              <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => setShowNewReservationModal(true)}
+                className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 transition-colors"
+              >
+                + New Reservation
+              </button>
+              <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
+                <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
           </div>
 
           {/* Stats Cards */}
@@ -442,6 +453,19 @@ export default function BookingManagement({ hotelId, onClose }: BookingManagemen
           </div>
         </div>
       </div>
+
+      {/* New Reservation Modal */}
+      {showNewReservationModal && (
+        <NewReservationModal
+          hotelId={hotelId}
+          rooms={rooms}
+          onClose={() => setShowNewReservationModal(false)}
+          onSuccess={() => {
+            fetchReservations();
+            router.refresh();
+          }}
+        />
+      )}
     </div>
   );
 }

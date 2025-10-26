@@ -25,17 +25,27 @@ export default function HotelBasicInfo({ business, hotel, amenities }: HotelBasi
   const [address, setAddress] = useState(business.location?.address || '');
   
   // Handle both old (string[]) and new ({url, description}[]) format
-  const [images, setImages] = useState<Array<{url: string; description: string}>>(
-    (business.images || []).map((img: any) => 
-      typeof img === 'string' ? { url: img, description: '' } : img
-    )
-  );
+  const [images, setImages] = useState<Array<{url: string; description: string}>>(() => {
+    console.log('Initial images setup - business.images:', business.images);
+    const normalized = (business.images || []).map((img: any) => {
+      console.log('Normalizing initial image:', img, 'type:', typeof img);
+      const result = typeof img === 'string' ? { url: img, description: '' } : img;
+      console.log('Result:', result);
+      return result;
+    });
+    console.log('Final normalized images:', normalized);
+    return normalized;
+  });
 
   // Sync images state when business prop changes (after refresh)
   useEffect(() => {
-    const updatedImages = (business.images || []).map((img: any) => 
-      typeof img === 'string' ? { url: img, description: '' } : img
-    );
+    console.log('useEffect triggered - business.images:', business.images);
+    const updatedImages = (business.images || []).map((img: any) => {
+      const normalized = typeof img === 'string' ? { url: img, description: '' } : img;
+      console.log('Normalizing image:', img, 'to:', normalized);
+      return normalized;
+    });
+    console.log('Setting images to:', updatedImages);
     setImages(updatedImages);
   }, [business.images]);
   
@@ -212,11 +222,28 @@ export default function HotelBasicInfo({ business, hotel, amenities }: HotelBasi
               Upload 5-15 photos showing your property (exterior, lobby, facilities, common areas). First image will be the main thumbnail.
             </p>
             <div className="space-y-3">
-              {images.map((img, idx) => (
+              {images.map((img, idx) => {
+                console.log('Rendering image idx', idx, 'img:', img, 'url:', img.url);
+                
+                // Safety check - ensure we have a valid URL string
+                const imageUrl = typeof img.url === 'string' ? img.url : 
+                               typeof img === 'string' ? img : 
+                               (img as any)?.url || '';
+                
+                console.log('Final imageUrl for idx', idx, ':', imageUrl);
+                
+                return (
                 <div key={idx} className="relative">
                   <div className="flex items-start gap-3 rounded-lg border border-gray-200 bg-gray-50 p-3">
                     {/* Thumbnail */}
-                    <img src={img.url} alt={`Hotel ${idx + 1}`} className="h-20 w-32 flex-shrink-0 rounded object-cover" />
+                    <img 
+                      src={imageUrl} 
+                      alt={`Hotel ${idx + 1}`} 
+                      className="h-20 w-32 flex-shrink-0 rounded object-cover"
+                      onError={(e) => {
+                        console.error('Image load error for idx', idx, 'img:', img, 'url:', img.url, 'imageUrl:', imageUrl, 'type of url:', typeof img.url);
+                      }}
+                    />
                     
                     {/* Info */}
                     <div className="flex-1">
@@ -426,8 +453,8 @@ export default function HotelBasicInfo({ business, hotel, amenities }: HotelBasi
 
       {/* Error */}
       {error && (
-        <div className="rounded-lg bg-red-50 p-4 text-red-600">{error}</div>
-      )}
+        <div className="rounded-lg bg-red-50 p-4 text-red-600">{error}                </div>
+              ))}
 
       {/* Save Button */}
       <div className="flex justify-end">

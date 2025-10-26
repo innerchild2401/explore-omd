@@ -429,22 +429,22 @@ export default function AvailabilityDashboard({ hotelId, onClose }: Availability
             </div>
 
             {/* Legend */}
-            <div className="flex items-center gap-4 text-sm">
+            <div className="flex items-center gap-4 text-sm text-gray-900">
               <div className="flex items-center gap-1">
                 <span className="text-green-600">✅</span>
-                <span>Available</span>
+                <span className="font-medium">Available</span>
               </div>
               <div className="flex items-center gap-1">
                 <span className="text-red-600">🔴</span>
-                <span>Booked</span>
+                <span className="font-medium">Booked</span>
               </div>
               <div className="flex items-center gap-1">
                 <span className="text-yellow-600">🚫</span>
-                <span>Blocked</span>
+                <span className="font-medium">Blocked</span>
               </div>
               <div className="flex items-center gap-1">
                 <span className="text-orange-600">🔧</span>
-                <span>Maintenance</span>
+                <span className="font-medium">Maintenance</span>
               </div>
             </div>
           </div>
@@ -461,11 +461,11 @@ export default function AvailabilityDashboard({ hotelId, onClose }: Availability
               <div className="min-w-full">
                 {/* Header Row */}
                 <div className="grid gap-1 mb-2" style={{ gridTemplateColumns: `200px repeat(${dates.length}, 1fr)` }}>
-                  <div className="p-3 font-medium text-gray-700 bg-gray-50 rounded-lg">
+                  <div className="p-3 font-medium text-gray-900 bg-gray-50 rounded-lg">
                     Room
                   </div>
                   {dates.map(date => (
-                    <div key={date.toISOString()} className="p-3 text-center font-medium text-gray-700 bg-gray-50 rounded-lg">
+                    <div key={date.toISOString()} className="p-3 text-center font-medium text-gray-900 bg-gray-50 rounded-lg">
                       <div className="text-sm">{formatDate(date)}</div>
                     </div>
                   ))}
@@ -486,7 +486,10 @@ export default function AvailabilityDashboard({ hotelId, onClose }: Availability
                       const dateStr = date.toISOString().split('T')[0];
                       const avail = getAvailabilityForRoomAndDate(room.id, dateStr);
                       const reservation = getReservationForRoomAndDate(room.id, dateStr);
-                      const status = avail?.availability_status || 'available';
+                      // Determine status: if reservation exists, it's booked; otherwise use availability status
+                      const status = reservation 
+                        ? 'booked' 
+                        : (avail?.availability_status || 'available');
                       const isDragOver = dragOverRoom === room.id && dragOverDate === dateStr;
 
                       return (

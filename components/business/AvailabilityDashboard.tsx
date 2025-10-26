@@ -84,12 +84,12 @@ export default function AvailabilityDashboard({ hotelId, onClose }: Availability
 
       if (roomsError) throw roomsError;
 
-      // Fetch availability for date range
+      // Fetch availability with reservations using proper foreign key relationship
       const { data: availabilityData, error: availabilityError } = await supabase
         .from('room_availability')
         .select(`
           *,
-          reservations!inner(
+          reservations!left(
             id,
             confirmation_number,
             guest_id,
@@ -107,7 +107,7 @@ export default function AvailabilityDashboard({ hotelId, onClose }: Availability
 
       if (availabilityError) throw availabilityError;
 
-      // Process reservations from availability data
+      // Process reservations from joined availability data
       const reservationsMap = new Map<string, Reservation>();
       availabilityData?.forEach(avail => {
         if (avail.reservations) {

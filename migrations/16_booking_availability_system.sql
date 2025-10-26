@@ -114,20 +114,24 @@ CREATE TABLE reservations (
 -- 4. ROOM AVAILABILITY TABLE (Real-time availability)
 -- =============================================
 
-CREATE TABLE room_availability (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  room_id UUID NOT NULL REFERENCES rooms(id) ON DELETE CASCADE,
-  date DATE NOT NULL,
-  availability_status TEXT NOT NULL CHECK (availability_status IN ('available', 'booked', 'blocked', 'maintenance', 'out_of_order')),
-  reservation_id UUID REFERENCES reservations(id), -- If booked, link to reservation
-  blocked_reason TEXT, -- 'maintenance', 'group_booking', 'inventory_hold'
-  blocked_by UUID REFERENCES user_profiles(id), -- Who blocked the room
-  housekeeping_status TEXT DEFAULT 'clean' CHECK (housekeeping_status IN ('clean', 'dirty', 'inspected', 'out_of_order')),
-  housekeeping_notes TEXT,
-  last_updated TIMESTAMPTZ DEFAULT NOW(),
-  
-  UNIQUE(room_id, date)
-);
+-- The room_availability table already exists from migration 05, so we'll modify it
+-- First, add new columns to the existing table
+ALTER TABLE room_availability 
+ADD COLUMN IF NOT EXISTS availability_status TEXT DEFAULT 'available' CHECK (availability_status IN ('available', 'booked', 'blocked', 'maintenance', 'out_of_order')),
+ADD COLUMN IF NOT EXISTS reservation_id UUID REFERENCES reservations(id),
+ADD COLUMN IF NOT EXISTS blocked_reason TEXT,
+ADD COLUMN IF NOT EXISTS blocked_by UUID REFERENCES user_profiles(id),
+ADD COLUMN IF NOT EXISTS housekeeping_status TEXT DEFAULT 'clean' CHECK (housekeeping_status IN ('clean', 'dirty', 'inspected', 'out_of_order')),
+ADD COLUMN IF NOT EXISTS housekeeping_notes TEXT,
+ADD COLUMN IF NOT EXISTS last_updated TIMESTAMPTZ DEFAULT NOW();
+
+-- Update existing records to have proper availability_status based on available_quantity
+UPDATE room_availability 
+SET availability_status = CASE 
+  WHEN available_quantity > 0 THEN 'available'
+  ELSE 'booked'
+END
+WHERE availability_status IS NULL;
 
 -- =============================================
 -- 5. BOOKING EVENTS TABLE (Audit trail)
@@ -204,10 +208,10 @@ CREATE INDEX idx_reservations_confirmation ON reservations(confirmation_number);
 CREATE INDEX idx_reservations_channel ON reservations(channel_id);
 CREATE INDEX idx_reservations_room_id ON reservations(room_id);
 
--- Room availability indexes
-CREATE INDEX idx_room_availability_room_date ON room_availability(room_id, date);
-CREATE INDEX idx_room_availability_status ON room_availability(availability_status);
-CREATE INDEX idx_room_availability_date ON room_availability(date);
+-- Room availability indexes (some already exist from migration 05)
+CREATE INDEX IF NOT EXISTS idx_room_availability_room_date ON room_availability(room_id, date);
+CREATE INDEX IF NOT EXISTS idx_room_availability_status ON room_availability(availability_status);
+CREATE INDEX IF NOT EXISTS idx_room_availability_date ON room_availability(date);
 
 -- Booking events indexes
 CREATE INDEX idx_booking_events_reservation ON booking_events(reservation_id);
@@ -479,8 +483,10 @@ USING (
   )
 );
 
--- Room Availability
-ALTER TABLE room_availability ENABLE ROW LEVEL SECURITY;
+-- Room Availability (RLS already enabled from migration 05)
+-- Drop existing policies and create new ones
+DROP POLICY IF EXISTS "Hotel owners can view room availability" ON room_availability;
+DROP POLICY IF EXISTS "Hotel owners can manage room availability" ON room_availability;
 
 CREATE POLICY "Hotel owners can manage room availability"
 ON room_availability
@@ -608,6 +614,6 @@ SELECT generate_confirmation_number() as sample_confirmation;
 -- Test room availability function
 SELECT 
   r.name as room_name,
-  check_room_availability(r.id, CURRENT_DATE, CURRENT_DATE + INTERVAL '3 days') as is_available
+  check_room_availability(r.id, CURRENT_DATE, (CURRENT_DATE + INTERVAL '3 days')::DATE) as is_available
 FROM rooms r
 LIMIT 3;

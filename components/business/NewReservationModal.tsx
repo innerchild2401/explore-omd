@@ -171,21 +171,56 @@ export default function NewReservationModal({ hotelId, rooms, onClose, onSuccess
       const confirmationNumber = generateConfirmationNumber();
       setConfirmationData(prev => ({ ...prev, confirmation_number: confirmationNumber }));
 
-      // Create guest profile first
-      const { data: guestProfile, error: guestError } = await supabase
+      // Check if guest profile already exists, if not create one
+      let guestProfile;
+      
+      // First, try to find existing guest profile
+      const { data: existingGuest, error: findError } = await supabase
         .from('guest_profiles')
-        .insert({
-          first_name: guestData.first_name,
-          last_name: guestData.last_name,
-          email: guestData.email,
-          phone: guestData.phone || null,
-          nationality: guestData.nationality || null,
-          special_requests: guestData.special_requests || null
-        })
-        .select()
+        .select('*')
+        .eq('email', guestData.email)
         .single();
 
-      if (guestError) throw guestError;
+      if (findError && findError.code !== 'PGRST116') {
+        // PGRST116 is "not found" error, which is expected if guest doesn't exist
+        throw findError;
+      }
+
+      if (existingGuest) {
+        // Guest exists, update their information
+        const { data: updatedGuest, error: updateError } = await supabase
+          .from('guest_profiles')
+          .update({
+            first_name: guestData.first_name,
+            last_name: guestData.last_name,
+            phone: guestData.phone || existingGuest.phone,
+            nationality: guestData.nationality || existingGuest.nationality,
+            special_requests: guestData.special_requests || existingGuest.special_requests
+          })
+          .eq('id', existingGuest.id)
+          .select()
+          .single();
+
+        if (updateError) throw updateError;
+        guestProfile = updatedGuest;
+      } else {
+        // Guest doesn't exist, create new profile
+        const { data: newGuest, error: createError } = await supabase
+          .from('guest_profiles')
+          .insert({
+            first_name: guestData.first_name,
+            last_name: guestData.last_name,
+            email: guestData.email,
+            phone: guestData.phone || null,
+            nationality: guestData.nationality || null,
+            special_requests: guestData.special_requests || null
+          })
+          .select()
+          .single();
+
+        if (createError) throw createError;
+        guestProfile = newGuest;
+      }
 
       // Get direct booking channel
       const { data: directChannel, error: channelError } = await supabase
@@ -197,31 +232,35 @@ export default function NewReservationModal({ hotelId, rooms, onClose, onSuccess
       if (channelError) throw channelError;
 
       // Create reservation
+      const reservationData = {
+        confirmation_number: confirmationNumber,
+        hotel_id: hotelId,
+        guest_id: guestProfile.id,
+        channel_id: directChannel.id,
+        check_in_date: bookingData.check_in_date,
+        check_out_date: bookingData.check_out_date,
+        adults: bookingData.adults,
+        children: bookingData.children,
+        infants: bookingData.infants,
+        room_id: bookingData.room_id,
+        base_rate: pricingData.base_rate,
+        taxes: pricingData.taxes,
+        fees: pricingData.fees,
+        total_amount: pricingData.total_amount,
+        currency: pricingData.currency,
+        reservation_status: confirmationData.reservation_status,
+        payment_status: confirmationData.payment_status,
+        special_requests: guestData.special_requests || null,
+        arrival_time: bookingData.arrival_time,
+        group_name: bookingData.group_name || null,
+        corporate_code: bookingData.corporate_code || null
+      };
+
+      console.log('Creating reservation with data:', reservationData);
+
       const { data: reservation, error: reservationError } = await supabase
         .from('reservations')
-        .insert({
-          confirmation_number: confirmationNumber,
-          hotel_id: hotelId,
-          guest_id: guestProfile.id,
-          channel_id: directChannel.id,
-          check_in_date: bookingData.check_in_date,
-          check_out_date: bookingData.check_out_date,
-          adults: bookingData.adults,
-          children: bookingData.children,
-          infants: bookingData.infants,
-          room_id: bookingData.room_id,
-          base_rate: pricingData.base_rate,
-          taxes: pricingData.taxes,
-          fees: pricingData.fees,
-          total_amount: pricingData.total_amount,
-          currency: pricingData.currency,
-          reservation_status: confirmationData.reservation_status,
-          payment_status: confirmationData.payment_status,
-          special_requests: guestData.special_requests || null,
-          arrival_time: bookingData.arrival_time,
-          group_name: bookingData.group_name || null,
-          corporate_code: bookingData.corporate_code || null
-        })
+        .insert(reservationData)
         .select()
         .single();
 

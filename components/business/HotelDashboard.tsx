@@ -80,6 +80,11 @@ export default function HotelDashboard({
   const supabase = createClient();
   const [activeTab, setActiveTab] = useState<'info' | 'rooms' | 'availability' | 'bookings' | 'reservations' | 'analytics'>('info');
 
+  // Debug: Log the business ID when component loads
+  console.log('HotelDashboard loaded with business ID:', business?.id);
+  console.log('HotelDashboard loaded with hotel ID:', hotel?.id);
+  console.log('HotelDashboard loaded with business name:', business?.name);
+
   const handleSignOut = async () => {
     await supabase.auth.signOut();
     router.push(`/${omd.slug}/business/login`);

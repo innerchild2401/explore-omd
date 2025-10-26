@@ -171,6 +171,7 @@ export default function NewReservationModal({ hotelId, rooms, onClose, onSuccess
       const { data: { user }, error: authError } = await supabase.auth.getUser();
       console.log('Auth check - User:', user);
       console.log('Auth check - Error:', authError);
+      console.log('Hotel ID being used:', hotelId);
       
       if (authError || !user) {
         throw new Error('User not authenticated');

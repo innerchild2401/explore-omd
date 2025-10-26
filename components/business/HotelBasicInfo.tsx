@@ -23,7 +23,13 @@ export default function HotelBasicInfo({ business, hotel, amenities }: HotelBasi
   const [phone, setPhone] = useState(business.contact?.phone || '');
   const [email, setEmail] = useState(business.contact?.email || '');
   const [address, setAddress] = useState(business.location?.address || '');
-  const [images, setImages] = useState<string[]>(business.images || []);
+  
+  // Handle both old (string[]) and new ({url, description}[]) format
+  const [images, setImages] = useState<Array<{url: string; description: string}>>(
+    (business.images || []).map((img: any) => 
+      typeof img === 'string' ? { url: img, description: '' } : img
+    )
+  );
   
   // Hotel fields
   const [propertySubtype, setPropertySubtype] = useState(hotel.property_subtype || 'hotel');
@@ -179,27 +185,46 @@ export default function HotelBasicInfo({ business, hotel, amenities }: HotelBasi
             <div className="space-y-3">
               {images.map((img, idx) => (
                 <div key={idx} className="relative">
-                  <div className="flex items-center justify-between rounded-lg border border-gray-200 bg-gray-50 p-2">
-                    <div className="flex items-center gap-3">
-                      <img src={img} alt={`Hotel ${idx + 1}`} className="h-20 w-32 rounded object-cover" />
-                      <span className="text-sm font-medium text-gray-700">
-                        {idx === 0 ? 'Main Photo' : `Photo ${idx + 1}`}
-                      </span>
+                  <div className="rounded-lg border border-gray-200 bg-gray-50 p-3">
+                    <div className="mb-2 flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <img src={img.url} alt={`Hotel ${idx + 1}`} className="h-20 w-32 rounded object-cover" />
+                        <span className="text-sm font-medium text-gray-700">
+                          {idx === 0 ? 'Main Photo' : `Photo ${idx + 1}`}
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setImages(images.filter((_, i) => i !== idx))}
+                        className="rounded-lg bg-red-50 px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-100"
+                      >
+                        Remove
+                      </button>
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => setImages(images.filter((_, i) => i !== idx))}
-                      className="rounded-lg bg-red-50 px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-100"
-                    >
-                      Remove
-                    </button>
+                    <div>
+                      <label className="mb-1 block text-xs font-medium text-gray-600">
+                        Photo Label (1-3 words, e.g., &quot;Pool&quot;, &quot;Lobby&quot;, &quot;Restaurant&quot;)
+                      </label>
+                      <input
+                        type="text"
+                        value={img.description}
+                        onChange={(e) => {
+                          const newImages = [...images];
+                          newImages[idx] = { ...newImages[idx], description: e.target.value };
+                          setImages(newImages);
+                        }}
+                        maxLength={30}
+                        placeholder="e.g., Outdoor Pool, Gym, Spa"
+                        className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-blue-500 focus:outline-none"
+                      />
+                    </div>
                   </div>
                 </div>
               ))}
               {images.length < 15 && (
                 <ImageUpload
                   value=""
-                  onChange={(url) => setImages([...images, url])}
+                  onChange={(url) => setImages([...images, { url, description: '' }])}
                   bucket="images"
                   folder="hotels"
                   maxSizeMB={5}

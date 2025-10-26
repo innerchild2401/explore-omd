@@ -26,7 +26,12 @@ export default function RoomModal({ hotelId, room, amenities, onClose }: RoomMod
   const [quantity, setQuantity] = useState(room?.quantity || 1);
   const [bedConfiguration, setBedConfiguration] = useState<any>(room?.bed_configuration || {});
   const [selectedAmenities, setSelectedAmenities] = useState<string[]>(room?.room_amenities || []);
-  const [images, setImages] = useState<string[]>(room?.images || []);
+  // Handle both old (string[]) and new ({url, description}[]) format
+  const [images, setImages] = useState<Array<{url: string; description: string}>>(
+    (room?.images || []).map((img: any) => 
+      typeof img === 'string' ? { url: img, description: '' } : img
+    )
+  );
   const [isActive, setIsActive] = useState(room?.is_active ?? true);
 
   const handleSave = async () => {
@@ -259,30 +264,54 @@ export default function RoomModal({ hotelId, room, amenities, onClose }: RoomMod
           <div>
             <label className="mb-2 block text-sm font-medium text-gray-700">Room Images</label>
             <p className="mb-3 text-xs text-gray-500">Add 3-8 images. First image will be the main thumbnail.</p>
-            {images.map((img, idx) => (
-              <div key={idx} className="mb-3">
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-medium text-gray-700">Image {idx + 1}</span>
-                  <button
-                    onClick={() => setImages(images.filter((_, i) => i !== idx))}
-                    className="text-sm text-red-600 hover:text-red-700"
-                  >
-                    Remove
-                  </button>
+            <div className="space-y-3">
+              {images.map((img, idx) => (
+                <div key={idx} className="rounded-lg border border-gray-200 bg-gray-50 p-3">
+                  <div className="mb-2 flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <img src={img.url} alt={`Room ${idx + 1}`} className="h-20 w-32 rounded object-cover" />
+                      <span className="text-sm font-medium text-gray-700">
+                        {idx === 0 ? 'Main Photo' : `Photo ${idx + 1}`}
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setImages(images.filter((_, i) => i !== idx))}
+                      className="rounded-lg bg-red-50 px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-100"
+                    >
+                      Remove
+                    </button>
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-xs font-medium text-gray-600">
+                      Photo Label (e.g., &quot;Bedroom&quot;, &quot;Bathroom&quot;, &quot;View&quot;)
+                    </label>
+                    <input
+                      type="text"
+                      value={img.description}
+                      onChange={(e) => {
+                        const newImages = [...images];
+                        newImages[idx] = { ...newImages[idx], description: e.target.value };
+                        setImages(newImages);
+                      }}
+                      maxLength={30}
+                      placeholder="e.g., King Bed, Bathroom, Balcony View"
+                      className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-blue-500 focus:outline-none"
+                    />
+                  </div>
                 </div>
-                <img src={img} alt={`Room ${idx + 1}`} className="mt-2 h-32 w-full rounded-lg object-cover" />
-              </div>
-            ))}
-            {images.length < 8 && (
-              <ImageUpload
-                value=""
-                onChange={(url) => setImages([...images, url])}
-                bucket="images"
-                folder="rooms"
-                maxSizeMB={5}
-                recommendedSize="1200×800px (3:2 aspect ratio)"
-              />
-            )}
+              ))}
+              {images.length < 8 && (
+                <ImageUpload
+                  value=""
+                  onChange={(url) => setImages([...images, { url, description: '' }])}
+                  bucket="images"
+                  folder="rooms"
+                  maxSizeMB={5}
+                  recommendedSize="1200×800px (3:2 aspect ratio)"
+                />
+              )}
+            </div>
           </div>
 
           {/* Active Status */}

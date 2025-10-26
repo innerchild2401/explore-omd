@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import RoomImageCarousel from './RoomImageCarousel';
 
 interface RoomCardProps {
   room: any;
@@ -19,17 +20,14 @@ const formatBedConfiguration = (config: any): string => {
 };
 
 export default function RoomCard({ room, hotelSlug, omdSlug }: RoomCardProps) {
-  const mainImage = room.images?.[0] || '/placeholder-room.jpg';
-
   return (
     <div className="overflow-hidden rounded-2xl bg-white shadow-sm transition-shadow hover:shadow-md">
       <div className="grid gap-4 md:grid-cols-3">
-        {/* Room Image */}
-        <div className="relative h-64 md:h-full md:col-span-1">
-          <img
-            src={mainImage}
-            alt={room.name}
-            className="h-full w-full object-cover"
+        {/* Room Image Carousel */}
+        <div className="md:col-span-1">
+          <RoomImageCarousel 
+            images={room.images || []} 
+            roomName={room.name} 
           />
         </div>
 

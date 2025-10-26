@@ -4,14 +4,18 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface ImageGalleryProps {
-  images: string[];
+  images: Array<string | {url: string; description?: string}>;
   hotelName: string;
 }
 
 export default function ImageGallery({ images, hotelName }: ImageGalleryProps) {
   const [selectedImage, setSelectedImage] = useState<number | null>(null);
 
-  const displayImages = images.slice(0, 5);
+  // Normalize images to always have url and description
+  const normalizedImages = images.map(img => 
+    typeof img === 'string' ? { url: img, description: '' } : img
+  );
+  const displayImages = normalizedImages.slice(0, 5);
   const remainingCount = Math.max(0, images.length - 5);
 
   if (images.length === 0) {
@@ -36,12 +40,18 @@ export default function ImageGallery({ images, hotelName }: ImageGalleryProps) {
           onClick={() => setSelectedImage(0)}
         >
           <img
-            src={displayImages[0]}
+            src={displayImages[0].url}
             alt={`${hotelName} - Main`}
             className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
             style={{ maxHeight: '500px' }}
           />
           <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
+          {/* Subtle label overlay */}
+          {displayImages[0].description && (
+            <div className="absolute bottom-3 left-3 rounded-lg bg-black/50 px-3 py-1.5 backdrop-blur-sm">
+              <span className="text-sm font-medium text-white">{displayImages[0].description}</span>
+            </div>
+          )}
         </div>
 
         {/* Smaller images */}
@@ -52,11 +62,18 @@ export default function ImageGallery({ images, hotelName }: ImageGalleryProps) {
             onClick={() => setSelectedImage(index + 1)}
           >
             <img
-              src={image}
+              src={image.url}
               alt={`${hotelName} - ${index + 2}`}
               className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
             />
             <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
+            
+            {/* Subtle label overlay */}
+            {image.description && (
+              <div className="absolute bottom-2 left-2 rounded-lg bg-black/50 px-2 py-1 backdrop-blur-sm">
+                <span className="text-xs font-medium text-white">{image.description}</span>
+              </div>
+            )}
             
             {/* Show remaining count on last image */}
             {index === 3 && remainingCount > 0 && (
@@ -89,11 +106,17 @@ export default function ImageGallery({ images, hotelName }: ImageGalleryProps) {
 
             <div className="relative max-h-[90vh] max-w-[90vw]">
               <img
-                src={images[selectedImage]}
+                src={normalizedImages[selectedImage].url}
                 alt={`${hotelName} - ${selectedImage + 1}`}
                 className="max-h-[90vh] max-w-[90vw] object-contain"
                 onClick={(e) => e.stopPropagation()}
               />
+              {/* Show description in lightbox */}
+              {normalizedImages[selectedImage].description && (
+                <div className="absolute bottom-4 left-1/2 -translate-x-1/2 rounded-lg bg-black/70 px-4 py-2 backdrop-blur-sm">
+                  <span className="text-white font-medium">{normalizedImages[selectedImage].description}</span>
+                </div>
+              )}
 
               {/* Navigation */}
               {images.length > 1 && (

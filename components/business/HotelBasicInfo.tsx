@@ -47,8 +47,12 @@ export default function HotelBasicInfo({ business, hotel, amenities }: HotelBasi
     setError('');
     
     try {
+      // Debug: Log what we're about to save
+      console.log('About to save images:', images);
+      console.log('Business ID:', business.id);
+      
       // Update business
-      const { error: businessError } = await supabase
+      const { data: updatedBusiness, error: businessError } = await supabase
         .from('businesses')
         .update({
           name,
@@ -64,9 +68,15 @@ export default function HotelBasicInfo({ business, hotel, amenities }: HotelBasi
           },
           images,
         })
-        .eq('id', business.id);
+        .eq('id', business.id)
+        .select();
 
-      if (businessError) throw businessError;
+      if (businessError) {
+        console.error('Business update error:', businessError);
+        throw businessError;
+      }
+      
+      console.log('Business updated successfully:', updatedBusiness);
 
       // Update hotel
       const { error: hotelError } = await supabase
@@ -82,18 +92,22 @@ export default function HotelBasicInfo({ business, hotel, amenities }: HotelBasi
         })
         .eq('id', hotel.id);
 
-      if (hotelError) throw hotelError;
+      if (hotelError) {
+        console.error('Hotel update error:', hotelError);
+        throw hotelError;
+      }
 
-      // Debug: Check what we're saving
-      console.log('Saved images:', images);
+      console.log('Hotel updated successfully');
+      console.log('Final images that were saved:', images);
       
-      alert('Saved successfully! The page will reload to show your changes.');
+      // Success - use router.refresh() instead of full reload
+      router.refresh();
       
-      // Force a full page reload to ensure fresh data
-      window.location.reload();
+      alert('Saved successfully!');
     } catch (err: any) {
       console.error('Save error:', err);
-      setError(err.message || 'Failed to save');
+      setError(err.message || 'Failed to save: ' + err.message);
+      alert('Error: ' + err.message);
     } finally {
       setSaving(false);
     }

@@ -11,11 +11,11 @@ import ReservationsList from './ReservationsList';
 interface Business {
   id: string;
   name: string;
+  slug: string;
   description: string;
   images: string[];
-  phone: string;
-  email: string;
-  address: string;
+  contact: any;
+  location: any;
   omd_id: string;
 }
 
@@ -96,7 +96,7 @@ export default function HotelDashboard({
             </div>
             <div className="flex items-center gap-4">
               <Link
-                href={`/${business.omd_id}/hotels/${business.id}`}
+                href={`/${omd.slug}/hotels/${business.slug}`}
                 className="text-sm text-blue-600 hover:text-blue-700"
                 target="_blank"
               >

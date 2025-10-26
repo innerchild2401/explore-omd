@@ -23,11 +23,23 @@ export default function BusinessCarousel({
   const getTypeIcon = () => {
     switch (type) {
       case 'hotel':
-        return '🏨';
+        return (
+          <svg className="h-10 w-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+          </svg>
+        );
       case 'restaurant':
-        return '🍽️';
+        return (
+          <svg className="h-10 w-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+          </svg>
+        );
       case 'experience':
-        return '🎟️';
+        return (
+          <svg className="h-10 w-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z" />
+          </svg>
+        );
     }
   };
 
@@ -42,8 +54,8 @@ export default function BusinessCarousel({
             viewport={{ once: true }}
             transition={{ duration: 0.6 }}
           >
-            <span className="mb-2 text-4xl">{getTypeIcon()}</span>
-            <h2 className="mb-2 text-4xl font-bold">
+            <div className="mb-3 flex justify-center text-blue-600">{getTypeIcon()}</div>
+            <h2 className="mb-2 text-4xl font-bold text-gray-900">
               {title || `Where to ${type === 'hotel' ? 'Stay' : type === 'restaurant' ? 'Eat' : 'Explore'}`}
             </h2>
             {subtitle && <p className="text-lg text-gray-600">{subtitle}</p>}
@@ -62,7 +74,7 @@ export default function BusinessCarousel({
                 transition={{ duration: 0.5, delay: index * 0.1 }}
                 className="flex-shrink-0"
               >
-                <Link href={`/${omdSlug}/business/${business.slug}`}>
+                <Link href={`/${omdSlug}/${type}s/${business.slug}`}>
                   <div className="group w-80 overflow-hidden rounded-2xl bg-white shadow-lg transition-all hover:shadow-xl">
                     {/* Image */}
                     <div className="relative h-48 overflow-hidden">
@@ -72,7 +84,7 @@ export default function BusinessCarousel({
                         className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-110"
                       />
                       {business.rating > 0 && (
-                        <div className="absolute right-2 top-2 rounded-full bg-white px-3 py-1 text-sm font-semibold shadow-md">
+                        <div className="absolute right-2 top-2 rounded-full bg-white px-3 py-1 text-sm font-semibold shadow-md text-gray-900">
                           {business.rating} ⭐
                         </div>
                       )}
@@ -80,7 +92,7 @@ export default function BusinessCarousel({
 
                     {/* Content */}
                     <div className="p-4">
-                      <h3 className="mb-2 text-xl font-bold line-clamp-1">
+                      <h3 className="mb-2 text-xl font-bold text-gray-900 line-clamp-1">
                         {business.name}
                       </h3>
                       <p className="mb-3 text-sm text-gray-600 line-clamp-2">

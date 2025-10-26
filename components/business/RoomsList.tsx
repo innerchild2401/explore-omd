@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import RoomModal from './RoomModal';
-import PricingCalendarModal from './PricingCalendarModal';
+import PricingCalendar from './PricingCalendar';
 
 interface RoomsListProps {
   hotelId: string;
@@ -119,7 +119,7 @@ export default function RoomsList({ hotelId, rooms, amenities }: RoomsListProps)
       )}
 
       {showPricingModal && pricingRoom && (
-        <PricingCalendarModal
+        <PricingCalendar
           room={pricingRoom}
           onClose={() => {
             setShowPricingModal(false);

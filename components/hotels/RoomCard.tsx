@@ -8,6 +8,16 @@ interface RoomCardProps {
   omdSlug: string;
 }
 
+const formatBedConfiguration = (config: any): string => {
+  if (typeof config === 'string') return config;
+  if (!config || typeof config !== 'object') return '';
+  
+  // Convert object like {queen: 2, single: 1} to "2 Queen, 1 Single"
+  return Object.entries(config)
+    .map(([type, count]) => `${count} ${type.charAt(0).toUpperCase() + type.slice(1)}`)
+    .join(', ');
+};
+
 export default function RoomCard({ room, hotelSlug, omdSlug }: RoomCardProps) {
   const mainImage = room.images?.[0] || '/placeholder-room.jpg';
 
@@ -48,12 +58,12 @@ export default function RoomCard({ room, hotelSlug, omdSlug }: RoomCardProps) {
                     <span>{room.size_sqm} m²</span>
                   </div>
                 )}
-                {room.bed_configuration && (
+                {room.bed_configuration && formatBedConfiguration(room.bed_configuration) && (
                   <div className="flex items-center gap-2 text-gray-700">
                     <svg className="h-5 w-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
                     </svg>
-                    <span>{room.bed_configuration}</span>
+                    <span>{formatBedConfiguration(room.bed_configuration)}</span>
                   </div>
                 )}
               </div>

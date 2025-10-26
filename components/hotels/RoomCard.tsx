@@ -1,6 +1,5 @@
 'use client';
 
-import { Users, Maximize } from 'lucide-react';
 import Link from 'next/link';
 
 interface RoomCardProps {
@@ -36,12 +35,16 @@ export default function RoomCard({ room, hotelSlug, omdSlug }: RoomCardProps) {
               {/* Room Features */}
               <div className="mb-4 flex flex-wrap gap-4">
                 <div className="flex items-center gap-2 text-gray-700">
-                  <Users className="h-5 w-5 text-gray-500" />
+                  <svg className="h-5 w-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                  </svg>
                   <span>{room.max_occupancy} {room.max_occupancy === 1 ? 'Guest' : 'Guests'}</span>
                 </div>
                 {room.size_sqm && (
                   <div className="flex items-center gap-2 text-gray-700">
-                    <Maximize className="h-5 w-5 text-gray-500" />
+                    <svg className="h-5 w-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+                    </svg>
                     <span>{room.size_sqm} m²</span>
                   </div>
                 )}

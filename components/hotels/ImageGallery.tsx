@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X } from 'lucide-react';
 
 interface ImageGalleryProps {
   images: string[];
@@ -83,7 +82,9 @@ export default function ImageGallery({ images, hotelName }: ImageGalleryProps) {
               onClick={() => setSelectedImage(null)}
               className="absolute right-4 top-4 rounded-full bg-white/10 p-2 text-white transition-colors hover:bg-white/20"
             >
-              <X className="h-6 w-6" />
+              <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
             </button>
 
             <div className="relative max-h-[90vh] max-w-[90vw]">

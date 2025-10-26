@@ -1,9 +1,3 @@
-import { 
-  Wifi, Coffee, Tv, Wind, Utensils, Car, 
-  Dumbbell, Wine, Waves, Sparkles, Shield, 
-  Clock, Baby, Briefcase, Dog 
-} from 'lucide-react';
-
 interface AmenitiesListProps {
   amenities: Array<{
     id: string;
@@ -14,31 +8,7 @@ interface AmenitiesListProps {
 }
 
 const getAmenityIcon = (iconName?: string) => {
-  const icons: { [key: string]: any } = {
-    wifi: Wifi,
-    coffee: Coffee,
-    tv: Tv,
-    ac: Wind,
-    restaurant: Utensils,
-    parking: Car,
-    gym: Dumbbell,
-    bar: Wine,
-    pool: Waves,
-    spa: Sparkles,
-    security: Shield,
-    reception: Clock,
-    kids: Baby,
-    business: Briefcase,
-    pets: Dog,
-  };
-
-  const IconComponent = iconName ? icons[iconName.toLowerCase()] : null;
-  
-  if (IconComponent) {
-    return <IconComponent className="h-5 w-5 text-blue-600" />;
-  }
-  
-  // Default icon
+  // Default checkmark icon
   return (
     <svg className="h-5 w-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />

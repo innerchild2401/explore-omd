@@ -419,8 +419,8 @@ export default function HotelBasicInfo({ business, hotel, amenities }: HotelBasi
 
       {/* Error */}
       {error && (
-        <div className="rounded-lg bg-red-50 p-4 text-red-600">{error}                </div>
-              ))}
+        <div className="rounded-lg bg-red-50 p-4 text-red-600">{error}</div>
+      )}
 
       {/* Save Button */}
       <div className="flex justify-end">

@@ -62,7 +62,7 @@ export default async function HotelDetailPage({ params }: HotelPageProps) {
     .order('base_price', { ascending: true });
 
   // Get hotel amenities
-  const amenityIds = hotel?.amenities || [];
+  const amenityIds = hotel?.selected_amenities || [];
   let amenities = [];
   if (amenityIds.length > 0) {
     const { data: amenitiesData } = await supabase

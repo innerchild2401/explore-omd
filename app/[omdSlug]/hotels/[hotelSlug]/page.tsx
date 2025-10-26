@@ -5,6 +5,8 @@ import ImageGallery from '@/components/hotels/ImageGallery';
 import RoomCard from '@/components/hotels/RoomCard';
 import AmenitiesList from '@/components/hotels/AmenitiesList';
 import LandmarksList from '@/components/hotels/LandmarksList';
+import LazyLoadWrapper from '@/components/ui/LazyLoadWrapper';
+import RoomCardSkeleton from '@/components/hotels/RoomCardSkeleton';
 
 export const revalidate = 60;
 
@@ -179,13 +181,19 @@ export default async function HotelDetailPage({ params }: HotelPageProps) {
               <div className="mb-8">
                 <h2 className="mb-4 text-2xl font-bold text-gray-900">Available Rooms</h2>
                 <div className="space-y-4">
-                  {rooms.map((room) => (
-                    <RoomCard 
-                      key={room.id} 
-                      room={room} 
-                      hotelSlug={hotelSlug}
-                      omdSlug={omdSlug}
-                    />
+                  {rooms.map((room, index) => (
+                    <LazyLoadWrapper
+                      key={room.id}
+                      fallback={<RoomCardSkeleton />}
+                      rootMargin="200px"
+                      threshold={0.1}
+                    >
+                      <RoomCard 
+                        room={room} 
+                        hotelSlug={hotelSlug}
+                        omdSlug={omdSlug}
+                      />
+                    </LazyLoadWrapper>
                   ))}
                 </div>
               </div>

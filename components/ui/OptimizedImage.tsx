@@ -60,7 +60,7 @@ export default function OptimizedImage({
   const imageProps = {
     src,
     alt,
-    className: `${className} ${isLoading ? 'opacity-0' : 'opacity-100'} transition-opacity duration-300`,
+    className: `${className} ${isLoading ? 'opacity-0' : 'opacity-100'} transition-opacity duration-150`,
     priority,
     quality,
     placeholder,

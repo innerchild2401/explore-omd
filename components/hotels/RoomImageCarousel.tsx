@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import OptimizedImage from '@/components/ui/OptimizedImage';
 
 interface RoomImageCarouselProps {
   images: Array<string | {url: string; description?: string}>;
@@ -38,12 +39,15 @@ export default function RoomImageCarousel({ images, roomName }: RoomImageCarouse
   return (
     <>
       <div className="relative h-64 w-full overflow-hidden rounded-lg bg-gray-900 group">
-        {/* Main Image */}
-        <img
+        {/* Main Image - Now using OptimizedImage */}
+        <OptimizedImage
           src={normalizedImages[currentIndex].url}
           alt={`${roomName} - ${currentIndex + 1}`}
-          className="h-full w-full object-cover cursor-pointer transition-transform duration-300 group-hover:scale-105"
+          fill
+          className="object-cover cursor-pointer transition-transform duration-300 group-hover:scale-105"
+          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
           onClick={() => setShowLightbox(true)}
+          quality={85}
         />
 
         {/* Image Description Overlay */}
@@ -125,11 +129,14 @@ export default function RoomImageCarousel({ images, roomName }: RoomImageCarouse
             </button>
 
             <div className="relative max-h-[90vh] max-w-[90vw]">
-              <img
+              <OptimizedImage
                 src={normalizedImages[currentIndex].url}
                 alt={`${roomName} - ${currentIndex + 1}`}
+                width={1200}
+                height={800}
                 className="max-h-[90vh] max-w-[90vw] object-contain"
-                onClick={(e) => e.stopPropagation()}
+                onClick={(e) => e?.stopPropagation()}
+                quality={95}
               />
               
               {/* Description in lightbox */}

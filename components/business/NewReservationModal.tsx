@@ -167,6 +167,15 @@ export default function NewReservationModal({ hotelId, rooms, onClose, onSuccess
       setLoading(true);
       setError('');
 
+      // Check authentication status
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      console.log('Auth check - User:', user);
+      console.log('Auth check - Error:', authError);
+      
+      if (authError || !user) {
+        throw new Error('User not authenticated');
+      }
+
       // Generate confirmation number
       const confirmationNumber = generateConfirmationNumber();
       setConfirmationData(prev => ({ ...prev, confirmation_number: confirmationNumber }));

@@ -257,6 +257,8 @@ export default function NewReservationModal({ hotelId, rooms, onClose, onSuccess
       };
 
       console.log('Creating reservation with data:', reservationData);
+      console.log('Room ID being sent:', bookingData.room_id);
+      console.log('Room ID type:', typeof bookingData.room_id);
 
       const { data: reservation, error: reservationError } = await supabase
         .from('reservations')
@@ -537,6 +539,9 @@ export default function NewReservationModal({ hotelId, rooms, onClose, onSuccess
                             : 'border-gray-200 hover:border-gray-300'
                         }`}
                         onClick={() => {
+                          console.log('Room selected:', room);
+                          console.log('Room ID:', room.id);
+                          console.log('Room ID type:', typeof room.id);
                           setSelectedRoom(room);
                           setBookingData({...bookingData, room_id: room.id});
                         }}

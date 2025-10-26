@@ -23,6 +23,7 @@ interface RoomAvailability {
   id: string;
   room_id: string;
   date: string;
+  available_quantity: number;
   availability_status: 'available' | 'booked' | 'blocked' | 'maintenance' | 'out_of_order';
   reservation_id?: string;
   blocked_reason?: string;
@@ -495,6 +496,14 @@ export default function AvailabilityDashboard({ hotelId, onClose }: Availability
                                   ✕
                                 </button>
                               )}
+                            </div>
+                            
+                            {/* Show actual availability quantity */}
+                            <div className="text-xs font-medium text-gray-700">
+                              {avail?.available_quantity !== undefined ? 
+                                `${avail.available_quantity}/${room.quantity}` : 
+                                `${room.quantity}/${room.quantity}`
+                              }
                             </div>
                             
                             {reservation && (

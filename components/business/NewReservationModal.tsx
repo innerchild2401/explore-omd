@@ -18,6 +18,7 @@ interface Room {
   max_occupancy: number;
   base_price: number;
   quantity: number;
+  available_quantity?: number;
   is_active: boolean;
 }
 
@@ -102,20 +103,59 @@ export default function NewReservationModal({ hotelId, rooms, onClose, onSuccess
 
   const checkRoomAvailability = async () => {
     try {
-      const { data, error } = await supabase
-        .rpc('check_room_availability', {
-          p_room_id: rooms[0]?.id, // This is a simplified check
-          p_check_in: bookingData.check_in_date,
-          p_check_out: bookingData.check_out_date
-        });
+      if (!bookingData.check_in_date || !bookingData.check_out_date) {
+        setAvailableRooms([]);
+        return;
+      }
 
-      if (error) throw error;
+      // Check availability for each room individually
+      const availabilityChecks = await Promise.all(
+        rooms.map(async (room) => {
+          try {
+            const { data, error } = await supabase
+              .rpc('check_room_availability', {
+                p_room_id: room.id,
+                p_check_in: bookingData.check_in_date,
+                p_check_out: bookingData.check_out_date
+              });
 
-      // For now, show all active rooms as available
-      // In a real implementation, you'd check each room's availability
-      setAvailableRooms(rooms.filter(room => room.is_active));
+            if (error) throw error;
+
+            // Get actual availability from room_availability table
+            const { data: availabilityData, error: availabilityError } = await supabase
+              .from('room_availability')
+              .select('available_quantity')
+              .eq('room_id', room.id)
+              .eq('date', bookingData.check_in_date)
+              .single();
+
+            if (availabilityError && availabilityError.code !== 'PGRST116') {
+              throw availabilityError;
+            }
+
+            const availableQuantity = availabilityData?.available_quantity || room.quantity;
+            
+            return {
+              ...room,
+              available_quantity: availableQuantity,
+              is_available: availableQuantity > 0
+            };
+          } catch (err) {
+            console.error(`Error checking availability for room ${room.name}:`, err);
+            return {
+              ...room,
+              available_quantity: room.quantity,
+              is_available: true // Fallback to showing as available
+            };
+          }
+        })
+      );
+
+      // Only show rooms that are actually available
+      setAvailableRooms(availabilityChecks.filter(room => room.is_available));
     } catch (err: any) {
       console.error('Error checking availability:', err);
+      // Fallback: show all active rooms
       setAvailableRooms(rooms.filter(room => room.is_active));
     }
   };
@@ -172,6 +212,40 @@ export default function NewReservationModal({ hotelId, rooms, onClose, onSuccess
       
       if (authError || !user) {
         throw new Error('User not authenticated');
+      }
+
+      // Check room availability before proceeding
+      if (!selectedRoom || !bookingData.check_in_date || !bookingData.check_out_date) {
+        throw new Error('Missing booking information');
+      }
+
+      // Check availability for each date in the stay
+      const checkIn = new Date(bookingData.check_in_date);
+      const checkOut = new Date(bookingData.check_out_date);
+      const nights = Math.ceil((checkOut.getTime() - checkIn.getTime()) / (1000 * 60 * 60 * 24));
+      
+      for (let i = 0; i < nights; i++) {
+        const checkDate = new Date(checkIn);
+        checkDate.setDate(checkIn.getDate() + i);
+        const dateStr = checkDate.toISOString().split('T')[0];
+        
+        // Get availability for this specific date
+        const { data: availabilityData, error: availabilityError } = await supabase
+          .from('room_availability')
+          .select('available_quantity')
+          .eq('room_id', selectedRoom.id)
+          .eq('date', dateStr)
+          .single();
+
+        if (availabilityError && availabilityError.code !== 'PGRST116') {
+          throw availabilityError;
+        }
+
+        const availableQuantity = availabilityData?.available_quantity || selectedRoom.quantity;
+        
+        if (availableQuantity <= 0) {
+          throw new Error(`Room ${selectedRoom.name} is not available on ${dateStr}. Only ${availableQuantity} rooms available.`);
+        }
       }
 
       // Generate confirmation number
@@ -554,7 +628,7 @@ export default function NewReservationModal({ hotelId, rooms, onClose, onSuccess
                               {room.room_type.replace('_', ' ')}
                             </p>
                             <p className="text-sm text-gray-600">
-                              Max {room.max_occupancy} guests • {room.quantity} available
+                              Max {room.max_occupancy} guests • {room.available_quantity || room.quantity} available
                             </p>
                           </div>
                           <div className="text-right">

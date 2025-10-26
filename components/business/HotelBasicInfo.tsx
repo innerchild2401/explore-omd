@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import ImageUpload from '@/components/admin/ImageUpload';
@@ -30,6 +30,14 @@ export default function HotelBasicInfo({ business, hotel, amenities }: HotelBasi
       typeof img === 'string' ? { url: img, description: '' } : img
     )
   );
+
+  // Sync images state when business prop changes (after refresh)
+  useEffect(() => {
+    const updatedImages = (business.images || []).map((img: any) => 
+      typeof img === 'string' ? { url: img, description: '' } : img
+    );
+    setImages(updatedImages);
+  }, [business.images]);
   
   // Hotel fields
   const [propertySubtype, setPropertySubtype] = useState(hotel.property_subtype || 'hotel');
@@ -100,10 +108,11 @@ export default function HotelBasicInfo({ business, hotel, amenities }: HotelBasi
       console.log('Hotel updated successfully');
       console.log('Final images that were saved:', images);
       
-      // Success - use router.refresh() instead of full reload
+      // Success - refresh the page to get updated data
       router.refresh();
       
-      alert('Saved successfully!');
+      // Show success message
+      alert('✅ Hotel information saved successfully!');
     } catch (err: any) {
       console.error('Save error:', err);
       setError(err.message || 'Failed to save: ' + err.message);

@@ -34,6 +34,14 @@ export default function RoomModal({ hotelId, room, amenities, onClose }: RoomMod
   );
   const [isActive, setIsActive] = useState(room?.is_active ?? true);
 
+  // Sync images state when room prop changes (after refresh)
+  useEffect(() => {
+    const updatedImages = (room?.images || []).map((img: any) => 
+      typeof img === 'string' ? { url: img, description: '' } : img
+    );
+    setImages(updatedImages);
+  }, [room?.images]);
+
   const handleSave = async () => {
     console.log('RoomModal - handleSave called');
     
@@ -99,6 +107,9 @@ export default function RoomModal({ hotelId, room, amenities, onClose }: RoomMod
 
       router.refresh();
       onClose();
+      
+      // Show success message
+      alert('✅ Room saved successfully!');
     } catch (err: any) {
       console.error('Error saving room:', err);
       setError(err.message || 'Failed to save room');

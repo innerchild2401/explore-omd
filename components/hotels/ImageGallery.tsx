@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import OptimizedImage from '@/components/ui/OptimizedImage';
 
 interface ImageGalleryProps {
   images: Array<string | {url: string; description?: string}>;
@@ -39,11 +40,13 @@ export default function ImageGallery({ images, hotelName }: ImageGalleryProps) {
           className="col-span-4 md:col-span-2 md:row-span-2 cursor-pointer overflow-hidden group relative"
           onClick={() => setSelectedImage(0)}
         >
-          <img
+          <OptimizedImage
             src={displayImages[0].url}
             alt={`${hotelName} - Main`}
-            className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
-            style={{ maxHeight: '500px' }}
+            fill
+            className="object-cover transition-transform duration-300 group-hover:scale-105"
+            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+            priority
           />
           <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
           {/* Subtle label overlay */}
@@ -61,10 +64,12 @@ export default function ImageGallery({ images, hotelName }: ImageGalleryProps) {
             className="relative col-span-2 md:col-span-1 h-60 cursor-pointer overflow-hidden group"
             onClick={() => setSelectedImage(index + 1)}
           >
-            <img
+            <OptimizedImage
               src={image.url}
               alt={`${hotelName} - ${index + 2}`}
-              className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+              fill
+              className="object-cover transition-transform duration-300 group-hover:scale-105"
+              sizes="(max-width: 768px) 50vw, 25vw"
             />
             <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
             
@@ -105,11 +110,14 @@ export default function ImageGallery({ images, hotelName }: ImageGalleryProps) {
             </button>
 
             <div className="relative max-h-[90vh] max-w-[90vw]">
-              <img
+              <OptimizedImage
                 src={normalizedImages[selectedImage].url}
                 alt={`${hotelName} - ${selectedImage + 1}`}
+                width={1200}
+                height={800}
                 className="max-h-[90vh] max-w-[90vw] object-contain"
-                onClick={(e) => e.stopPropagation()}
+                onClick={(e) => e?.stopPropagation()}
+                quality={95}
               />
               {/* Show description in lightbox */}
               {normalizedImages[selectedImage].description && (

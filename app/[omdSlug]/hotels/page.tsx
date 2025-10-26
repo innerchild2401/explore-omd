@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
+import OptimizedImage from '@/components/ui/OptimizedImage';
 
 interface HotelsPageProps {
   params: { omdSlug: string };
@@ -94,10 +95,12 @@ export default async function HotelsPage({ params, searchParams }: HotelsPagePro
                 >
                   {mainImage && (
                     <div className="aspect-video w-full overflow-hidden">
-                      <img
-                        src={mainImage}
+                      <OptimizedImage
+                        src={typeof mainImage === 'string' ? mainImage : (mainImage as any)?.url || '/placeholder-hotel.jpg'}
                         alt={business.name}
-                        className="h-full w-full object-cover transition-transform group-hover:scale-105"
+                        fill
+                        className="object-cover transition-transform group-hover:scale-105"
+                        sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                       />
                     </div>
                   )}

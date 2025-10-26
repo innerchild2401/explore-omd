@@ -3,6 +3,7 @@
 import { motion } from 'framer-motion';
 import type { Section, OMD } from '@/types';
 import { getImageUrl } from '@/lib/utils';
+import OptimizedImage from '@/components/ui/OptimizedImage';
 
 interface HeroSectionProps {
   section: Section;
@@ -17,10 +18,13 @@ export default function HeroSection({ section, omd }: HeroSectionProps) {
       {/* Background Image/Video */}
       <div className="absolute inset-0 z-0">
         {backgroundImage ? (
-          <img
+          <OptimizedImage
             src={getImageUrl(backgroundImage)}
             alt={title || omd.name}
-            className="h-full w-full object-cover"
+            fill
+            className="object-cover"
+            priority
+            sizes="100vw"
           />
         ) : (
           <div 
@@ -44,14 +48,21 @@ export default function HeroSection({ section, omd }: HeroSectionProps) {
         >
           {/* Logo */}
           {omd.logo && (
-            <motion.img
-              src={getImageUrl(omd.logo)}
-              alt={omd.name}
-              className="mx-auto mb-8 h-24 w-auto"
+            <motion.div
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ duration: 0.6 }}
-            />
+              className="mx-auto mb-8 h-24 w-auto"
+            >
+              <OptimizedImage
+                src={getImageUrl(omd.logo)}
+                alt={omd.name}
+                width={96}
+                height={96}
+                className="h-24 w-auto"
+                priority
+              />
+            </motion.div>
           )}
 
           {/* Title */}

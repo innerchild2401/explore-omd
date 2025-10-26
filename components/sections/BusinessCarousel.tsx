@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import Link from 'next/link';
 import type { Section, Business } from '@/types';
 import { getImageUrl, formatPrice, getStarRating } from '@/lib/utils';
+import OptimizedImage from '@/components/ui/OptimizedImage';
 
 interface BusinessCarouselProps {
   section: Section;
@@ -78,10 +79,17 @@ export default function BusinessCarousel({
                   <div className="group w-80 overflow-hidden rounded-2xl bg-white shadow-lg transition-all hover:shadow-xl">
                     {/* Image */}
                     <div className="relative h-48 overflow-hidden">
-                      <img
-                        src={getImageUrl(business.images[0])}
+                      <OptimizedImage
+                        src={getImageUrl(
+                          typeof business.images[0] === 'string' 
+                            ? business.images[0] 
+                            : (business.images[0] as any)?.url
+                        )}
                         alt={business.name}
-                        className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-110"
+                        fill
+                        className="object-cover transition-transform duration-300 group-hover:scale-110"
+                        sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                        priority={index < 3} // Prioritize first 3 images
                       />
                       {business.rating > 0 && (
                         <div className="absolute right-2 top-2 rounded-full bg-white px-3 py-1 text-sm font-semibold shadow-md text-gray-900">

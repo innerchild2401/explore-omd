@@ -224,18 +224,18 @@ export default function HotelDashboard({
       {/* Modals */}
       {activeTab === 'availability' && (
         <AvailabilityDashboard
-          hotelId={hotel.id}
+          hotelId={business.id}
           onClose={() => setActiveTab('info')}
         />
       )}
 
-      {activeTab === 'bookings' && (
-        <BookingManagement
-          hotelId={hotel.id}
-          rooms={rooms}
-          onClose={() => setActiveTab('info')}
-        />
-      )}
+        {activeTab === 'bookings' && (
+          <BookingManagement
+            hotelId={business.id}
+            rooms={rooms}
+            onClose={() => setActiveTab('info')}
+          />
+        )}
     </div>
   );
 }

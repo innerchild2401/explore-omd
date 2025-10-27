@@ -119,13 +119,56 @@ export default function IndividualRoomsManager({ roomTypeId, roomTypeName, roomT
         if (!fetchError && allRoomsOnThisFloor) {
           const existingNumbers = allRoomsOnThisFloor.map(r => r.room_number);
           
-          // Check for room number overlaps
+          // Find overlaps and gaps
+          const overlappingRooms: string[] = [];
+          const potentialNumbers: number[] = [];
+          
           for (let i = 0; i < count; i++) {
             const roomNumber = prefix + (startNumber + i < 10 ? '0' + (startNumber + i).toString() : (startNumber + i).toString());
             if (existingNumbers.includes(roomNumber)) {
-              alert(`Room number "${roomNumber}" already exists on Floor ${floorNumber}! Please choose a different start number or prefix.`);
-              return;
+              overlappingRooms.push(roomNumber);
             }
+          }
+          
+          if (overlappingRooms.length > 0) {
+            // Find gaps in the sequence (unassigned rooms)
+            const allNumbers = existingNumbers.map(n => parseInt(n.replace(prefix, ''))).sort((a, b) => a - b);
+            const gaps: string[] = [];
+            let nextSuggested = prefix + '01';
+            
+            if (allNumbers.length > 0) {
+              // Find the highest existing number with this prefix
+              const highestWithPrefix = Math.max(...allNumbers.filter(n => allRoomsOnThisFloor.some(r => r.room_number.startsWith(prefix) && parseInt(r.room_number.replace(prefix, '')) === n)));
+              
+              // Find gaps
+              for (let i = 0; i < allNumbers.length - 1; i++) {
+                if (allNumbers[i + 1] - allNumbers[i] > 1) {
+                  const start = allNumbers[i] + 1;
+                  const end = allNumbers[i + 1] - 1;
+                  if (start === end) {
+                    gaps.push(prefix + (start < 10 ? '0' : '') + start.toString());
+                  } else {
+                    gaps.push(`${prefix}${(start < 10 ? '0' : '') + start.toString()}-${prefix}${(end < 10 ? '0' : '') + end.toString()}`);
+                  }
+                }
+              }
+              
+              // Suggest next number
+              const nextNum = highestWithPrefix + 1;
+              nextSuggested = prefix + (nextNum < 10 ? '0' : '') + nextNum.toString();
+            }
+            
+            // Build helpful error message
+            let errorMsg = `❌ Room number overlap detected on Floor ${floorNumber}!\n\n`;
+            errorMsg += `Overlapping rooms: ${overlappingRooms.join(', ')}\n\n`;
+            errorMsg += `💡 Suggested starting number: ${nextSuggested}\n`;
+            
+            if (gaps.length > 0) {
+              errorMsg += `\nAlso available: ${gaps.join(', ')}`;
+            }
+            
+            alert(errorMsg);
+            return;
           }
         }
       } catch (error) {

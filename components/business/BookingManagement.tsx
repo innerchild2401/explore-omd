@@ -171,15 +171,19 @@ export default function BookingManagement({ hotelId, rooms, onClose }: BookingMa
   };
 
   const handleAssignRoom = async (reservationId: string, individualRoomId: string) => {
+    console.log('handleAssignRoom called with:', { reservationId, individualRoomId });
     setAssigningRoom(reservationId);
     try {
-      const { error } = await supabase
+      const { error, data } = await supabase
         .from('reservations')
         .update({ 
           individual_room_id: individualRoomId,
           assignment_method: 'manual'
         })
-        .eq('id', reservationId);
+        .eq('id', reservationId)
+        .select();
+
+      console.log('Update result:', { error, data });
 
       if (error) throw error;
 

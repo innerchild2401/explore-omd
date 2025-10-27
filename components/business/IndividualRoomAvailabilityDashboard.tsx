@@ -20,11 +20,13 @@ interface RoomType {
 
 interface Reservation {
   id: string;
-  check_in: string;
-  check_out: string;
-  guests: number;
+  check_in_date: string;
+  check_out_date: string;
+  adults: number;
+  children: number;
+  infants: number;
   individual_room_id: string | null;
-  status: string;
+  reservation_status: string;
 }
 
 interface ArrivalAlert {
@@ -116,19 +118,21 @@ export default function IndividualRoomAvailabilityDashboard({ hotelId, onClose }
       }
       setIndividualRooms(roomsByType);
 
-      // Fetch all reservations - check both hotel_reservations and reservations tables
+      // Fetch all reservations from reservations table
       const { data: resData, error: resError } = await supabase
-        .from('hotel_reservations')
+        .from('reservations')
         .select(`
           id,
-          check_in,
-          check_out,
-          guests,
+          check_in_date,
+          check_out_date,
+          adults,
+          children,
+          infants,
           individual_room_id,
-          status
+          reservation_status
         `)
         .eq('hotel_id', hotelData.id)
-        .in('status', ['confirmed', 'completed']);
+        .in('reservation_status', ['confirmed', 'checked_in']);
 
       if (!resError && resData) {
         setAllReservations(resData as any);
@@ -190,7 +194,7 @@ export default function IndividualRoomAvailabilityDashboard({ hotelId, onClose }
     return allReservations.find(res => {
       if (res.individual_room_id !== roomId) return false;
       // Check if date falls within reservation period (inclusive of check_in, exclusive of check_out)
-      return res.check_in <= dateStr && res.check_out > dateStr;
+      return res.check_in_date <= dateStr && res.check_out_date > dateStr;
     }) || null;
   };
 
@@ -315,13 +319,13 @@ export default function IndividualRoomAvailabilityDashboard({ hotelId, onClose }
                     <table className="min-w-full border-collapse">
                       <thead>
                         <tr>
-                          <th className="sticky left-0 z-10 min-w-[180px] border-r-2 border-gray-300 bg-gray-50 px-4 py-2 text-left text-sm font-semibold">
+                          <th className="sticky left-0 z-10 min-w-[180px] border-r-2 border-gray-300 bg-gray-100 px-4 py-3 text-left text-sm font-bold text-gray-900">
                             Room
                           </th>
                           {dates.map(date => (
                             <th
                               key={date.toISOString()}
-                              className="min-w-[100px] border-b border-gray-300 bg-gray-50 px-2 py-2 text-center text-xs font-semibold"
+                              className="min-w-[100px] border-b border-gray-300 bg-gray-100 px-2 py-3 text-center text-xs font-bold text-gray-900"
                             >
                               {date.toLocaleDateString('en-US', { weekday: 'short', day: 'numeric' })}
                             </th>
@@ -356,7 +360,7 @@ export default function IndividualRoomAvailabilityDashboard({ hotelId, onClose }
                                     <div className="rounded-md bg-gradient-to-br from-blue-500 to-blue-600 p-1.5 text-white shadow-sm hover:shadow-md transition-all">
                                       <div className="font-bold text-[10px]">#{reservation.id.slice(-6)}</div>
                                       <div className="text-[9px] mt-0.5 opacity-90">
-                                        {reservation.guests} {reservation.guests === 1 ? 'guest' : 'guests'}
+                                        {reservation.adults + reservation.children + reservation.infants} {reservation.adults + reservation.children + reservation.infants === 1 ? 'guest' : 'guests'}
                                       </div>
                                     </div>
                                   ) : (

@@ -107,6 +107,8 @@ export default function BookingManagement({ hotelId, rooms, onClose }: BookingMa
 
       const { data, error } = await query;
 
+      console.log('Reservations query result:', { data, error });
+      
       if (error) throw error;
 
       // Calculate stats

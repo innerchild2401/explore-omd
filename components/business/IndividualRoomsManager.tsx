@@ -22,21 +22,27 @@ interface IndividualRoom {
 interface IndividualRoomsManagerProps {
   roomTypeId: string;
   roomTypeName: string;
+  roomTypeQuantity?: number;
   onClose: () => void;
 }
 
-export default function IndividualRoomsManager({ roomTypeId, roomTypeName, onClose }: IndividualRoomsManagerProps) {
+export default function IndividualRoomsManager({ roomTypeId, roomTypeName, roomTypeQuantity, onClose }: IndividualRoomsManagerProps) {
   const supabase = createClient();
   const [individualRooms, setIndividualRooms] = useState<IndividualRoom[]>([]);
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
   const [showGenerator, setShowGenerator] = useState(false);
+  const [maxQuantity, setMaxQuantity] = useState(roomTypeQuantity || 0);
 
   // Generator settings
   const [prefix, setPrefix] = useState('');
   const [startNumber, setStartNumber] = useState(1);
-  const [count, setCount] = useState(10);
+  const [count, setCount] = useState(1);
   const [floorNumber, setFloorNumber] = useState<number | null>(null);
+
+  // Calculate available slots
+  const availableSlots = maxQuantity - individualRooms.length;
+  const canCreateMore = availableSlots > 0;
 
   // Fetch individual rooms
   const fetchIndividualRooms = async () => {
@@ -59,6 +65,17 @@ export default function IndividualRoomsManager({ roomTypeId, roomTypeName, onClo
 
   // Auto-generate rooms
   const handleGenerateRooms = async () => {
+    // Validate count doesn't exceed available slots
+    if (count > availableSlots) {
+      alert(`Cannot create ${count} rooms. Only ${availableSlots} slot(s) available out of ${maxQuantity} total.`);
+      return;
+    }
+
+    if (count < 1) {
+      alert('Must create at least 1 room.');
+      return;
+    }
+
     setGenerating(true);
     try {
       // Build parameters object, only including floor_number if it's not null
@@ -152,11 +169,18 @@ export default function IndividualRoomsManager({ roomTypeId, roomTypeName, onClo
         <div className="p-6">
           {/* Actions */}
           <div className="mb-6 flex items-center justify-between">
-            <p className="text-gray-600">
-              {individualRooms.length === 0 
-                ? 'No individual rooms created yet. Generate rooms from room type or add manually.'
-                : `${individualRooms.length} room(s) created`}
-            </p>
+            <div>
+              <p className="text-gray-600">
+                {individualRooms.length === 0 
+                  ? 'No individual rooms created yet. Generate rooms from room type or add manually.'
+                  : `${individualRooms.length} room(s) created`}
+              </p>
+              {maxQuantity > 0 && (
+                <p className="mt-1 text-sm font-medium text-gray-700">
+                  {individualRooms.length} / {maxQuantity} rooms • {availableSlots} slots remaining
+                </p>
+              )}
+            </div>
             <div className="flex gap-3">
               {individualRooms.length === 0 && (
                 <button
@@ -208,13 +232,24 @@ export default function IndividualRoomsManager({ roomTypeId, roomTypeName, onClo
                 <div>
                   <label className="mb-2 block text-sm font-medium text-gray-700">
                     Number of Rooms
+                    {maxQuantity > 0 && (
+                      <span className="ml-2 text-xs font-normal text-gray-500">
+                        (Max: {availableSlots})
+                      </span>
+                    )}
                   </label>
                   <input
                     type="number"
                     value={count}
                     onChange={(e) => setCount(parseInt(e.target.value) || 1)}
+                    max={maxQuantity > 0 ? availableSlots : undefined}
                     className="w-full rounded-lg border border-gray-300 px-4 py-2 text-gray-900"
                   />
+                  {maxQuantity > 0 && count > availableSlots && (
+                    <p className="mt-1 text-xs text-red-600">
+                      ⚠️ Cannot exceed {availableSlots} available slot(s)
+                    </p>
+                  )}
                 </div>
                 <div>
                   <label className="mb-2 block text-sm font-medium text-gray-700">
@@ -232,10 +267,10 @@ export default function IndividualRoomsManager({ roomTypeId, roomTypeName, onClo
               <div className="mt-4 flex gap-3">
                 <button
                   onClick={handleGenerateRooms}
-                  disabled={generating}
+                  disabled={generating || !canCreateMore || count > availableSlots}
                   className="rounded-lg bg-green-600 px-6 py-2 font-semibold text-white hover:bg-green-700 disabled:bg-gray-400"
                 >
-                  {generating ? 'Generating...' : 'Generate Rooms'}
+                  {generating ? 'Generating...' : canCreateMore ? 'Generate Rooms' : 'All Rooms Created'}
                 </button>
                 <button
                   onClick={() => setShowGenerator(false)}

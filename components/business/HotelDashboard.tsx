@@ -7,6 +7,7 @@ import { createClient } from '@/lib/supabase/client';
 import HotelBasicInfo from './HotelBasicInfo';
 import RoomsList from './RoomsList';
 import AvailabilityDashboard from './AvailabilityDashboard';
+import IndividualRoomAvailabilityDashboard from './IndividualRoomAvailabilityDashboard';
 import BookingManagement from './BookingManagement';
 
 interface Business {
@@ -219,7 +220,7 @@ export default function HotelDashboard({
 
       {/* Modals */}
       {activeTab === 'availability' && (
-        <AvailabilityDashboard
+        <IndividualRoomAvailabilityDashboard
           hotelId={business.id}
           onClose={() => setActiveTab('info')}
         />

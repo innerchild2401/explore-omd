@@ -18,14 +18,16 @@ interface RoomType {
   room_type: string;
 }
 
-interface UnassignedReservation {
+interface Reservation {
   id: string;
   confirmation_number: string;
   check_in_date: string;
   check_out_date: string;
-  guests: number;
-  guest_name: string;
-  room_type_id: string;
+  adults: number;
+  children: number;
+  infants: number;
+  individual_room_id: string | null;
+  guest_profiles: { first_name: string; last_name: string; email: string };
 }
 
 interface ArrivalAlert {
@@ -41,19 +43,41 @@ export default function IndividualRoomAvailabilityDashboard({ hotelId, onClose }
   const router = useRouter();
   const supabase = createClient();
   
-  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+  const [viewMode, setViewMode] = useState<'week' | 'month'>('week');
+  const [currentDate, setCurrentDate] = useState(new Date());
   const [roomTypes, setRoomTypes] = useState<RoomType[]>([]);
   const [individualRooms, setIndividualRooms] = useState<Record<string, IndividualRoom[]>>({});
-  const [unassignedReservations, setUnassignedReservations] = useState<UnassignedReservation[]>([]);
+  const [allReservations, setAllReservations] = useState<Reservation[]>([]);
   const [arrivalAlerts, setArrivalAlerts] = useState<ArrivalAlert[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedReservation, setSelectedReservation] = useState<UnassignedReservation | null>(null);
-  const [showNotifications, setShowNotifications] = useState(false);
 
   useEffect(() => {
     fetchData();
     fetchArrivalAlerts();
-  }, [selectedDate]);
+  }, [currentDate, viewMode]);
+
+  const getDateRange = () => {
+    const start = new Date(currentDate);
+    if (viewMode === 'week') {
+      start.setDate(start.getDate() - start.getDay()); // Start of week
+      return { start, days: 7 };
+    } else {
+      start.setDate(1); // First day of month
+      const lastDay = new Date(start.getFullYear(), start.getMonth() + 1, 0);
+      return { start, days: lastDay.getDate() };
+    }
+  };
+
+  const getDates = () => {
+    const { start, days } = getDateRange();
+    const dates = [];
+    for (let i = 0; i < days; i++) {
+      const date = new Date(start);
+      date.setDate(start.getDate() + i);
+      dates.push(date);
+    }
+    return dates;
+  };
 
   const fetchData = async () => {
     try {
@@ -95,7 +119,7 @@ export default function IndividualRoomAvailabilityDashboard({ hotelId, onClose }
       }
       setIndividualRooms(roomsByType);
 
-      // Fetch unassigned reservations
+      // Fetch all reservations
       const { data: resData, error: resError } = await supabase
         .from('reservations')
         .select(`
@@ -106,26 +130,14 @@ export default function IndividualRoomAvailabilityDashboard({ hotelId, onClose }
           adults,
           children,
           infants,
-          room_id,
-          guest_profiles(first_name, last_name)
+          individual_room_id,
+          guest_profiles(first_name, last_name, email)
         `)
-        .is('individual_room_id', null)
         .eq('hotel_id', hotelData.id)
-        .eq('reservation_status', 'confirmed');
+        .in('reservation_status', ['confirmed', 'checked_in']);
 
       if (!resError && resData) {
-        const unassigned = resData.map(r => ({
-          id: r.id,
-          confirmation_number: r.confirmation_number,
-          check_in_date: r.check_in_date,
-          check_out_date: r.check_out_date,
-          guests: r.adults + r.children + r.infants,
-          guest_name: Array.isArray(r.guest_profiles) 
-            ? `${r.guest_profiles[0]?.first_name || ''} ${r.guest_profiles[0]?.last_name || ''}`.trim()
-            : `${(r.guest_profiles as any)?.first_name || ''} ${(r.guest_profiles as any)?.last_name || ''}`.trim(),
-          room_type_id: r.room_id
-        }));
-        setUnassignedReservations(unassigned);
+        setAllReservations(resData as any);
       }
 
     } catch (err: any) {
@@ -147,7 +159,7 @@ export default function IndividualRoomAvailabilityDashboard({ hotelId, onClose }
 
       if (!hotelData) return;
 
-      const { data: arrivals, error } = await supabase
+      const { data: arrivals } = await supabase
         .from('reservations')
         .select(`
           id,
@@ -161,7 +173,7 @@ export default function IndividualRoomAvailabilityDashboard({ hotelId, onClose }
         .eq('check_in_date', today)
         .in('reservation_status', ['confirmed', 'tentative']);
 
-      if (!error && arrivals) {
+      if (arrivals) {
         const alerts: ArrivalAlert[] = arrivals.map(r => ({
           reservation_id: r.id,
           confirmation_number: r.confirmation_number,
@@ -179,32 +191,22 @@ export default function IndividualRoomAvailabilityDashboard({ hotelId, onClose }
     }
   };
 
-  const assignRoomToReservation = async (reservationId: string, individualRoomId: string) => {
-    try {
-      const { error } = await supabase
-        .from('reservations')
-        .update({ individual_room_id: individualRoomId })
-        .eq('id', reservationId);
-
-      if (error) throw error;
-
-      await fetchData();
-      setSelectedReservation(null);
-      router.refresh();
-    } catch (err: any) {
-      console.error('Error assigning room:', err);
-      alert('Failed to assign room: ' + err.message);
-    }
+  const getReservationForRoomAndDate = (roomId: string, date: Date): Reservation | null => {
+    const dateStr = date.toISOString().split('T')[0];
+    return allReservations.find(res => {
+      if (res.individual_room_id !== roomId) return false;
+      return res.check_in_date <= dateStr && res.check_out_date > dateStr;
+    }) || null;
   };
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'clean': return 'bg-green-100 text-green-800 border-green-300';
-      case 'occupied': return 'bg-red-100 text-red-800 border-red-300';
-      case 'dirty': return 'bg-yellow-100 text-yellow-800 border-yellow-300';
-      case 'maintenance': return 'bg-orange-100 text-orange-800 border-orange-300';
-      case 'out_of_order': return 'bg-gray-100 text-gray-800 border-gray-300';
-      default: return 'bg-gray-100 text-gray-800 border-gray-300';
+      case 'clean': return 'bg-green-100 border-green-300';
+      case 'occupied': return 'bg-red-100 border-red-300';
+      case 'dirty': return 'bg-yellow-100 border-yellow-300';
+      case 'maintenance': return 'bg-orange-100 border-orange-300';
+      case 'out_of_order': return 'bg-gray-100 border-gray-300';
+      default: return 'bg-gray-100 border-gray-300';
     }
   };
 
@@ -216,22 +218,72 @@ export default function IndividualRoomAvailabilityDashboard({ hotelId, onClose }
     );
   }
 
+  const dates = getDates();
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-      <div className="mx-auto w-full max-w-7xl rounded-lg bg-white shadow-xl">
+      <div className="mx-auto w-full max-w-[95vw] rounded-lg bg-white shadow-xl">
         {/* Header */}
         <div className="border-b border-gray-200 bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-4">
           <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-2xl font-bold text-white">Individual Rooms Availability</h2>
-              <p className="mt-1 text-blue-100">Date: {new Date(selectedDate).toLocaleDateString()}</p>
+            <div className="flex items-center gap-4">
+              <button
+                onClick={() => {
+                  const newDate = new Date(currentDate);
+                  if (viewMode === 'week') {
+                    newDate.setDate(newDate.getDate() - 7);
+                  } else {
+                    newDate.setMonth(newDate.getMonth() - 1);
+                  }
+                  setCurrentDate(newDate);
+                }}
+                className="rounded-lg bg-white bg-opacity-20 px-3 py-1 text-white hover:bg-opacity-30"
+              >
+                ‹
+              </button>
+              <div>
+                <h2 className="text-2xl font-bold text-white">Individual Rooms Availability</h2>
+                <p className="text-blue-100">{currentDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}</p>
+              </div>
+              <button
+                onClick={() => {
+                  const newDate = new Date(currentDate);
+                  if (viewMode === 'week') {
+                    newDate.setDate(newDate.getDate() + 7);
+                  } else {
+                    newDate.setMonth(newDate.getMonth() + 1);
+                  }
+                  setCurrentDate(newDate);
+                }}
+                className="rounded-lg bg-white bg-opacity-20 px-3 py-1 text-white hover:bg-opacity-30"
+              >
+                ›
+              </button>
             </div>
             <div className="flex gap-3">
+              <div className="flex rounded-lg bg-white bg-opacity-20 p-1">
+                <button
+                  onClick={() => setViewMode('week')}
+                  className={`rounded px-4 py-2 text-sm font-semibold ${
+                    viewMode === 'week' ? 'bg-white text-blue-700' : 'text-white'
+                  }`}
+                >
+                  Week
+                </button>
+                <button
+                  onClick={() => setViewMode('month')}
+                  className={`rounded px-4 py-2 text-sm font-semibold ${
+                    viewMode === 'month' ? 'bg-white text-blue-700' : 'text-white'
+                  }`}
+                >
+                  Month
+                </button>
+              </div>
               <button
-                onClick={() => setShowNotifications(!showNotifications)}
+                onClick={fetchArrivalAlerts}
                 className="relative rounded-lg bg-white bg-opacity-20 px-4 py-2 text-white hover:bg-opacity-30"
               >
-                🔔 Notifications
+                🔔
                 {arrivalAlerts.length > 0 && (
                   <span className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-xs text-white">
                     {arrivalAlerts.length}
@@ -248,149 +300,113 @@ export default function IndividualRoomAvailabilityDashboard({ hotelId, onClose }
           </div>
         </div>
 
-        <div className="flex h-[calc(100vh-200px)]">
-          {/* Main Calendar View */}
-          <div className="flex-1 overflow-auto p-6">
-            <div className="space-y-6">
-              {roomTypes.map(roomType => {
-                const rooms = individualRooms[roomType.id] || [];
-                if (rooms.length === 0) return null;
+        {/* Calendar Grid */}
+        <div className="overflow-auto p-6" style={{ maxHeight: 'calc(100vh - 200px)' }}>
+          <div className="inline-block min-w-full">
+            {roomTypes.map(roomType => {
+              const rooms = individualRooms[roomType.id] || [];
+              if (rooms.length === 0) return null;
 
-                return (
-                  <div key={roomType.id} className="rounded-lg border border-gray-200">
-                    <div className="border-b border-gray-200 bg-gray-50 px-4 py-3">
-                      <h3 className="font-semibold text-gray-900">{roomType.name}</h3>
-                      <p className="text-sm text-gray-600 capitalize">{roomType.room_type}</p>
-                    </div>
-                    <div className="grid grid-cols-1 gap-2 p-4 sm:grid-cols-2 lg:grid-cols-3">
-                      {rooms.map(room => {
-                        const isUnassigned = unassignedReservations.some(
-                          r => r.room_type_id === room.room_id && !selectedReservation
-                        );
+              return (
+                <div key={roomType.id} className="mb-8">
+                  {/* Room Type Header */}
+                  <div className="sticky top-0 z-10 border-b-2 border-gray-300 bg-gray-50 pb-2 mb-4">
+                    <h3 className="font-bold text-gray-900">{roomType.name}</h3>
+                    <p className="text-sm text-gray-600 capitalize">{roomType.room_type}</p>
+                  </div>
 
-                        return (
-                          <div
-                            key={room.id}
-                            className={`rounded-lg border-2 p-3 cursor-pointer transition-all ${
-                              getStatusColor(room.current_status)
-                            } ${
-                              selectedReservation && unassignedReservations.some(r => r.room_type_id === room.room_id) 
-                                ? 'ring-2 ring-blue-500' 
-                                : ''
-                            }`}
-                            onClick={() => {
-                              if (selectedReservation) {
-                                assignRoomToReservation(selectedReservation.id, room.id);
-                              }
-                            }}
-                          >
-                            <div className="flex items-center justify-between">
-                              <div>
-                                <div className="font-semibold">Room {room.room_number}</div>
-                                {room.floor_number && (
-                                  <div className="text-xs opacity-75">Floor {room.floor_number}</div>
-                                )}
-                              </div>
-                              <div className="text-xs capitalize font-medium">
+                  {/* Calendar Table */}
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full border-collapse">
+                      <thead>
+                        <tr>
+                          <th className="sticky left-0 z-10 min-w-[180px] border-r-2 border-gray-300 bg-gray-50 px-4 py-2 text-left text-sm font-semibold">
+                            Room
+                          </th>
+                          {dates.map(date => (
+                            <th
+                              key={date.toISOString()}
+                              className="min-w-[100px] border-b border-gray-300 bg-gray-50 px-2 py-2 text-center text-xs font-semibold"
+                            >
+                              {date.toLocaleDateString('en-US', { weekday: 'short', day: 'numeric' })}
+                            </th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {rooms.map(room => (
+                          <tr key={room.id}>
+                            <td className="sticky left-0 z-10 border-r-2 border-gray-300 bg-white px-4 py-2 font-medium">
+                              <div>Room {room.room_number}</div>
+                              {room.floor_number && (
+                                <div className="text-xs text-gray-500">Floor {room.floor_number}</div>
+                              )}
+                              <div className={`mt-1 inline-flex rounded px-2 py-0.5 text-xs font-semibold ${getStatusColor(room.current_status)}`}>
                                 {room.current_status}
                               </div>
-                            </div>
-                            {selectedReservation && (
-                              <div className="mt-2 rounded bg-blue-200 px-2 py-1 text-xs font-medium text-blue-900">
-                                Click to assign
-                              </div>
-                            )}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                );
-              })}
+                            </td>
+                            {dates.map(date => {
+                              const reservation = getReservationForRoomAndDate(room.id, date);
+                              const dateStr = date.toISOString().split('T')[0];
+                              const isToday = dateStr === new Date().toISOString().split('T')[0];
 
-              {roomTypes.length === 0 && (
-                <div className="rounded-lg bg-gray-50 p-12 text-center">
-                  <p className="text-gray-600">No rooms configured. Please add room types and create individual rooms.</p>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Sidebar - Unassigned Reservations */}
-          <div className="w-80 border-l border-gray-200 bg-gray-50">
-            <div className="border-b border-gray-200 bg-white px-4 py-3">
-              <h3 className="font-semibold text-gray-900">Unassigned Reservations</h3>
-              <p className="text-sm text-gray-600">{unassignedReservations.length} pending</p>
-            </div>
-            <div className="space-y-2 overflow-auto p-4">
-              {unassignedReservations.map(reservation => (
-                <div
-                  key={reservation.id}
-                  onClick={() => setSelectedReservation(reservation)}
-                  className={`rounded-lg border-2 p-3 cursor-pointer transition-all ${
-                    selectedReservation?.id === reservation.id 
-                      ? 'border-blue-500 bg-blue-50' 
-                      : 'border-gray-200 bg-white hover:border-gray-300'
-                  }`}
-                >
-                  <div className="font-semibold text-gray-900">#{reservation.confirmation_number}</div>
-                  <div className="text-sm text-gray-600">{reservation.guest_name}</div>
-                  <div className="mt-2 flex items-center gap-2 text-xs">
-                    <span>Check-in: {new Date(reservation.check_in_date).toLocaleDateString()}</span>
+                              return (
+                                <td
+                                  key={dateStr}
+                                  className={`border-b border-gray-200 px-2 py-2 text-center text-xs ${
+                                    isToday ? 'bg-blue-50' : 'bg-white'
+                                  }`}
+                                >
+                                  {reservation ? (
+                                    <div className="rounded bg-blue-500 p-1 text-white">
+                                      <div className="font-semibold">#{reservation.confirmation_number}</div>
+                                      <div className="text-xs">
+                                        {reservation.guest_profiles.first_name[0]}{reservation.guest_profiles.last_name[0]}
+                                      </div>
+                                    </div>
+                                  ) : (
+                                    <div className="text-gray-400">—</div>
+                                  )}
+                                </td>
+                              );
+                            })}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
                   </div>
-                  <div className="text-xs text-gray-500">{reservation.guests} guests</div>
                 </div>
-              ))}
-              {unassignedReservations.length === 0 && (
-                <div className="py-8 text-center text-gray-500">
-                  <p className="text-sm">All reservations assigned ✓</p>
-                </div>
-              )}
-            </div>
+              );
+            })}
           </div>
         </div>
 
-        {/* Notifications Panel */}
-        {showNotifications && (
-          <div className="absolute right-80 top-0 h-full w-80 border-l border-gray-200 bg-white shadow-xl">
-            <div className="border-b border-gray-200 px-4 py-3">
-              <div className="flex items-center justify-between">
-                <h3 className="font-semibold text-gray-900">Today&apos;s Arrivals</h3>
-                <button
-                  onClick={() => setShowNotifications(false)}
-                  className="text-gray-400 hover:text-gray-600"
-                >
-                  ✕
-                </button>
-              </div>
+        {/* Arrival Alerts - Fixed Panel */}
+        {arrivalAlerts.length > 0 && (
+          <div className="absolute bottom-4 right-4 w-80 rounded-lg border-2 border-red-500 bg-white shadow-xl">
+            <div className="flex items-center justify-between border-b border-gray-200 bg-red-50 px-4 py-3">
+              <h3 className="font-bold text-red-900">⚠️ Today&apos;s Arrivals</h3>
+              <span className="rounded-full bg-red-500 px-2 py-1 text-xs text-white">
+                {arrivalAlerts.length}
+              </span>
             </div>
-            <div className="space-y-2 overflow-auto p-4">
+            <div className="max-h-64 space-y-2 overflow-auto p-4">
               {arrivalAlerts.map(alert => (
-                <div
-                  key={alert.reservation_id}
-                  className="rounded-lg border border-blue-200 bg-blue-50 p-3"
-                >
+                <div key={alert.reservation_id} className="rounded-lg border border-red-200 bg-red-50 p-3">
                   <div className="flex items-center justify-between">
-                    <div className="font-semibold text-blue-900">#{alert.confirmation_number}</div>
+                    <div className="font-semibold text-red-900">#{alert.confirmation_number}</div>
                     {!alert.assigned_room && (
-                      <span className="rounded-full bg-red-500 px-2 py-1 text-xs text-white">
-                        ⚠️ No room assigned
-                      </span>
+                      <span className="rounded-full bg-red-500 px-2 py-1 text-xs text-white">⚠️</span>
                     )}
                   </div>
-                  <div className="text-sm text-blue-800">{alert.guest_name}</div>
+                  <div className="text-sm text-red-800">{alert.guest_name}</div>
                   {alert.assigned_room && (
-                    <div className="mt-2 text-xs text-blue-700">
-                      Room: {alert.assigned_room}
+                    <div className="mt-2 text-xs text-red-700">
+                      Room: {alert.assigned_room} ✓
                     </div>
                   )}
                 </div>
               ))}
-              {arrivalAlerts.length === 0 && (
-                <div className="py-8 text-center text-gray-500">
-                  <p className="text-sm">No arrivals today ✓</p>
-                </div>
-              )}
             </div>
           </div>
         )}
@@ -398,4 +414,3 @@ export default function IndividualRoomAvailabilityDashboard({ hotelId, onClose }
     </div>
   );
 }
-

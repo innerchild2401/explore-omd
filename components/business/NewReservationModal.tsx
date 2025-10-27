@@ -346,6 +346,28 @@ export default function NewReservationModal({ hotelId, rooms, onClose, onSuccess
 
       if (reservationError) throw reservationError;
 
+      // Try to auto-assign an individual room if available
+      try {
+        const { data: assignedRoom, error: assignError } = await supabase.rpc(
+          'auto_assign_room_for_reservation',
+          {
+            p_reservation_id: reservation.id,
+            p_room_type_id: bookingData.room_id,
+            p_check_in_date: bookingData.check_in_date,
+            p_check_out_date: bookingData.check_out_date,
+            p_preferences: {}
+          }
+        );
+
+        if (assignError) {
+          console.log('Could not auto-assign room:', assignError.message);
+          // Not a critical error - reservation is created, room can be assigned later
+        }
+      } catch (assignErr) {
+        console.log('Room assignment skipped:', assignErr);
+        // Continue anyway - reservation is created
+      }
+
       setSuccess(`Reservation created successfully! Confirmation: ${confirmationNumber}`);
       
       // Wait a moment then close and refresh

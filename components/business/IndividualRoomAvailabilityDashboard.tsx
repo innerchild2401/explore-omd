@@ -26,6 +26,7 @@ interface Reservation {
   children: number;
   infants: number;
   individual_room_id: string | null;
+  room_id: string | null;
   reservation_status: string;
 }
 
@@ -129,6 +130,7 @@ export default function IndividualRoomAvailabilityDashboard({ hotelId, onClose }
           children,
           infants,
           individual_room_id,
+          room_id,
           reservation_status
         `)
         .eq('hotel_id', hotelData.id)
@@ -191,9 +193,9 @@ export default function IndividualRoomAvailabilityDashboard({ hotelId, onClose }
 
   const getReservationForRoomAndDate = (roomId: string, date: Date): Reservation | null => {
     const dateStr = date.toISOString().split('T')[0];
+    // Only show reservations that are assigned to this specific individual room
     return allReservations.find(res => {
       if (res.individual_room_id !== roomId) return false;
-      // Check if date falls within reservation period (inclusive of check_in, exclusive of check_out)
       return res.check_in_date <= dateStr && res.check_out_date > dateStr;
     }) || null;
   };

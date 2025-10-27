@@ -185,7 +185,7 @@ export default function IndividualRoomsManager({ roomTypeId, roomTypeName, onClo
                     value={prefix}
                     onChange={(e) => setPrefix(e.target.value)}
                     placeholder="e.g., '2' for 201, 202..."
-                    className="w-full rounded-lg border border-gray-300 px-4 py-2"
+                    className="w-full rounded-lg border border-gray-300 px-4 py-2 text-gray-900 placeholder:text-gray-400"
                   />
                 </div>
                 <div>
@@ -196,7 +196,7 @@ export default function IndividualRoomsManager({ roomTypeId, roomTypeName, onClo
                     type="number"
                     value={startNumber}
                     onChange={(e) => setStartNumber(parseInt(e.target.value) || 1)}
-                    className="w-full rounded-lg border border-gray-300 px-4 py-2"
+                    className="w-full rounded-lg border border-gray-300 px-4 py-2 text-gray-900"
                   />
                 </div>
                 <div>
@@ -207,7 +207,7 @@ export default function IndividualRoomsManager({ roomTypeId, roomTypeName, onClo
                     type="number"
                     value={count}
                     onChange={(e) => setCount(parseInt(e.target.value) || 1)}
-                    className="w-full rounded-lg border border-gray-300 px-4 py-2"
+                    className="w-full rounded-lg border border-gray-300 px-4 py-2 text-gray-900"
                   />
                 </div>
                 <div>
@@ -219,7 +219,7 @@ export default function IndividualRoomsManager({ roomTypeId, roomTypeName, onClo
                     value={floorNumber || ''}
                     onChange={(e) => setFloorNumber(e.target.value ? parseInt(e.target.value) : null)}
                     placeholder="Auto-assign if empty"
-                    className="w-full rounded-lg border border-gray-300 px-4 py-2"
+                    className="w-full rounded-lg border border-gray-300 px-4 py-2 text-gray-900 placeholder:text-gray-400"
                   />
                 </div>
               </div>

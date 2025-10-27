@@ -62,6 +62,8 @@ export default function BookingManagement({ hotelId, rooms, onClose }: BookingMa
   const supabase = createClient();
   
   const [reservations, setReservations] = useState<Reservation[]>([]);
+  const [individualRooms, setIndividualRooms] = useState<Record<string, any[]>>({});
+  const [assigningRoom, setAssigningRoom] = useState<string | null>(null);
   const [stats, setStats] = useState<BookingStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -111,6 +113,22 @@ export default function BookingManagement({ hotelId, rooms, onClose }: BookingMa
         throw error;
       }
 
+      // Fetch individual rooms for each room type
+      const roomsByType: Record<string, any[]> = {};
+      for (const roomType of rooms || []) {
+        const { data: indivRooms } = await supabase
+          .from('individual_rooms')
+          .select('*')
+          .eq('room_id', roomType.id)
+          .order('floor_number', { ascending: true })
+          .order('room_number', { ascending: true });
+
+        if (indivRooms) {
+          roomsByType[roomType.id] = indivRooms;
+        }
+      }
+      setIndividualRooms(roomsByType);
+
       // Calculate stats
       const totalReservations = data?.length || 0;
       const confirmedReservations = data?.filter(r => r.reservation_status === 'confirmed').length || 0;
@@ -149,6 +167,29 @@ export default function BookingManagement({ hotelId, rooms, onClose }: BookingMa
       setError(err.message);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleAssignRoom = async (reservationId: string, individualRoomId: string) => {
+    setAssigningRoom(reservationId);
+    try {
+      const { error } = await supabase
+        .from('reservations')
+        .update({ 
+          individual_room_id: individualRoomId,
+          assignment_method: 'manual'
+        })
+        .eq('id', reservationId);
+
+      if (error) throw error;
+
+      await fetchReservations();
+      router.refresh();
+    } catch (err: any) {
+      console.error('Error assigning room:', err);
+      setError(err.message);
+    } finally {
+      setAssigningRoom(null);
     }
   };
 
@@ -381,12 +422,32 @@ export default function BookingManagement({ hotelId, rooms, onClose }: BookingMa
                         <div className="text-sm text-gray-600 capitalize">
                           {reservation.rooms?.room_type?.replace('_', ' ') || ''}
                         </div>
-                        {reservation.individual_room && (
+                        {reservation.individual_room ? (
                           <div className="mt-1 inline-flex items-center gap-1 rounded-full bg-blue-100 px-2 py-1 text-xs font-semibold text-blue-800">
                             🏠 Room {reservation.individual_room.room_number}
                             {reservation.individual_room.floor_number && ` (Floor ${reservation.individual_room.floor_number})`}
                           </div>
-                        )}
+                        ) : (() => {
+                          // Get room_id from reservation to find available individual rooms
+                          const roomId = (reservation as any).room_id;
+                          const availableRooms = roomId ? individualRooms[roomId] || [] : [];
+                          
+                          return availableRooms.length > 0 ? (
+                            <select
+                              disabled={assigningRoom === reservation.id}
+                              onChange={(e) => e.target.value && handleAssignRoom(reservation.id, e.target.value)}
+                              className="mt-2 rounded-lg border border-gray-300 bg-white px-3 py-1 text-sm text-gray-900 focus:border-blue-500 focus:outline-none"
+                              defaultValue=""
+                            >
+                              <option value="">Assign Room...</option>
+                              {availableRooms.map(room => (
+                                <option key={room.id} value={room.id}>
+                                  Room {room.room_number}{room.floor_number ? ` (Floor ${room.floor_number})` : ''}
+                                </option>
+                              ))}
+                            </select>
+                          ) : null;
+                        })()}
                         <div className="mt-1 text-sm text-gray-600">
                           {reservation.adults} adults
                           {reservation.children > 0 && `, ${reservation.children} children`}

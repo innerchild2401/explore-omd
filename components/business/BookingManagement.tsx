@@ -181,6 +181,33 @@ export default function BookingManagement({ hotelId, rooms, onClose }: BookingMa
     console.log('handleAssignRoom called with:', { reservationId, individualRoomId });
     setAssigningRoom(reservationId);
     try {
+      // Get reservation details for date checking
+      const reservation = reservations.find(r => r.id === reservationId);
+      if (!reservation) {
+        setError('Reservation not found');
+        setAssigningRoom(null);
+        return;
+      }
+
+      // First check if the room is available using the database function
+      const { data: availabilityCheck, error: checkError } = await supabase
+        .rpc('is_room_available_for_reservation', {
+          p_individual_room_id: individualRoomId,
+          p_check_in_date: reservation.check_in_date,
+          p_check_out_date: reservation.check_out_date,
+          p_reservation_id: reservationId
+        });
+
+      if (checkError) throw checkError;
+
+      // If room is not available, show error
+      if (!availabilityCheck) {
+        setError('This room is already booked for these dates. Please select a different room.');
+        setAssigningRoom(null);
+        return;
+      }
+
+      // Room is available, proceed with assignment
       const { error, data } = await supabase
         .from('reservations')
         .update({ 
@@ -200,7 +227,7 @@ export default function BookingManagement({ hotelId, rooms, onClose }: BookingMa
       router.refresh();
     } catch (err: any) {
       console.error('Error assigning room:', err);
-      setError(err.message);
+      setError(err.message || 'Failed to assign room. Please try again.');
     } finally {
       setAssigningRoom(null);
     }

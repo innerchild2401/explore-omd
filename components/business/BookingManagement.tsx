@@ -154,6 +154,11 @@ export default function BookingManagement({ hotelId, rooms, onClose }: BookingMa
       const occupancyRate = (todayReservations / totalRooms) * 100;
 
       setReservations(data || []);
+      console.log('Set reservations:', data?.map(r => ({
+        id: r.id,
+        individual_room_id: r.individual_room_id,
+        individual_room: r.individual_rooms
+      })));
       setStats({
         total_reservations: totalReservations,
         confirmed_reservations: confirmedReservations,
@@ -187,7 +192,9 @@ export default function BookingManagement({ hotelId, rooms, onClose }: BookingMa
 
       if (error) throw error;
 
+      console.log('Waiting for fetchReservations...');
       await fetchReservations();
+      console.log('fetchReservations completed');
       router.refresh();
     } catch (err: any) {
       console.error('Error assigning room:', err);

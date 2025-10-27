@@ -435,7 +435,14 @@ export default function BookingManagement({ hotelId, rooms, onClose }: BookingMa
                           return availableRooms.length > 0 ? (
                             <select
                               disabled={assigningRoom === reservation.id}
-                              onChange={(e) => e.target.value && handleAssignRoom(reservation.id, e.target.value)}
+                              onChange={(e) => {
+                                const value = e.target.value;
+                                if (value && value !== '') {
+                                  handleAssignRoom(reservation.id, value);
+                                  // Reset dropdown after selection
+                                  e.target.value = '';
+                                }
+                              }}
                               className="mt-2 rounded-lg border border-gray-300 bg-white px-3 py-1 text-sm text-gray-900 focus:border-blue-500 focus:outline-none"
                               defaultValue=""
                             >

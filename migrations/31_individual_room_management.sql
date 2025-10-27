@@ -298,7 +298,7 @@ CREATE OR REPLACE FUNCTION generate_individual_rooms(
 ) RETURNS TABLE(individual_room_id UUID, room_number TEXT) AS $$
 DECLARE
   v_individual_room_id UUID;
-  v_room_number TEXT;
+  v_room_num TEXT;
   v_floor_num INTEGER;
   i INTEGER;
 BEGIN
@@ -319,11 +319,11 @@ BEGIN
       v_floor_num,
       'clean'
     )
-    RETURNING id, room_number INTO v_individual_room_id, v_room_number;
+    RETURNING id, individual_rooms.room_number INTO v_individual_room_id, v_room_num;
     
-    -- Return the values
+    -- Return the values (individual_room_id and room_number are OUT parameters from RETURNS TABLE)
     individual_room_id := v_individual_room_id;
-    room_number := v_room_number;
+    room_number := v_room_num;
     RETURN NEXT;
   END LOOP;
   

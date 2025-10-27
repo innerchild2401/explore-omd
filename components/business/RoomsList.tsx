@@ -4,6 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import RoomModal from './RoomModal';
 import PricingCalendar from './PricingCalendar';
+import IndividualRoomsManager from './IndividualRoomsManager';
 
 interface RoomsListProps {
   hotelId: string;
@@ -14,8 +15,10 @@ interface RoomsListProps {
 export default function RoomsList({ hotelId, rooms, amenities }: RoomsListProps) {
   const [showRoomModal, setShowRoomModal] = useState(false);
   const [showPricingModal, setShowPricingModal] = useState(false);
+  const [showIndividualRooms, setShowIndividualRooms] = useState(false);
   const [editingRoom, setEditingRoom] = useState<any>(null);
   const [pricingRoom, setPricingRoom] = useState<any>(null);
+  const [selectedRoomType, setSelectedRoomType] = useState<any>(null);
 
   const handleAddRoom = () => {
     setEditingRoom(null);
@@ -30,6 +33,11 @@ export default function RoomsList({ hotelId, rooms, amenities }: RoomsListProps)
   const handleManagePricing = (room: any) => {
     setPricingRoom(room);
     setShowPricingModal(true);
+  };
+
+  const handleManageIndividualRooms = (room: any) => {
+    setSelectedRoomType(room);
+    setShowIndividualRooms(true);
   };
 
   return (
@@ -89,15 +97,21 @@ export default function RoomsList({ hotelId, rooms, amenities }: RoomsListProps)
               <div className="flex gap-2">
                 <button
                   onClick={() => handleEditRoom(room)}
-                  className="flex-1 rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                  className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
                 >
                   Edit
                 </button>
                 <button
                   onClick={() => handleManagePricing(room)}
-                  className="flex-1 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+                  className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
                 >
-                  Manage Pricing
+                  Pricing
+                </button>
+                <button
+                  onClick={() => handleManageIndividualRooms(room)}
+                  className="rounded-lg bg-purple-600 px-4 py-2 text-sm font-medium text-white hover:bg-purple-700"
+                >
+                  🏠 Individual Rooms
                 </button>
               </div>
             </div>
@@ -124,6 +138,17 @@ export default function RoomsList({ hotelId, rooms, amenities }: RoomsListProps)
           onClose={() => {
             setShowPricingModal(false);
             setPricingRoom(null);
+          }}
+        />
+      )}
+
+      {showIndividualRooms && selectedRoomType && (
+        <IndividualRoomsManager
+          roomTypeId={selectedRoomType.id}
+          roomTypeName={selectedRoomType.name}
+          onClose={() => {
+            setShowIndividualRooms(false);
+            setSelectedRoomType(null);
           }}
         />
       )}

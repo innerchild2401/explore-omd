@@ -62,7 +62,32 @@ This folder contains all database schema migrations for the Explore OMD platform
 4. Paste and Run
 5. Update this README with status
 
+### 31_individual_room_management.sql
+**Status:** ⏳ Pending Application  
+**Date:** December 2024  
+**Description:** Phase 1 - Individual Room Management System
+
+**Tables Created:**
+- `individual_rooms` - Physical room instances (Room 201, Room 202, etc.)
+- `room_status_history` - Audit trail of room status changes
+- `individual_room_availability` - Per-room daily availability tracking
+
+**Schema Changes:**
+- Added `individual_room_id`, `room_assigned_at`, `assignment_method` to `hotel_reservations`
+- Added indexes for performance on all new tables
+
+**Functions Created:**
+- `auto_assign_room_for_reservation()` - Auto-assign best available room
+- `generate_individual_rooms()` - Bulk generate physical rooms from room types
+
+**Features:**
+- Track individual physical rooms vs room types
+- Room status management (clean/dirty/occupied/out_of_order/blocked)
+- Auto-assignment algorithm with preference matching
+- RLS policies for proper data isolation
+- Performance-optimized indexes
+
 ## Current Schema Version
-**Version:** 2  
-**Last Updated:** October 25, 2025
+**Version:** 31  
+**Last Updated:** December 2024
 

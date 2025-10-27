@@ -95,10 +95,16 @@ export default function BookingManagement({ hotelId, rooms, onClose }: BookingMa
 
       const { data, error } = await supabase
         .from('reservations')
-        .select('*')
+        .select(`
+          *,
+          guest_profiles!guest_id(first_name, last_name, email, phone),
+          rooms!room_id(name, room_type),
+          booking_channels!channel_id(name, display_name, channel_type),
+          individual_rooms!individual_room_id(room_number, floor_number, current_status)
+        `)
         .eq('hotel_id', hotelData.id);
       
-      console.log('Simple query:', { data, error, hotelDataId: hotelData.id });
+      console.log('Reservations with relations:', { data, error, hotelDataId: hotelData.id });
 
       if (error) {
         console.error('Query error:', error);
@@ -219,10 +225,11 @@ export default function BookingManagement({ hotelId, rooms, onClose }: BookingMa
   };
 
   const filteredReservations = reservations.filter(reservation => {
+    if (!reservation) return false;
     const matchesSearch = searchTerm === '' || 
-      reservation.confirmation_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      `${reservation.guest_profiles.first_name} ${reservation.guest_profiles.last_name}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      reservation.guest_profiles.email.toLowerCase().includes(searchTerm.toLowerCase());
+      reservation.confirmation_number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (reservation.guest_profiles && `${reservation.guest_profiles.first_name || ''} ${reservation.guest_profiles.last_name || ''}`.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (reservation.guest_profiles?.email && reservation.guest_profiles.email.toLowerCase().includes(searchTerm.toLowerCase()));
     
     return matchesSearch;
   });
@@ -348,10 +355,10 @@ export default function BookingManagement({ hotelId, rooms, onClose }: BookingMa
                       {/* Guest Info */}
                       <div className="md:col-span-3">
                         <div className="font-medium text-gray-900">
-                          {reservation.guest_profiles.first_name} {reservation.guest_profiles.last_name}
+                          {reservation.guest_profiles ? `${reservation.guest_profiles.first_name || ''} ${reservation.guest_profiles.last_name || ''}`.trim() : 'Unknown Guest'}
                         </div>
-                        <div className="text-sm text-gray-600">{reservation.guest_profiles.email}</div>
-                        {reservation.guest_profiles.phone && (
+                        <div className="text-sm text-gray-600">{reservation.guest_profiles?.email || 'No email'}</div>
+                        {reservation.guest_profiles?.phone && (
                           <div className="text-sm text-gray-600">{reservation.guest_profiles.phone}</div>
                         )}
                         <div className="mt-2 text-sm font-medium text-gray-900">
@@ -370,9 +377,9 @@ export default function BookingManagement({ hotelId, rooms, onClose }: BookingMa
                       {/* Room & Guests */}
                       <div className="md:col-span-2">
                         <div className="text-sm text-gray-600">Room</div>
-                        <div className="font-medium text-gray-900">{reservation.rooms.name}</div>
+                        <div className="font-medium text-gray-900">{reservation.rooms?.name || 'TBD'}</div>
                         <div className="text-sm text-gray-600 capitalize">
-                          {reservation.rooms.room_type.replace('_', ' ')}
+                          {reservation.rooms?.room_type?.replace('_', ' ') || ''}
                         </div>
                         {reservation.individual_room && (
                           <div className="mt-1 inline-flex items-center gap-1 rounded-full bg-blue-100 px-2 py-1 text-xs font-semibold text-blue-800">
@@ -390,9 +397,9 @@ export default function BookingManagement({ hotelId, rooms, onClose }: BookingMa
                       {/* Channel */}
                       <div className="md:col-span-2">
                         <div className="text-sm text-gray-600">Channel</div>
-                        <div className="font-medium text-gray-900">{reservation.booking_channels.display_name}</div>
+                        <div className="font-medium text-gray-900">{reservation.booking_channels?.display_name || reservation.booking_channels?.name || 'Unknown'}</div>
                         <div className="text-sm text-gray-600 capitalize">
-                          {reservation.booking_channels.channel_type}
+                          {reservation.booking_channels?.channel_type || ''}
                         </div>
                       </div>
 

@@ -86,15 +86,12 @@ export default function BookingManagement({ hotelId, rooms, onClose }: BookingMa
         .single();
 
       if (hotelError) throw hotelError;
+      console.log('Hotel ID:', hotelData.id);
       
       let query = supabase
         .from('reservations')
         .select(`
-          *,
-          guest_profiles(first_name, last_name, email, phone),
-          rooms(name, room_type),
-          booking_channels(name, display_name, channel_type),
-          individual_rooms(room_number, floor_number, current_status)
+          *
         `)
         .eq('hotel_id', hotelData.id)
         .order('check_in_date', { ascending: true });

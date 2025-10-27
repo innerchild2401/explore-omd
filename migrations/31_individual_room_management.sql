@@ -307,6 +307,7 @@ BEGIN
   
   -- Generate individual rooms
   FOR i IN 1..p_count LOOP
+    -- Calculate room number: prefix + padded number (e.g., "1" + "01" = "101")
     INSERT INTO individual_rooms (
       room_id,
       room_number,
@@ -315,7 +316,10 @@ BEGIN
     )
     VALUES (
       p_room_type_id,
-      p_prefix || (p_start_number + i - 1)::TEXT,
+      CASE 
+        WHEN (p_start_number + i - 1) < 10 THEN p_prefix || '0' || (p_start_number + i - 1)::TEXT
+        ELSE p_prefix || (p_start_number + i - 1)::TEXT
+      END,
       v_floor_num,
       'clean'
     )

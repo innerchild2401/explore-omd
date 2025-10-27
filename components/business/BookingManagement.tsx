@@ -41,6 +41,11 @@ interface Reservation {
     display_name: string;
     channel_type: string;
   };
+  individual_room?: {
+    room_number: string;
+    floor_number?: number;
+    current_status?: string;
+  };
 }
 
 interface BookingStats {
@@ -88,7 +93,8 @@ export default function BookingManagement({ hotelId, rooms, onClose }: BookingMa
           *,
           guest_profiles!inner(first_name, last_name, email, phone),
           rooms!inner(name, room_type),
-          booking_channels!inner(name, display_name, channel_type)
+          booking_channels!inner(name, display_name, channel_type),
+          individual_room:individual_rooms!left(room_number, floor_number, current_status)
         `)
         .eq('hotel_id', hotelData.id)
         .order('check_in_date', { ascending: true });
@@ -375,6 +381,12 @@ export default function BookingManagement({ hotelId, rooms, onClose }: BookingMa
                         <div className="text-sm text-gray-600 capitalize">
                           {reservation.rooms.room_type.replace('_', ' ')}
                         </div>
+                        {reservation.individual_room && (
+                          <div className="mt-1 inline-flex items-center gap-1 rounded-full bg-blue-100 px-2 py-1 text-xs font-semibold text-blue-800">
+                            🏠 Room {reservation.individual_room.room_number}
+                            {reservation.individual_room.floor_number && ` (Floor ${reservation.individual_room.floor_number})`}
+                          </div>
+                        )}
                         <div className="mt-1 text-sm text-gray-600">
                           {reservation.adults} adults
                           {reservation.children > 0 && `, ${reservation.children} children`}

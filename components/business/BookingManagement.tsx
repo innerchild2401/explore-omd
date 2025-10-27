@@ -91,10 +91,10 @@ export default function BookingManagement({ hotelId, rooms, onClose }: BookingMa
         .from('reservations')
         .select(`
           *,
-          guest_profiles!inner(first_name, last_name, email, phone),
-          rooms!inner(name, room_type),
-          booking_channels!inner(name, display_name, channel_type),
-          individual_room:individual_rooms!left(room_number, floor_number, current_status)
+          guest_profiles(first_name, last_name, email, phone),
+          rooms(name, room_type),
+          booking_channels(name, display_name, channel_type),
+          individual_rooms(room_number, floor_number, current_status)
         `)
         .eq('hotel_id', hotelData.id)
         .order('check_in_date', { ascending: true });

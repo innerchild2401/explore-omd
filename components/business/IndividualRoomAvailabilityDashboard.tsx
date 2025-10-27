@@ -20,14 +20,11 @@ interface RoomType {
 
 interface Reservation {
   id: string;
-  confirmation_number: string;
-  check_in_date: string;
-  check_out_date: string;
-  adults: number;
-  children: number;
-  infants: number;
+  check_in: string;
+  check_out: string;
+  guests: number;
   individual_room_id: string | null;
-  guest_profiles: { first_name: string; last_name: string; email: string };
+  status: string;
 }
 
 interface ArrivalAlert {
@@ -119,22 +116,19 @@ export default function IndividualRoomAvailabilityDashboard({ hotelId, onClose }
       }
       setIndividualRooms(roomsByType);
 
-      // Fetch all reservations
+      // Fetch all reservations - check both hotel_reservations and reservations tables
       const { data: resData, error: resError } = await supabase
-        .from('reservations')
+        .from('hotel_reservations')
         .select(`
           id,
-          confirmation_number,
-          check_in_date,
-          check_out_date,
-          adults,
-          children,
-          infants,
+          check_in,
+          check_out,
+          guests,
           individual_room_id,
-          guest_profiles(first_name, last_name, email)
+          status
         `)
         .eq('hotel_id', hotelData.id)
-        .in('reservation_status', ['confirmed', 'checked_in']);
+        .in('status', ['confirmed', 'completed']);
 
       if (!resError && resData) {
         setAllReservations(resData as any);
@@ -195,18 +189,19 @@ export default function IndividualRoomAvailabilityDashboard({ hotelId, onClose }
     const dateStr = date.toISOString().split('T')[0];
     return allReservations.find(res => {
       if (res.individual_room_id !== roomId) return false;
-      return res.check_in_date <= dateStr && res.check_out_date > dateStr;
+      // Check if date falls within reservation period (inclusive of check_in, exclusive of check_out)
+      return res.check_in <= dateStr && res.check_out > dateStr;
     }) || null;
   };
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'clean': return 'bg-green-100 border-green-300';
-      case 'occupied': return 'bg-red-100 border-red-300';
-      case 'dirty': return 'bg-yellow-100 border-yellow-300';
-      case 'maintenance': return 'bg-orange-100 border-orange-300';
-      case 'out_of_order': return 'bg-gray-100 border-gray-300';
-      default: return 'bg-gray-100 border-gray-300';
+      case 'clean': return 'bg-green-100 text-green-800 border-green-300';
+      case 'occupied': return 'bg-red-100 text-red-800 border-red-300';
+      case 'dirty': return 'bg-yellow-100 text-yellow-800 border-yellow-300';
+      case 'maintenance': return 'bg-orange-100 text-orange-800 border-orange-300';
+      case 'out_of_order': return 'bg-gray-100 text-gray-800 border-gray-300';
+      default: return 'bg-gray-100 text-gray-800 border-gray-300';
     }
   };
 
@@ -336,12 +331,12 @@ export default function IndividualRoomAvailabilityDashboard({ hotelId, onClose }
                       <tbody>
                         {rooms.map(room => (
                           <tr key={room.id}>
-                            <td className="sticky left-0 z-10 border-r-2 border-gray-300 bg-white px-4 py-2 font-medium">
-                              <div>Room {room.room_number}</div>
+                            <td className="sticky left-0 z-10 border-r-2 border-gray-300 bg-gray-50 px-4 py-3 font-medium shadow-sm">
+                              <div className="font-semibold text-gray-900">Room {room.room_number}</div>
                               {room.floor_number && (
-                                <div className="text-xs text-gray-500">Floor {room.floor_number}</div>
+                                <div className="text-xs text-gray-600 mt-0.5">Floor {room.floor_number}</div>
                               )}
-                              <div className={`mt-1 inline-flex rounded px-2 py-0.5 text-xs font-semibold ${getStatusColor(room.current_status)}`}>
+                              <div className={`mt-2 inline-flex rounded-full px-2.5 py-1 text-xs font-bold border ${getStatusColor(room.current_status)}`}>
                                 {room.current_status}
                               </div>
                             </td>
@@ -353,19 +348,19 @@ export default function IndividualRoomAvailabilityDashboard({ hotelId, onClose }
                               return (
                                 <td
                                   key={dateStr}
-                                  className={`border-b border-gray-200 px-2 py-2 text-center text-xs ${
-                                    isToday ? 'bg-blue-50' : 'bg-white'
-                                  }`}
+                                  className={`border-b border-l border-gray-200 px-1 py-3 text-center text-xs hover:bg-gray-50 transition-colors ${
+                                    isToday ? 'bg-blue-50 border-blue-200' : 'bg-white'
+                                  } ${!reservation && 'text-gray-300'}`}
                                 >
                                   {reservation ? (
-                                    <div className="rounded bg-blue-500 p-1 text-white">
-                                      <div className="font-semibold">#{reservation.confirmation_number}</div>
-                                      <div className="text-xs">
-                                        {reservation.guest_profiles.first_name[0]}{reservation.guest_profiles.last_name[0]}
+                                    <div className="rounded-md bg-gradient-to-br from-blue-500 to-blue-600 p-1.5 text-white shadow-sm hover:shadow-md transition-all">
+                                      <div className="font-bold text-[10px]">#{reservation.id.slice(-6)}</div>
+                                      <div className="text-[9px] mt-0.5 opacity-90">
+                                        {reservation.guests} {reservation.guests === 1 ? 'guest' : 'guests'}
                                       </div>
                                     </div>
                                   ) : (
-                                    <div className="text-gray-400">—</div>
+                                    <div className="text-gray-300">—</div>
                                   )}
                                 </td>
                               );

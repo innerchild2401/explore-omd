@@ -90,26 +90,20 @@ export default function BookingManagement({ hotelId, rooms, onClose }: BookingMa
       
       let query = supabase
         .from('reservations')
-        .select(`
-          *
-        `)
-        .eq('hotel_id', hotelData.id)
-        .order('check_in_date', { ascending: true });
+        .select('*')
+        .eq('hotel_id', hotelData.id);
 
-      // Apply filters
-      if (filterStatus !== 'all') {
-        query = query.eq('reservation_status', filterStatus);
-      }
+      const { data, error } = await supabase
+        .from('reservations')
+        .select('*')
+        .eq('hotel_id', hotelData.id);
       
-      if (filterChannel !== 'all') {
-        query = query.eq('booking_channels.name', filterChannel);
+      console.log('Simple query:', { data, error, hotelDataId: hotelData.id });
+
+      if (error) {
+        console.error('Query error:', error);
+        throw error;
       }
-
-      const { data, error } = await query;
-
-      console.log('Reservations query result:', { data, error });
-      
-      if (error) throw error;
 
       // Calculate stats
       const totalReservations = data?.length || 0;

@@ -45,9 +45,9 @@ CREATE TABLE IF NOT EXISTS individual_rooms (
 );
 
 -- Indexes for performance
-CREATE INDEX idx_individual_rooms_room_id ON individual_rooms(room_id);
-CREATE INDEX idx_individual_rooms_status ON individual_rooms(current_status);
-CREATE INDEX idx_individual_rooms_floor ON individual_rooms(floor_number);
+CREATE INDEX IF NOT EXISTS idx_individual_rooms_room_id ON individual_rooms(room_id);
+CREATE INDEX IF NOT EXISTS idx_individual_rooms_status ON individual_rooms(current_status);
+CREATE INDEX IF NOT EXISTS idx_individual_rooms_floor ON individual_rooms(floor_number);
 
 -- =============================================
 -- 2. ROOM STATUS HISTORY TABLE
@@ -75,9 +75,9 @@ CREATE TABLE IF NOT EXISTS room_status_history (
 );
 
 -- Indexes for performance and queries
-CREATE INDEX idx_room_status_history_room ON room_status_history(individual_room_id);
-CREATE INDEX idx_room_status_history_date ON room_status_history(changed_at);
-CREATE INDEX idx_room_status_history_reservation ON room_status_history(reservation_id);
+CREATE INDEX IF NOT EXISTS idx_room_status_history_room ON room_status_history(individual_room_id);
+CREATE INDEX IF NOT EXISTS idx_room_status_history_date ON room_status_history(changed_at);
+CREATE INDEX IF NOT EXISTS idx_room_status_history_reservation ON room_status_history(reservation_id);
 
 -- =============================================
 -- 3. UPDATE RESERVATIONS TABLE
@@ -116,22 +116,24 @@ CREATE TABLE IF NOT EXISTS individual_room_availability (
 );
 
 -- Indexes for performance
-CREATE INDEX idx_individual_room_availability_room ON individual_room_availability(individual_room_id);
-CREATE INDEX idx_individual_room_availability_date ON individual_room_availability(date);
-CREATE INDEX idx_individual_room_availability_status ON individual_room_availability(status);
-CREATE INDEX idx_individual_room_availability_reservation ON individual_room_availability(reservation_id);
+CREATE INDEX IF NOT EXISTS idx_individual_room_availability_room ON individual_room_availability(individual_room_id);
+CREATE INDEX IF NOT EXISTS idx_individual_room_availability_date ON individual_room_availability(date);
+CREATE INDEX IF NOT EXISTS idx_individual_room_availability_status ON individual_room_availability(status);
+CREATE INDEX IF NOT EXISTS idx_individual_room_availability_reservation ON individual_room_availability(reservation_id);
 
 -- =============================================
 -- 5. TRIGGER FOR UPDATED_AT
 -- =============================================
 
 -- Create update trigger for individual_rooms
+DROP TRIGGER IF EXISTS update_individual_rooms_updated_at ON individual_rooms;
 CREATE TRIGGER update_individual_rooms_updated_at
   BEFORE UPDATE ON individual_rooms
   FOR EACH ROW
   EXECUTE FUNCTION update_updated_at_column();
 
 -- Create update trigger for individual_room_availability
+DROP TRIGGER IF EXISTS update_individual_room_availability_updated_at ON individual_room_availability;
 CREATE TRIGGER update_individual_room_availability_updated_at
   BEFORE UPDATE ON individual_room_availability
   FOR EACH ROW
@@ -217,6 +219,7 @@ ALTER TABLE room_status_history ENABLE ROW LEVEL SECURITY;
 ALTER TABLE individual_room_availability ENABLE ROW LEVEL SECURITY;
 
 -- Policy: Hotel owners can view and manage their own rooms
+DROP POLICY IF EXISTS "hotel_owners_manage_individual_rooms" ON individual_rooms;
 CREATE POLICY "hotel_owners_manage_individual_rooms"
   ON individual_rooms
   FOR ALL
@@ -232,6 +235,7 @@ CREATE POLICY "hotel_owners_manage_individual_rooms"
   );
 
 -- Policy: Public can view individual rooms for active hotels
+DROP POLICY IF EXISTS "public_view_individual_rooms" ON individual_rooms;
 CREATE POLICY "public_view_individual_rooms"
   ON individual_rooms
   FOR SELECT
@@ -247,6 +251,7 @@ CREATE POLICY "public_view_individual_rooms"
   );
 
 -- Policy: Hotel owners can manage their room status history
+DROP POLICY IF EXISTS "hotel_owners_manage_status_history" ON room_status_history;
 CREATE POLICY "hotel_owners_manage_status_history"
   ON room_status_history
   FOR ALL
@@ -263,6 +268,7 @@ CREATE POLICY "hotel_owners_manage_status_history"
   );
 
 -- Policy: Hotel owners can view their room availability
+DROP POLICY IF EXISTS "hotel_owners_view_room_availability" ON individual_room_availability;
 CREATE POLICY "hotel_owners_view_room_availability"
   ON individual_room_availability
   FOR ALL
@@ -294,6 +300,7 @@ DECLARE
   v_individual_room_id UUID;
   v_room_number TEXT;
   v_floor_num INTEGER;
+  i INTEGER;
 BEGIN
   -- Set floor number
   v_floor_num := COALESCE(p_floor_number, (p_start_number / 100));
@@ -314,10 +321,13 @@ BEGIN
     )
     RETURNING id, room_number INTO v_individual_room_id, v_room_number;
     
+    -- Return the values
     individual_room_id := v_individual_room_id;
     room_number := v_room_number;
     RETURN NEXT;
   END LOOP;
+  
+  RETURN;
 END;
 $$ LANGUAGE plpgsql;
 

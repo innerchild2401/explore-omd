@@ -61,13 +61,19 @@ export default function IndividualRoomsManager({ roomTypeId, roomTypeName, onClo
   const handleGenerateRooms = async () => {
     setGenerating(true);
     try {
-      const { data, error } = await supabase.rpc('generate_individual_rooms', {
+      // Build parameters object, only including floor_number if it's not null
+      const params: any = {
         p_room_type_id: roomTypeId,
         p_prefix: prefix,
         p_start_number: startNumber,
-        p_count: count,
-        p_floor_number: floorNumber
-      });
+        p_count: count
+      };
+      
+      if (floorNumber !== null) {
+        params.p_floor_number = floorNumber;
+      }
+      
+      const { data, error } = await supabase.rpc('generate_individual_rooms', params);
 
       if (error) throw error;
       
@@ -76,7 +82,7 @@ export default function IndividualRoomsManager({ roomTypeId, roomTypeName, onClo
       setShowGenerator(false);
     } catch (error) {
       console.error('Failed to generate rooms:', error);
-      alert('Failed to generate rooms. Make sure the migration has been applied.');
+      alert(`Failed to generate rooms: ${error}. Make sure migration 31_individual_room_management.sql has been applied to your database.`);
     } finally {
       setGenerating(false);
     }

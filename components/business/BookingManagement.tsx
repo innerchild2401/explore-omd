@@ -154,11 +154,13 @@ export default function BookingManagement({ hotelId, rooms, onClose }: BookingMa
       const occupancyRate = (todayReservations / totalRooms) * 100;
 
       setReservations(data || []);
-      console.log('Set reservations:', data?.map(r => ({
+      console.log('Set reservations (detailed):', JSON.stringify(data?.map(r => ({
         id: r.id,
+        confirmation_number: r.confirmation_number,
         individual_room_id: r.individual_room_id,
-        individual_room: r.individual_rooms
-      })));
+        individual_room: r.individual_rooms,
+        rooms: r.rooms
+      })), null, 2));
       setStats({
         total_reservations: totalReservations,
         confirmed_reservations: confirmedReservations,
@@ -433,10 +435,10 @@ export default function BookingManagement({ hotelId, rooms, onClose }: BookingMa
                         <div className="text-sm text-gray-600 capitalize">
                           {reservation.rooms?.room_type?.replace('_', ' ') || ''}
                         </div>
-                        {reservation.individual_room ? (
+                        {(reservation as any).individual_rooms || reservation.individual_room ? (
                           <div className="mt-1 inline-flex items-center gap-1 rounded-full bg-blue-100 px-2 py-1 text-xs font-semibold text-blue-800">
-                            🏠 Room {reservation.individual_room.room_number}
-                            {reservation.individual_room.floor_number && ` (Floor ${reservation.individual_room.floor_number})`}
+                            🏠 Room {((reservation as any).individual_rooms || reservation.individual_room).room_number}
+                            {((reservation as any).individual_rooms || reservation.individual_room).floor_number && ` (Floor ${((reservation as any).individual_rooms || reservation.individual_room).floor_number})`}
                           </div>
                         ) : (() => {
                           // Get room_id from reservation to find available individual rooms

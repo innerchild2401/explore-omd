@@ -12,9 +12,10 @@ SELECT
   r.individual_room_id,
   ir.room_number,
   ir.floor_number,
-  r.rooms->>'name' AS room_type
+  rt.name AS room_type
 FROM reservations r
 LEFT JOIN individual_rooms ir ON ir.id = r.individual_room_id
+LEFT JOIN rooms rt ON rt.id = ir.room_id
 WHERE r.reservation_status IN ('confirmed', 'checked_in', 'checked_out')
 ORDER BY r.check_in_date;
 

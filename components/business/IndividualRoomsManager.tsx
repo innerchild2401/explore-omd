@@ -31,8 +31,10 @@ export default function IndividualRoomsManager({ roomTypeId, roomTypeName, roomT
   const [individualRooms, setIndividualRooms] = useState<IndividualRoom[]>([]);
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [showGenerator, setShowGenerator] = useState(false);
   const [maxQuantity, setMaxQuantity] = useState(roomTypeQuantity || 0);
+  const [selectedRooms, setSelectedRooms] = useState<string[]>([]);
 
   // Generator settings
   const [prefix, setPrefix] = useState('');
@@ -43,6 +45,17 @@ export default function IndividualRoomsManager({ roomTypeId, roomTypeName, roomT
   // Calculate available slots
   const availableSlots = maxQuantity - individualRooms.length;
   const canCreateMore = availableSlots > 0;
+
+  // Group rooms by floor for better visualization
+  const roomsByFloor = individualRooms.reduce((acc, room) => {
+    const floor = room.floor_number || 0;
+    if (!acc[floor]) acc[floor] = [];
+    acc[floor].push(room);
+    return acc;
+  }, {} as Record<number, IndividualRoom[]>);
+
+  // Get existing room numbers to suggest next number and prevent overlaps
+  const existingRoomNumbers = individualRooms.map(r => r.room_number).sort();
 
   // Fetch individual rooms
   const fetchIndividualRooms = async () => {
@@ -76,6 +89,17 @@ export default function IndividualRoomsManager({ roomTypeId, roomTypeName, roomT
       return;
     }
 
+    // Check for room number overlaps
+    const generatedNumbers = [];
+    for (let i = 0; i < count; i++) {
+      const roomNumber = prefix + (startNumber + i).toString();
+      if (existingRoomNumbers.includes(roomNumber)) {
+        alert(`Room number "${roomNumber}" already exists! Please choose a different start number or prefix.`);
+        return;
+      }
+      generatedNumbers.push(roomNumber);
+    }
+
     setGenerating(true);
     try {
       // Build parameters object, only including floor_number if it's not null
@@ -97,11 +121,51 @@ export default function IndividualRoomsManager({ roomTypeId, roomTypeName, roomT
       // Refresh the list
       await fetchIndividualRooms();
       setShowGenerator(false);
+      // Reset form
+      setPrefix('');
+      setStartNumber(1);
+      setCount(1);
+      setFloorNumber(null);
     } catch (error) {
       console.error('Failed to generate rooms:', error);
       alert(`Failed to generate rooms: ${error}. Make sure migration 31_individual_room_management.sql has been applied to your database.`);
     } finally {
       setGenerating(false);
+    }
+  };
+
+  // Delete individual room(s)
+  const handleDeleteRooms = async (roomIds: string[]) => {
+    if (!confirm(`Are you sure you want to delete ${roomIds.length} room(s)?`)) {
+      return;
+    }
+
+    setDeleting(true);
+    try {
+      const { error } = await supabase
+        .from('individual_rooms')
+        .delete()
+        .in('id', roomIds);
+
+      if (error) throw error;
+      
+      // Refresh the list
+      await fetchIndividualRooms();
+      setSelectedRooms([]);
+    } catch (error) {
+      console.error('Failed to delete rooms:', error);
+      alert('Failed to delete rooms');
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  // Toggle room selection
+  const toggleRoomSelection = (roomId: string) => {
+    if (selectedRooms.includes(roomId)) {
+      setSelectedRooms(selectedRooms.filter(id => id !== roomId));
+    } else {
+      setSelectedRooms([...selectedRooms, roomId]);
     }
   };
 
@@ -182,19 +246,24 @@ export default function IndividualRoomsManager({ roomTypeId, roomTypeName, roomT
               )}
             </div>
             <div className="flex gap-3">
-              {individualRooms.length === 0 && (
+              {selectedRooms.length > 0 && (
                 <button
-                  onClick={() => setShowGenerator(true)}
-                  className="rounded-lg bg-blue-600 px-6 py-2 font-semibold text-white hover:bg-blue-700"
+                  onClick={() => handleDeleteRooms(selectedRooms)}
+                  disabled={deleting}
+                  className="rounded-lg bg-red-600 px-6 py-2 font-semibold text-white hover:bg-red-700 disabled:bg-gray-400"
                 >
-                  🔄 Auto-Generate Rooms
+                  🗑️ Delete Selected ({selectedRooms.length})
                 </button>
               )}
               <button
-                className="rounded-lg border border-gray-300 px-6 py-2 font-semibold text-gray-700 hover:bg-gray-50"
-                onClick={() => setShowGenerator(false)}
+                onClick={() => setShowGenerator(!showGenerator)}
+                className={`px-6 py-2 font-semibold ${
+                  showGenerator 
+                    ? 'border border-gray-300 text-gray-700 hover:bg-gray-50' 
+                    : 'bg-blue-600 text-white hover:bg-blue-700'
+                } rounded-lg`}
               >
-                + Add Manually
+                {showGenerator ? '✕ Cancel' : canCreateMore ? '➕ Generate Rooms' : '⚠️ All Rooms Created'}
               </button>
             </div>
           </div>
@@ -282,47 +351,86 @@ export default function IndividualRoomsManager({ roomTypeId, roomTypeName, roomT
             </div>
           )}
 
-          {/* Rooms List */}
+          {/* Rooms List - Grouped by Floor */}
           {individualRooms.length > 0 ? (
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900">Room Number</th>
-                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900">Floor</th>
-                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900">Status</th>
-                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900">Size</th>
-                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900">Attributes</th>
-                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-200">
-                  {individualRooms.map((room) => (
-                    <tr key={room.id} className="hover:bg-gray-50">
-                      <td className="px-4 py-3 text-sm font-medium text-gray-900">{room.room_number}</td>
-                      <td className="px-4 py-3 text-sm text-gray-600">{room.floor_number || '-'}</td>
-                      <td className="px-4 py-3">
-                        <span className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-semibold ${getStatusColor(room.current_status)}`}>
-                          {getStatusIcon(room.current_status)} {room.current_status}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 text-sm text-gray-600">{room.size_sqm ? `${room.size_sqm} sqm` : '-'}</td>
-                      <td className="px-4 py-3 text-sm text-gray-600">
-                        <div className="flex gap-2">
-                          {room.balcony && <span className="rounded bg-green-100 px-2 py-1 text-xs">Balcony</span>}
-                          {room.accessible && <span className="rounded bg-blue-100 px-2 py-1 text-xs">Accessible</span>}
-                          {room.view_type && <span className="rounded bg-purple-100 px-2 py-1 text-xs capitalize">{room.view_type}</span>}
-                        </div>
-                      </td>
-                      <td className="px-4 py-3 text-sm">
-                        <button className="text-blue-600 hover:text-blue-700">
-                          Edit
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+            <div className="space-y-4">
+              {Object.keys(roomsByFloor).sort((a, b) => parseInt(b) - parseInt(a)).map((floor) => {
+                const floorRooms = roomsByFloor[parseInt(floor)];
+                return (
+                  <div key={floor} className="rounded-lg border border-gray-200 bg-white">
+                    <div className="border-b border-gray-200 bg-gray-50 px-6 py-3">
+                      <div className="flex items-center justify-between">
+                        <h3 className="text-lg font-semibold text-gray-900">Floor {floor}</h3>
+                        <span className="text-sm text-gray-600">{floorRooms.length} rooms</span>
+                      </div>
+                    </div>
+                    <div className="overflow-x-auto">
+                      <table className="w-full">
+                        <thead className="bg-gray-50">
+                          <tr>
+                            <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900 w-12">
+                              <input
+                                type="checkbox"
+                                checked={floorRooms.every(r => selectedRooms.includes(r.id))}
+                                onChange={(e) => {
+                                  if (e.target.checked) {
+                                    setSelectedRooms([...selectedRooms, ...floorRooms.map(r => r.id)]);
+                                  } else {
+                                    setSelectedRooms(selectedRooms.filter(id => !floorRooms.map(r => r.id).includes(id)));
+                                  }
+                                }}
+                                className="rounded border-gray-300"
+                              />
+                            </th>
+                            <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900">Room Number</th>
+                            <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900">Status</th>
+                            <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900">Size</th>
+                            <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900">Attributes</th>
+                            <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900">Actions</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-200">
+                          {floorRooms.map((room) => (
+                            <tr key={room.id} className={`hover:bg-gray-50 ${selectedRooms.includes(room.id) ? 'bg-blue-50' : ''}`}>
+                              <td className="px-4 py-3">
+                                <input
+                                  type="checkbox"
+                                  checked={selectedRooms.includes(room.id)}
+                                  onChange={() => toggleRoomSelection(room.id)}
+                                  className="rounded border-gray-300"
+                                />
+                              </td>
+                              <td className="px-4 py-3 text-sm font-medium text-gray-900">{room.room_number}</td>
+                              <td className="px-4 py-3">
+                                <span className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-semibold ${getStatusColor(room.current_status)}`}>
+                                  {getStatusIcon(room.current_status)} {room.current_status}
+                                </span>
+                              </td>
+                              <td className="px-4 py-3 text-sm text-gray-600">{room.size_sqm ? `${room.size_sqm} sqm` : '-'}</td>
+                              <td className="px-4 py-3 text-sm text-gray-600">
+                                <div className="flex gap-2">
+                                  {room.balcony && <span className="rounded bg-green-100 px-2 py-1 text-xs">Balcony</span>}
+                                  {room.accessible && <span className="rounded bg-blue-100 px-2 py-1 text-xs">Accessible</span>}
+                                  {room.view_type && <span className="rounded bg-purple-100 px-2 py-1 text-xs capitalize">{room.view_type}</span>}
+                                </div>
+                              </td>
+                              <td className="px-4 py-3 text-sm">
+                                <button
+                                  onClick={() => handleDeleteRooms([room.id])}
+                                  disabled={deleting}
+                                  className="text-red-600 hover:text-red-700 disabled:text-gray-400"
+                                >
+                                  🗑️ Delete
+                                </button>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           ) : (
             <div className="rounded-lg bg-gray-50 p-12 text-center">

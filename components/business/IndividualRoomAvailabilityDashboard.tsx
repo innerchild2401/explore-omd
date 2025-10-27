@@ -166,26 +166,47 @@ export default function IndividualRoomAvailabilityDashboard({ hotelId, onClose }
           confirmation_number,
           check_in_date,
           reservation_status,
-          individual_rooms(room_number),
+          individual_room_id,
+          guest_id,
           guest_profiles(first_name, last_name)
         `)
         .eq('hotel_id', hotelData.id)
         .eq('check_in_date', today)
         .in('reservation_status', ['confirmed', 'tentative']);
-
-      if (arrivals) {
-        const alerts: ArrivalAlert[] = arrivals.map(r => ({
-          reservation_id: r.id,
-          confirmation_number: r.confirmation_number,
-          guest_name: Array.isArray(r.guest_profiles)
-            ? `${r.guest_profiles[0]?.first_name || ''} ${r.guest_profiles[0]?.last_name || ''}`.trim()
-            : `${(r.guest_profiles as any)?.first_name || ''} ${(r.guest_profiles as any)?.last_name || ''}`.trim(),
-          check_in_date: r.check_in_date,
-          reservation_status: r.reservation_status,
-          assigned_room: Array.isArray(r.individual_rooms) ? r.individual_rooms[0]?.room_number : (r.individual_rooms as any)?.[0]?.room_number
-        }));
+      
+      // If arrivals exist, get individual room info
+      if (arrivals && arrivals.length > 0) {
+        const roomIds = arrivals.filter(r => r.individual_room_id).map(r => r.individual_room_id);
+        let roomData: any[] = [];
+        
+        if (roomIds.length > 0) {
+          const { data: rooms } = await supabase
+            .from('individual_rooms')
+            .select('id, room_number')
+            .in('id', roomIds);
+          
+          roomData = rooms || [];
+        }
+        
+        const roomMap = new Map(roomData.map(r => [r.id, r.room_number]));
+        
+        const alerts: ArrivalAlert[] = arrivals.map(r => {
+          const guest = r.guest_profiles as any;
+          return {
+            reservation_id: r.id,
+            confirmation_number: r.confirmation_number,
+            guest_name: guest
+              ? `${guest.first_name || ''} ${guest.last_name || ''}`.trim()
+              : 'Unknown',
+            check_in_date: r.check_in_date,
+            reservation_status: r.reservation_status,
+            assigned_room: r.individual_room_id ? roomMap.get(r.individual_room_id) : undefined
+          };
+        });
+        
         setArrivalAlerts(alerts);
       }
+
     } catch (err) {
       console.error('Error fetching arrivals:', err);
     }
@@ -342,9 +363,6 @@ export default function IndividualRoomAvailabilityDashboard({ hotelId, onClose }
                               {room.floor_number && (
                                 <div className="text-xs text-gray-600 mt-0.5">Floor {room.floor_number}</div>
                               )}
-                              <div className={`mt-2 inline-flex rounded-full px-2.5 py-1 text-xs font-bold border ${getStatusColor(room.current_status)}`}>
-                                {room.current_status}
-                              </div>
                             </td>
                             {dates.map(date => {
                               const reservation = getReservationForRoomAndDate(room.id, date);
@@ -355,8 +373,8 @@ export default function IndividualRoomAvailabilityDashboard({ hotelId, onClose }
                                 <td
                                   key={dateStr}
                                   className={`border-b border-l border-gray-200 px-1 py-3 text-center text-xs hover:bg-gray-50 transition-colors ${
-                                    isToday ? 'bg-blue-50 border-blue-200' : 'bg-white'
-                                  } ${!reservation && 'text-gray-300'}`}
+                                    isToday ? 'border-blue-400' : ''
+                                  } ${getStatusColor(room.current_status)}`}
                                 >
                                   {reservation ? (
                                     <div className="rounded-md bg-gradient-to-br from-blue-500 to-blue-600 p-1.5 text-white shadow-sm hover:shadow-md transition-all">

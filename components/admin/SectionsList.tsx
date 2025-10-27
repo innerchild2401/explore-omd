@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { motion, Reorder } from 'framer-motion';
 import type { Section } from '@/types';
 import SectionEditor from './SectionEditor';
+import { createClient } from '@/lib/supabase/client';
 
 interface SectionsListProps {
   sections: Section[];
@@ -13,6 +14,27 @@ interface SectionsListProps {
 export default function SectionsList({ sections: initialSections, omdId }: SectionsListProps) {
   const [sections, setSections] = useState(initialSections);
   const [editingSection, setEditingSection] = useState<Section | null>(null);
+  const [loading, setLoading] = useState(false);
+  const supabase = createClient();
+
+  // Re-fetch sections from database
+  const refreshSections = async () => {
+    setLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('sections')
+        .select('*')
+        .eq('omd_id', omdId)
+        .order('order_index');
+
+      if (error) throw error;
+      if (data) setSections(data);
+    } catch (error) {
+      console.error('Failed to refresh sections:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleReorder = async (newOrder: Section[]) => {
     setSections(newOrder);
@@ -23,8 +45,19 @@ export default function SectionsList({ sections: initialSections, omdId }: Secti
   };
 
   const toggleVisibility = async (section: Section) => {
-    // TODO: Implement visibility toggle
-    console.log('Toggle visibility:', section.id);
+    try {
+      const { error } = await supabase
+        .from('sections')
+        .update({ is_visible: !section.is_visible })
+        .eq('id', section.id);
+
+      if (error) throw error;
+      
+      // Refresh sections to show updated visibility
+      await refreshSections();
+    } catch (error) {
+      console.error('Failed to toggle visibility:', error);
+    }
   };
 
   const getSectionIcon = (type: string) => {
@@ -52,8 +85,9 @@ export default function SectionsList({ sections: initialSections, omdId }: Secti
         <SectionEditor
           section={editingSection}
           onClose={() => setEditingSection(null)}
-          onSave={() => {
-            // TODO: Refresh sections
+          onSave={async () => {
+            // Refresh sections after save
+            await refreshSections();
             setEditingSection(null);
           }}
         />

@@ -23,12 +23,14 @@ interface IndividualRoomsManagerProps {
   roomTypeId: string;
   roomTypeName: string;
   roomTypeQuantity?: number;
+  hotelId: string;
   onClose: () => void;
 }
 
-export default function IndividualRoomsManager({ roomTypeId, roomTypeName, roomTypeQuantity, onClose }: IndividualRoomsManagerProps) {
+export default function IndividualRoomsManager({ roomTypeId, roomTypeName, roomTypeQuantity, hotelId, onClose }: IndividualRoomsManagerProps) {
   const supabase = createClient();
   const [individualRooms, setIndividualRooms] = useState<IndividualRoom[]>([]);
+  const [allRoomsOnFloor, setAllRoomsOnFloor] = useState<IndividualRoom[]>([]);
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -55,9 +57,10 @@ export default function IndividualRoomsManager({ roomTypeId, roomTypeName, roomT
   }, {} as Record<number, IndividualRoom[]>);
 
   // Get existing room numbers to suggest next number and prevent overlaps
-  const existingRoomNumbers = individualRooms.map(r => r.room_number).sort();
+  // Check against ALL rooms on the floor, not just this room type
+  const existingRoomNumbers = allRoomsOnFloor.map(r => r.room_number).sort();
 
-  // Fetch individual rooms
+  // Fetch individual rooms for this room type
   const fetchIndividualRooms = async () => {
     setLoading(true);
     try {
@@ -69,6 +72,21 @@ export default function IndividualRoomsManager({ roomTypeId, roomTypeName, roomT
 
       if (error) throw error;
       setIndividualRooms(data || []);
+
+      // Also fetch ALL rooms on the floor to check for overlaps
+      // We need to get all individual_rooms for all room types in this hotel
+      if (floorNumber !== null) {
+        const { data: allRooms, error: allRoomsError } = await supabase
+          .from('individual_rooms')
+          .select('*, rooms!inner(hotel_id)')
+          .eq('rooms.hotel_id', hotelId)
+          .eq('floor_number', floorNumber)
+          .order('room_number');
+
+        if (!allRoomsError && allRooms) {
+          setAllRoomsOnFloor(allRooms);
+        }
+      }
     } catch (error) {
       console.error('Failed to fetch individual rooms:', error);
     } finally {
@@ -89,15 +107,30 @@ export default function IndividualRoomsManager({ roomTypeId, roomTypeName, roomT
       return;
     }
 
-    // Check for room number overlaps
-    const generatedNumbers = [];
-    for (let i = 0; i < count; i++) {
-      const roomNumber = prefix + (startNumber + i).toString();
-      if (existingRoomNumbers.includes(roomNumber)) {
-        alert(`Room number "${roomNumber}" already exists! Please choose a different start number or prefix.`);
-        return;
+    // Fetch all rooms on this floor to check for overlaps
+    if (floorNumber !== null) {
+      try {
+        const { data: allRoomsOnThisFloor, error: fetchError } = await supabase
+          .from('individual_rooms')
+          .select('room_number, rooms!inner(hotel_id)')
+          .eq('rooms.hotel_id', hotelId)
+          .eq('floor_number', floorNumber);
+        
+        if (!fetchError && allRoomsOnThisFloor) {
+          const existingNumbers = allRoomsOnThisFloor.map(r => r.room_number);
+          
+          // Check for room number overlaps
+          for (let i = 0; i < count; i++) {
+            const roomNumber = prefix + (startNumber + i < 10 ? '0' + (startNumber + i).toString() : (startNumber + i).toString());
+            if (existingNumbers.includes(roomNumber)) {
+              alert(`Room number "${roomNumber}" already exists on Floor ${floorNumber}! Please choose a different start number or prefix.`);
+              return;
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Error checking for overlaps:', error);
       }
-      generatedNumbers.push(roomNumber);
     }
 
     setGenerating(true);

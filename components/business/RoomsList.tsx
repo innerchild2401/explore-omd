@@ -147,6 +147,7 @@ export default function RoomsList({ hotelId, rooms, amenities }: RoomsListProps)
           roomTypeId={selectedRoomType.id}
           roomTypeName={selectedRoomType.name}
           roomTypeQuantity={selectedRoomType.quantity}
+          hotelId={hotelId}
           onClose={() => {
             setShowIndividualRooms(false);
             setSelectedRoomType(null);

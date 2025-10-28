@@ -41,6 +41,7 @@ interface Reservation {
     display_name: string;
     channel_type: string;
   };
+  individual_room_id?: string;
   individual_room?: {
     room_number: string;
     floor_number?: number;
@@ -463,7 +464,30 @@ export default function BookingManagement({ hotelId, rooms, onClose }: BookingMa
                         ) : (() => {
                           // Get room_id from reservation to find available individual rooms
                           const roomId = (reservation as any).room_id;
-                          const availableRooms = roomId ? individualRooms[roomId] || [] : [];
+                          const allRooms = roomId ? individualRooms[roomId] || [] : [];
+                          
+                          // Filter out rooms that are occupied during the reservation dates
+                          const availableRooms = allRooms.filter(room => {
+                            // Check if this room is already assigned to another reservation during these dates
+                            const isOccupied = reservations.some(otherReservation => {
+                              if (otherReservation.id === reservation.id) return false; // Skip current reservation
+                              if (!otherReservation.individual_room_id) return false; // Skip unassigned reservations
+                              
+                              const otherRoomId = otherReservation.individual_room_id;
+                              const otherCheckIn = otherReservation.check_in_date;
+                              const otherCheckOut = otherReservation.check_out_date;
+                              const currentCheckIn = reservation.check_in_date;
+                              const currentCheckOut = reservation.check_out_date;
+                              
+                              // Check if room is the same and dates overlap
+                              return otherRoomId === room.id && 
+                                     otherCheckIn < currentCheckOut && 
+                                     otherCheckOut > currentCheckIn &&
+                                     ['confirmed', 'checked_in'].includes(otherReservation.reservation_status);
+                            });
+                            
+                            return !isOccupied;
+                          });
                           
                           return availableRooms.length > 0 ? (
                             <select

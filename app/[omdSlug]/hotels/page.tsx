@@ -49,8 +49,7 @@ export default async function HotelsPage({ params, searchParams }: HotelsPagePro
         rating
       )
     `)
-    .eq('businesses.omd_id', omd.id)
-    .eq('businesses.is_active', true);
+    .eq('businesses.omd_id', omd.id);
 
   const { data: hotels } = await hotelsQuery;
 

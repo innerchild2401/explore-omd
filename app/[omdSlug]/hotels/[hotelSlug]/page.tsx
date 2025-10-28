@@ -7,6 +7,7 @@ import AmenitiesList from '@/components/hotels/AmenitiesList';
 import LandmarksList from '@/components/hotels/LandmarksList';
 import LazyLoadWrapper from '@/components/ui/LazyLoadWrapper';
 import RoomCardSkeleton from '@/components/hotels/RoomCardSkeleton';
+import ScrollToRoomsButton from '@/components/hotels/ScrollToRoomsButton';
 
 export const revalidate = 60;
 
@@ -330,17 +331,9 @@ export default async function HotelDetailPage({ params, searchParams }: HotelPag
               )}
 
               {/* Book Button */}
-              <button
-                onClick={() => {
-                  const roomsSection = document.getElementById('rooms-section');
-                  if (roomsSection) {
-                    roomsSection.scrollIntoView({ behavior: 'smooth' });
-                  }
-                }}
-                className="mt-6 w-full rounded-lg bg-blue-600 py-3 font-semibold text-white transition-colors hover:bg-blue-700"
-              >
-                {searchParams.checkIn && searchParams.checkOut ? 'View Available Rooms' : 'Book Now'}
-              </button>
+              <ScrollToRoomsButton 
+                hasSearchParams={Boolean(searchParams.checkIn && searchParams.checkOut)} 
+              />
               <p className="mt-2 text-center text-sm text-gray-500">
                 You won&apos;t be charged yet
               </p>

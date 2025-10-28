@@ -252,7 +252,7 @@ export default function HotelDashboard({
 
         {activeTab === 'bookings' && (
           <BookingManagement
-            hotelId={business.id}
+            hotelId={hotel.id}
             rooms={rooms}
             onClose={() => setActiveTab('info')}
           />
@@ -260,7 +260,7 @@ export default function HotelDashboard({
 
         {activeTab === 'reservations' && (
           <PendingReservations
-            hotelId={business.id}
+            hotelId={hotel.id}
             onClose={() => setActiveTab('info')}
           />
         )}

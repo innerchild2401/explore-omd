@@ -43,7 +43,7 @@ export default function BookingModal({ isOpen, onClose, hotelId, roomId, roomNam
         .from('guest_profiles')
         .select('id')
         .eq('email', formData.email)
-        .single();
+        .maybeSingle();
 
       let guestId: string;
 
@@ -71,7 +71,7 @@ export default function BookingModal({ isOpen, onClose, hotelId, roomId, roomNam
         .from('booking_channels')
         .select('id')
         .eq('name', 'website')
-        .single();
+        .maybeSingle();
 
       if (!channel) {
         const { data: newChannel, error: channelError } = await supabase

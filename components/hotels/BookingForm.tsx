@@ -41,7 +41,7 @@ export default function BookingForm({ hotelId, roomId, roomName, onBookingSubmit
         .from('guest_profiles')
         .select('id')
         .eq('email', formData.email)
-        .single();
+        .maybeSingle();
 
       let guestId: string;
 
@@ -69,7 +69,7 @@ export default function BookingForm({ hotelId, roomId, roomName, onBookingSubmit
         .from('booking_channels')
         .select('id')
         .eq('name', 'website')
-        .single();
+        .maybeSingle();
 
       if (!channel) {
         const { data: newChannel, error: channelError } = await supabase

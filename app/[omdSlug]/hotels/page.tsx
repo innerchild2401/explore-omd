@@ -10,6 +10,10 @@ interface HotelsPageProps {
 
 export default async function HotelsPage({ params, searchParams }: HotelsPageProps) {
   const supabase = await createClient();
+  
+  // Debug logging
+  console.log('HotelsPage - params:', params);
+  console.log('HotelsPage - searchParams:', searchParams);
 
   // Get OMD
   const { data: omd } = await supabase

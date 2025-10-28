@@ -54,10 +54,13 @@ export default function SearchBar({ omdSlug }: SearchBarProps) {
   ];
 
   const handleStaySearch = () => {
+    console.log('SearchBar - handleStaySearch called with:', { checkIn, checkOut, omdSlug });
     const params = new URLSearchParams();
     if (checkIn) params.set('checkIn', checkIn);
     if (checkOut) params.set('checkOut', checkOut);
-    router.push(`/${omdSlug}/hotels?${params.toString()}`);
+    const url = `/${omdSlug}/hotels?${params.toString()}`;
+    console.log('SearchBar - navigating to:', url);
+    router.push(url);
   };
 
   const handleRestaurantSearch = () => {

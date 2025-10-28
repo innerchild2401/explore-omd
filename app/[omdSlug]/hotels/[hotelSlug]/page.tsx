@@ -6,7 +6,6 @@ import RoomCard from '@/components/hotels/RoomCard';
 import AmenitiesList from '@/components/hotels/AmenitiesList';
 import LandmarksList from '@/components/hotels/LandmarksList';
 import LazyLoadWrapper from '@/components/ui/LazyLoadWrapper';
-import BookingForm from '@/components/hotels/BookingForm';
 import RoomCardSkeleton from '@/components/hotels/RoomCardSkeleton';
 
 export const revalidate = 60;
@@ -193,18 +192,8 @@ export default async function HotelDetailPage({ params }: HotelPageProps) {
                         room={room} 
                         hotelSlug={hotelSlug}
                         omdSlug={omdSlug}
+                        hotelId={hotel?.id}
                       />
-                      {/* Booking Form for each room */}
-                      <div className="mt-4 rounded-2xl bg-gray-50 p-6">
-                        <h3 className="mb-4 text-xl font-semibold text-gray-900">
-                          Request Booking for {room.name}
-                        </h3>
-                        <BookingForm 
-                          hotelId={hotel?.id} 
-                          roomId={room.id}
-                          roomName={room.name}
-                        />
-                      </div>
                     </LazyLoadWrapper>
                   ))}
                 </div>

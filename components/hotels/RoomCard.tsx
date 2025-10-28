@@ -1,12 +1,14 @@
 'use client';
 
-import Link from 'next/link';
+import { useState } from 'react';
 import RoomImageCarousel from './RoomImageCarousel';
+import BookingModal from './BookingModal';
 
 interface RoomCardProps {
   room: any;
   hotelSlug: string;
   omdSlug: string;
+  hotelId: string;
 }
 
 const formatBedConfiguration = (config: any): string => {
@@ -19,7 +21,8 @@ const formatBedConfiguration = (config: any): string => {
     .join(', ');
 };
 
-export default function RoomCard({ room, hotelSlug, omdSlug }: RoomCardProps) {
+export default function RoomCard({ room, hotelSlug, omdSlug, hotelId }: RoomCardProps) {
+  const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
   return (
     <div className="overflow-hidden rounded-2xl bg-white shadow-sm transition-shadow hover:shadow-md">
       <div className="grid gap-4 md:grid-cols-3">
@@ -99,16 +102,25 @@ export default function RoomCard({ room, hotelSlug, omdSlug }: RoomCardProps) {
                   {room.quantity} {room.quantity === 1 ? 'room' : 'rooms'} available
                 </div>
               )}
-              <Link
-                href={`/${omdSlug}/hotels/${hotelSlug}/book?room=${room.id}`}
+              <button
+                onClick={() => setIsBookingModalOpen(true)}
                 className="inline-block rounded-lg bg-blue-600 px-6 py-2 font-semibold text-white transition-colors hover:bg-blue-700"
               >
                 Book Now
-              </Link>
+              </button>
             </div>
           </div>
         </div>
       </div>
+
+      <BookingModal
+        isOpen={isBookingModalOpen}
+        onClose={() => setIsBookingModalOpen(false)}
+        hotelId={hotelId}
+        roomId={room.id}
+        roomName={room.name}
+        roomPrice={room.base_price}
+      />
     </div>
   );
 }

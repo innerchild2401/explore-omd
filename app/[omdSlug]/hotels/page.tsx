@@ -49,56 +49,94 @@ export default async function HotelsPage({ params, searchParams }: HotelsPagePro
     `)
     .eq('businesses.omd_id', omd.id);
 
-  const { data: hotels } = await hotelsQuery;
+  const { data: hotels, error: hotelsError } = await hotelsQuery;
   
   // Debug logging
   console.log('HotelsPage - Initial hotels query result:', hotels?.length || 0);
   console.log('HotelsPage - Hotels data:', hotels);
+  
+  if (hotelsError) {
+    console.error('Error fetching hotels:', hotelsError);
+  }
 
   // Filter hotels by availability if dates are provided
   let filteredHotels = hotels || [];
-  if (searchParams.checkIn && searchParams.checkOut && hotels) {
+  if (searchParams.checkIn && searchParams.checkOut && hotels && hotels.length > 0) {
     console.log('Filtering hotels by availability:', { checkIn: searchParams.checkIn, checkOut: searchParams.checkOut });
     
-    const availabilityPromises = hotels.map(async (hotel) => {
-      console.log('Checking availability for hotel:', hotel.id);
-      const { data: isAvailable, error } = await supabase
-        .rpc('check_hotel_availability_simple_bookings', {
-          p_hotel_id: hotel.id,
-          p_check_in: searchParams.checkIn,
-          p_check_out: searchParams.checkOut,
-          p_adults: parseInt(searchParams.adults || '1'),
-          p_children: parseInt(searchParams.children || '0')
-        });
-      
-      if (error) {
-        console.error('Error checking availability for hotel', hotel.id, error);
-        // Fallback: if function fails, assume hotel is available if it has rooms
-        const { data: rooms } = await supabase
-          .from('rooms')
-          .select('id')
-          .eq('hotel_id', hotel.id)
-          .eq('is_active', true)
-          .limit(1);
-        return { hotel, isAvailable: rooms && rooms.length > 0 };
-      }
-      
-      console.log('Hotel availability result:', hotel.id, isAvailable);
-      return { hotel, isAvailable };
-    });
+    try {
+      const availabilityPromises = hotels.map(async (hotel) => {
+        if (!hotel?.id) {
+          console.warn('Hotel missing ID:', hotel);
+          return { hotel, isAvailable: false };
+        }
 
-    const availabilityResults = await Promise.all(availabilityPromises);
-    console.log('All availability results:', availabilityResults);
-    
-    filteredHotels = availabilityResults
-      .filter(result => result.isAvailable)
-      .map(result => result.hotel);
+        console.log('Checking availability for hotel:', hotel.id);
+        
+        // Validate and parse parameters
+        const adults = Math.max(1, parseInt(searchParams.adults || '1') || 1);
+        const children = Math.max(0, parseInt(searchParams.children || '0') || 0);
+        
+        const { data: isAvailable, error } = await supabase
+          .rpc('check_hotel_availability_simple_bookings', {
+            p_hotel_id: hotel.id,
+            p_check_in: searchParams.checkIn,
+            p_check_out: searchParams.checkOut,
+            p_adults: adults,
+            p_children: children
+          });
+        
+        if (error) {
+          console.error('Error checking availability for hotel', hotel.id, error);
+          // Fallback: if function fails, assume hotel is available if it has rooms
+          const { data: rooms } = await supabase
+            .from('rooms')
+            .select('id')
+            .eq('hotel_id', hotel.id)
+            .eq('is_active', true)
+            .limit(1);
+          return { hotel, isAvailable: rooms && rooms.length > 0 };
+        }
+        
+        console.log('Hotel availability result:', hotel.id, isAvailable);
+        return { hotel, isAvailable: Boolean(isAvailable) };
+      });
+
+      const availabilityResults = await Promise.all(availabilityPromises);
+      console.log('All availability results:', availabilityResults);
       
-    console.log('Filtered hotels:', filteredHotels.length);
+      filteredHotels = availabilityResults
+        .filter(result => result && result.isAvailable)
+        .map(result => result.hotel);
+        
+      console.log('Filtered hotels:', filteredHotels.length);
+    } catch (error) {
+      console.error('Error in availability filtering:', error);
+      // Fallback: show all hotels if filtering fails
+      filteredHotels = hotels || [];
+    }
   }
 
   const hasSearchParams = searchParams.checkIn || searchParams.checkOut;
   const searchDates = hasSearchParams ? `${searchParams.checkIn || ''} to ${searchParams.checkOut || ''}` : '';
+
+  // Handle error state
+  if (hotelsError) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-gray-900 mb-4">Error Loading Hotels</h1>
+          <p className="text-gray-600 mb-4">There was an error loading the hotels. Please try again.</p>
+          <Link 
+            href={`/${params.omdSlug}`}
+            className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+          >
+            Go Home
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">

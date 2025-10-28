@@ -128,13 +128,13 @@ export default async function HotelDetailPage({ params, searchParams }: HotelPag
         <div className="mx-auto max-w-7xl px-4 py-4">
           <div className="flex items-center justify-between">
             <Link 
-              href={`/${omdSlug}/explore`}
+              href={`/${omdSlug}/hotels${searchParams.checkIn && searchParams.checkOut ? `?checkIn=${searchParams.checkIn}&checkOut=${searchParams.checkOut}&adults=${searchParams.adults || '1'}&children=${searchParams.children || '0'}` : ''}`}
               className="inline-flex items-center text-gray-700 transition-colors hover:text-blue-600"
             >
               <svg className="mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
               </svg>
-              Back to Explore
+              Back to Hotels
             </Link>
             <Link 
               href={`/${omdSlug}`}
@@ -145,6 +145,43 @@ export default async function HotelDetailPage({ params, searchParams }: HotelPag
           </div>
         </div>
       </header>
+
+      {/* Search Summary */}
+      {searchParams.checkIn && searchParams.checkOut && (
+        <div className="bg-blue-50 border-b border-blue-200">
+          <div className="mx-auto max-w-7xl px-4 py-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2 text-blue-800">
+                  <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                  <span className="font-semibold">
+                    {new Date(searchParams.checkIn).toLocaleDateString('en-US', { 
+                      month: 'short', 
+                      day: 'numeric',
+                      year: 'numeric'
+                    })} - {new Date(searchParams.checkOut).toLocaleDateString('en-US', { 
+                      month: 'short', 
+                      day: 'numeric',
+                      year: 'numeric'
+                    })}
+                  </span>
+                </div>
+                <div className="text-blue-700">
+                  {parseInt(searchParams.adults || '1')} {parseInt(searchParams.adults || '1') === 1 ? 'Guest' : 'Guests'}
+                  {parseInt(searchParams.children || '0') > 0 && (
+                    <>, {parseInt(searchParams.children || '0')} {parseInt(searchParams.children || '0') === 1 ? 'Child' : 'Children'}</>
+                  )}
+                </div>
+              </div>
+              <div className="text-blue-600 text-sm">
+                {rooms?.length || 0} room{(rooms?.length || 0) === 1 ? '' : 's'} available
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Image Gallery Section */}
       <section className="bg-white">
@@ -222,8 +259,10 @@ export default async function HotelDetailPage({ params, searchParams }: HotelPag
 
             {/* Rooms */}
             {rooms && rooms.length > 0 && (
-              <div className="mb-8">
-                <h2 className="mb-4 text-2xl font-bold text-gray-900">Available Rooms</h2>
+              <div id="rooms-section" className="mb-8">
+                <h2 className="mb-4 text-2xl font-bold text-gray-900">
+                  {searchParams.checkIn && searchParams.checkOut ? 'Available Rooms' : 'Rooms & Suites'}
+                </h2>
                 <div className="space-y-4">
                   {rooms.map((room, index) => (
                     <LazyLoadWrapper
@@ -292,9 +331,15 @@ export default async function HotelDetailPage({ params, searchParams }: HotelPag
 
               {/* Book Button */}
               <button
+                onClick={() => {
+                  const roomsSection = document.getElementById('rooms-section');
+                  if (roomsSection) {
+                    roomsSection.scrollIntoView({ behavior: 'smooth' });
+                  }
+                }}
                 className="mt-6 w-full rounded-lg bg-blue-600 py-3 font-semibold text-white transition-colors hover:bg-blue-700"
               >
-                Book Now
+                {searchParams.checkIn && searchParams.checkOut ? 'View Available Rooms' : 'Book Now'}
               </button>
               <p className="mt-2 text-center text-sm text-gray-500">
                 You won&apos;t be charged yet

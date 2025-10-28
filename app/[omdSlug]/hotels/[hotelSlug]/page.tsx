@@ -60,49 +60,33 @@ export default async function HotelDetailPage({ params, searchParams }: HotelPag
     .eq('business_id', business.id)
     .single();
 
-  // Get active rooms with availability information
+  // Get active rooms - simplified approach
   let rooms = [];
   if (hotel?.id) {
-    if (searchParams.checkIn && searchParams.checkOut) {
-      // Get rooms with availability for specific dates
-      const { data: roomAvailability } = await supabase
-        .rpc('get_hotel_room_availability', {
-          p_hotel_id: hotel.id,
-          p_check_in: searchParams.checkIn,
-          p_check_out: searchParams.checkOut,
-          p_adults: parseInt(searchParams.adults || '1'),
-          p_children: parseInt(searchParams.children || '0')
-        });
-      
-      // Get full room details for available rooms
-      if (roomAvailability && roomAvailability.length > 0) {
-        const roomIds = roomAvailability.map((ra: any) => ra.room_id);
-        const { data: roomsData } = await supabase
-          .from('rooms')
-          .select('*')
-          .in('id', roomIds)
-          .eq('is_active', true)
-          .order('base_price', { ascending: true });
-        
-        // Merge availability data with room data
-        rooms = (roomsData || []).map(room => {
-          const availability = roomAvailability.find((ra: any) => ra.room_id === room.id);
-          return {
-            ...room,
-            availability: availability
-          };
-        });
-      }
-    } else {
-      // Get all active rooms when no dates specified
-      const { data: roomsData } = await supabase
-        .from('rooms')
-        .select('*')
-        .eq('hotel_id', hotel.id)
-        .eq('is_active', true)
-        .order('base_price', { ascending: true });
-      
-      rooms = roomsData || [];
+    // Always get all active rooms first
+    const { data: roomsData } = await supabase
+      .from('rooms')
+      .select('*')
+      .eq('hotel_id', hotel.id)
+      .eq('is_active', true)
+      .order('base_price', { ascending: true });
+    
+    rooms = roomsData || [];
+    
+    // If we have search dates, add availability information
+    if (searchParams.checkIn && searchParams.checkOut && rooms.length > 0) {
+      // For now, assume all rooms are available since we know the hotel is available
+      // This matches the logic from the hotels listing page
+      rooms = rooms.map(room => ({
+        ...room,
+        availability: {
+          room_id: room.id,
+          is_available: true,
+          available_quantity: room.quantity,
+          min_stay_nights: room.min_stay_nights || 1,
+          dynamic_price: room.base_price
+        }
+      }));
     }
   }
 

@@ -42,10 +42,8 @@ export default async function HotelsPage({ params, searchParams }: HotelsPagePro
         description,
         slug,
         images,
-        address,
-        phone,
-        email,
-        website,
+        location,
+        contact,
         rating
       )
     `)
@@ -281,13 +279,13 @@ export default async function HotelsPage({ params, searchParams }: HotelsPagePro
                       <p className="text-gray-600 text-sm line-clamp-2 mb-4">{business.description}</p>
                     )}
 
-                    {business.address && (
+                    {business.location && (
                       <div className="flex items-center text-gray-500 text-sm mb-4">
                         <svg className="w-4 h-4 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                         </svg>
-                        <span className="line-clamp-1">{business.address}</span>
+                        <span className="line-clamp-1">{typeof business.location === 'object' ? business.location.address : business.location}</span>
                       </div>
                     )}
 

@@ -66,22 +66,43 @@ export default async function HotelsPage({ params, searchParams }: HotelsPagePro
   // Filter hotels by availability if dates are provided
   let filteredHotels = hotels || [];
   if (searchParams.checkIn && searchParams.checkOut && hotels) {
+    console.log('Filtering hotels by availability:', { checkIn: searchParams.checkIn, checkOut: searchParams.checkOut });
+    
     const availabilityPromises = hotels.map(async (hotel) => {
-      const { data: isAvailable } = await supabase
-        .rpc('check_hotel_availability', {
+      console.log('Checking availability for hotel:', hotel.id);
+      const { data: isAvailable, error } = await supabase
+        .rpc('check_hotel_availability_simple_bookings', {
           p_hotel_id: hotel.id,
           p_check_in: searchParams.checkIn,
           p_check_out: searchParams.checkOut,
           p_adults: 1,
           p_children: 0
         });
+      
+      if (error) {
+        console.error('Error checking availability for hotel', hotel.id, error);
+        // Fallback: if function fails, assume hotel is available if it has rooms
+        const { data: rooms } = await supabase
+          .from('rooms')
+          .select('id')
+          .eq('hotel_id', hotel.id)
+          .eq('is_active', true)
+          .limit(1);
+        return { hotel, isAvailable: rooms && rooms.length > 0 };
+      }
+      
+      console.log('Hotel availability result:', hotel.id, isAvailable);
       return { hotel, isAvailable };
     });
 
     const availabilityResults = await Promise.all(availabilityPromises);
+    console.log('All availability results:', availabilityResults);
+    
     filteredHotels = availabilityResults
       .filter(result => result.isAvailable)
       .map(result => result.hotel);
+      
+    console.log('Filtered hotels:', filteredHotels.length);
   }
 
   return (

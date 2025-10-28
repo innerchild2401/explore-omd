@@ -212,7 +212,8 @@ export default function BookingManagement({ hotelId, rooms, onClose }: BookingMa
         .from('reservations')
         .update({ 
           individual_room_id: individualRoomId,
-          assignment_method: 'manual'
+          assignment_method: 'manual',
+          reservation_status: 'confirmed' // Move to confirmed when room is assigned
         })
         .eq('id', reservationId)
         .select();
@@ -307,6 +308,10 @@ export default function BookingManagement({ hotelId, rooms, onClose }: BookingMa
 
   const filteredReservations = reservations.filter(reservation => {
     if (!reservation) return false;
+    
+    // Only show confirmed bookings and beyond (not tentative)
+    if (reservation.reservation_status === 'tentative') return false;
+    
     const matchesSearch = searchTerm === '' || 
       reservation.confirmation_number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (reservation.guest_profiles && `${reservation.guest_profiles.first_name || ''} ${reservation.guest_profiles.last_name || ''}`.toLowerCase().includes(searchTerm.toLowerCase())) ||

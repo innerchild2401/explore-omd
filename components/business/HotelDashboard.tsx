@@ -9,6 +9,8 @@ import RoomsList from './RoomsList';
 import AvailabilityDashboard from './AvailabilityDashboard';
 import IndividualRoomAvailabilityDashboard from './IndividualRoomAvailabilityDashboard';
 import BookingManagement from './BookingManagement';
+import PendingReservations from './PendingReservations';
+import ToastNotification from './ToastNotification';
 
 interface Business {
   id: string;
@@ -81,7 +83,6 @@ export default function HotelDashboard({
   const supabase = createClient();
   const [activeTab, setActiveTab] = useState<'info' | 'rooms' | 'availability' | 'bookings' | 'reservations' | 'analytics'>('info');
 
-
   const handleSignOut = async () => {
     await supabase.auth.signOut();
     router.push(`/${omd.slug}/business/login`);
@@ -89,6 +90,8 @@ export default function HotelDashboard({
 
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* Toast Notification */}
+      <ToastNotification hotelId={business.id} />
       {/* Header */}
       <header className="bg-white shadow">
         <div className="mx-auto max-w-7xl px-4 py-4">
@@ -125,7 +128,7 @@ export default function HotelDashboard({
               { id: 'rooms', label: 'Rooms', icon: '🛏️', badge: rooms.length },
               { id: 'availability', label: 'Availability', icon: '📅' },
               { id: 'bookings', label: 'Bookings', icon: '📝' },
-              { id: 'reservations', label: 'Reservations', icon: '📋' },
+              { id: 'reservations', label: 'Pending Reservations', icon: '⏳' },
               { id: 'analytics', label: 'Analytics', icon: '📊' },
             ].map((tab) => (
               <button
@@ -210,6 +213,27 @@ export default function HotelDashboard({
           </div>
         )}
 
+        {activeTab === 'reservations' && (
+          <div className="space-y-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-2xl font-bold text-gray-900">Pending Reservations</h2>
+                <p className="text-gray-600">Review and approve booking requests from website visitors</p>
+              </div>
+              <button
+                onClick={() => setActiveTab('reservations')}
+                className="rounded-lg bg-orange-600 px-6 py-3 font-semibold text-white hover:bg-orange-700"
+              >
+                Review Requests
+              </button>
+            </div>
+            <div className="rounded-lg bg-white p-8 text-center shadow">
+              <h3 className="text-lg font-semibold text-gray-900">Pending Reservations</h3>
+              <p className="mt-2 text-gray-600">Click &quot;Review Requests&quot; to approve or reject booking requests</p>
+            </div>
+          </div>
+        )}
+
         {activeTab === 'analytics' && (
           <div className="rounded-lg bg-white p-8 text-center shadow">
             <h3 className="text-lg font-semibold text-gray-900">Analytics</h3>
@@ -230,6 +254,13 @@ export default function HotelDashboard({
           <BookingManagement
             hotelId={business.id}
             rooms={rooms}
+            onClose={() => setActiveTab('info')}
+          />
+        )}
+
+        {activeTab === 'reservations' && (
+          <PendingReservations
+            hotelId={business.id}
             onClose={() => setActiveTab('info')}
           />
         )}

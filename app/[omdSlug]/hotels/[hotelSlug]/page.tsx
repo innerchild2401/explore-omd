@@ -259,11 +259,11 @@ export default async function HotelDetailPage({ params, searchParams }: HotelPag
             )}
 
             {/* Rooms */}
-            {rooms && rooms.length > 0 && (
-              <div id="rooms-section" className="mb-8">
-                <h2 className="mb-4 text-2xl font-bold text-gray-900">
-                  {searchParams.checkIn && searchParams.checkOut ? 'Available Rooms' : 'Rooms & Suites'}
-                </h2>
+            <div id="rooms-section" className="mb-8">
+              <h2 className="mb-4 text-2xl font-bold text-gray-900">
+                {searchParams.checkIn && searchParams.checkOut ? 'Available Rooms' : 'Rooms & Suites'}
+              </h2>
+              {rooms && rooms.length > 0 ? (
                 <div className="space-y-4">
                   {rooms.map((room, index) => (
                     <LazyLoadWrapper
@@ -282,8 +282,13 @@ export default async function HotelDetailPage({ params, searchParams }: HotelPag
                     </LazyLoadWrapper>
                   ))}
                 </div>
-              </div>
-            )}
+              ) : (
+                <div className="text-center py-8 text-gray-500">
+                  <p>No rooms available for the selected dates.</p>
+                  <p className="text-sm mt-2">Please try different dates or contact the hotel directly.</p>
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Right Column - Booking Card */}

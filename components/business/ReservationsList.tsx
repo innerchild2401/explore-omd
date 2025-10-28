@@ -21,16 +21,17 @@ export default function ReservationsList({ hotelId }: ReservationsListProps) {
     setLoading(true);
     try {
       let query = supabase
-        .from('hotel_reservations')
+        .from('reservations')
         .select(`
           *,
           rooms (
             name,
             room_type
           ),
-          user_profiles (
-            email,
-            metadata
+          guest_profiles (
+            first_name,
+            last_name,
+            email
           )
         `)
         .eq('hotel_id', hotelId)
@@ -40,13 +41,13 @@ export default function ReservationsList({ hotelId }: ReservationsListProps) {
       const today = new Date().toISOString().split('T')[0];
       
       if (filter === 'upcoming') {
-        query = query.eq('status', 'confirmed').gte('check_in_date', today);
+        query = query.eq('reservation_status', 'confirmed').gte('check_in_date', today);
       } else if (filter === 'current') {
-        query = query.eq('status', 'confirmed').lte('check_in_date', today).gte('check_out_date', today);
+        query = query.eq('reservation_status', 'confirmed').lte('check_in_date', today).gte('check_out_date', today);
       } else if (filter === 'past') {
         query = query.lt('check_out_date', today);
       } else if (filter === 'cancelled') {
-        query = query.eq('status', 'cancelled');
+        query = query.eq('reservation_status', 'cancelled');
       }
 
       const { data, error } = await query;
@@ -63,8 +64,8 @@ export default function ReservationsList({ hotelId }: ReservationsListProps) {
   const handleUpdateStatus = async (reservationId: string, newStatus: string) => {
     try {
       const { error } = await supabase
-        .from('hotel_reservations')
-        .update({ status: newStatus })
+        .from('reservations')
+        .update({ reservation_status: newStatus })
         .eq('id', reservationId);
 
       if (error) throw error;

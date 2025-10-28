@@ -127,9 +127,9 @@ export default function NewReservationModal({ hotelId, rooms, onClose, onSuccess
               .select('available_quantity')
               .eq('room_id', room.id)
               .eq('date', bookingData.check_in_date)
-              .single();
+              .maybeSingle();
 
-            if (availabilityError && availabilityError.code !== 'PGRST116') {
+            if (availabilityError) {
               throw availabilityError;
             }
 
@@ -235,9 +235,9 @@ export default function NewReservationModal({ hotelId, rooms, onClose, onSuccess
           .select('available_quantity')
           .eq('room_id', selectedRoom.id)
           .eq('date', dateStr)
-          .single();
+          .maybeSingle();
 
-        if (availabilityError && availabilityError.code !== 'PGRST116') {
+        if (availabilityError) {
           throw availabilityError;
         }
 
@@ -260,10 +260,9 @@ export default function NewReservationModal({ hotelId, rooms, onClose, onSuccess
         .from('guest_profiles')
         .select('*')
         .eq('email', guestData.email)
-        .single();
+        .maybeSingle();
 
-      if (findError && findError.code !== 'PGRST116') {
-        // PGRST116 is "not found" error, which is expected if guest doesn't exist
+      if (findError) {
         throw findError;
       }
 
@@ -280,7 +279,7 @@ export default function NewReservationModal({ hotelId, rooms, onClose, onSuccess
           })
           .eq('id', existingGuest.id)
           .select()
-          .single();
+          .maybeSingle();
 
         if (updateError) throw updateError;
         guestProfile = updatedGuest;
@@ -297,7 +296,7 @@ export default function NewReservationModal({ hotelId, rooms, onClose, onSuccess
             special_requests: guestData.special_requests || null
           })
           .select()
-          .single();
+          .maybeSingle();
 
         if (createError) throw createError;
         guestProfile = newGuest;
@@ -308,9 +307,13 @@ export default function NewReservationModal({ hotelId, rooms, onClose, onSuccess
         .from('booking_channels')
         .select('id')
         .eq('name', 'direct')
-        .single();
+        .maybeSingle();
 
       if (channelError) throw channelError;
+
+      if (!directChannel) {
+        throw new Error('Direct booking channel not found. Please contact support.');
+      }
 
       // Create reservation
       const reservationData = {

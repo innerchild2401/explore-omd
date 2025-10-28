@@ -83,20 +83,14 @@ export default function IndividualRoomAvailabilityDashboard({ hotelId, onClose }
     try {
       setLoading(true);
       
-      // Get hotel ID
-      const { data: hotelData, error: hotelError } = await supabase
-        .from('hotels')
-        .select('id')
-        .eq('business_id', hotelId)
-        .single();
-
-      if (hotelError) throw hotelError;
+      // hotelId is now the actual hotel.id, not business.id
+      console.log('Hotel ID:', hotelId);
       
       // Fetch room types
       const { data: roomsData, error: roomsError } = await supabase
         .from('rooms')
         .select('*')
-        .eq('hotel_id', hotelData.id)
+        .eq('hotel_id', hotelId)
         .eq('is_active', true)
         .order('name');
 
@@ -133,7 +127,7 @@ export default function IndividualRoomAvailabilityDashboard({ hotelId, onClose }
           room_id,
           reservation_status
         `)
-        .eq('hotel_id', hotelData.id)
+        .eq('hotel_id', hotelId)
         .in('reservation_status', ['confirmed', 'checked_in']);
 
       if (!resError && resData) {
@@ -151,14 +145,7 @@ export default function IndividualRoomAvailabilityDashboard({ hotelId, onClose }
     try {
       const today = new Date().toISOString().split('T')[0];
       
-      const { data: hotelData } = await supabase
-        .from('hotels')
-        .select('id')
-        .eq('business_id', hotelId)
-        .single();
-
-      if (!hotelData) return;
-
+      // hotelId is now the actual hotel.id, not business.id
       const { data: arrivals } = await supabase
         .from('reservations')
         .select(`
@@ -170,7 +157,7 @@ export default function IndividualRoomAvailabilityDashboard({ hotelId, onClose }
           guest_id,
           guest_profiles(first_name, last_name)
         `)
-        .eq('hotel_id', hotelData.id)
+        .eq('hotel_id', hotelId)
         .eq('check_in_date', today)
         .in('reservation_status', ['confirmed', 'tentative']);
       

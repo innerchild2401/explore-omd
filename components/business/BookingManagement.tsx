@@ -80,21 +80,9 @@ export default function BookingManagement({ hotelId, rooms, onClose }: BookingMa
     try {
       setLoading(true);
       
-      // First, get the hotel record associated with this business
-      const { data: hotelData, error: hotelError } = await supabase
-        .from('hotels')
-        .select('id')
-        .eq('business_id', hotelId)
-        .single();
-
-      if (hotelError) throw hotelError;
-      console.log('Hotel ID:', hotelData.id);
+      // hotelId is now the actual hotel.id, not business.id
+      console.log('Hotel ID:', hotelId);
       
-      let query = supabase
-        .from('reservations')
-        .select('*')
-        .eq('hotel_id', hotelData.id);
-
       const { data, error } = await supabase
         .from('reservations')
         .select(`
@@ -104,9 +92,9 @@ export default function BookingManagement({ hotelId, rooms, onClose }: BookingMa
           booking_channels!channel_id(name, display_name, channel_type),
           individual_rooms!individual_room_id(room_number, floor_number, current_status)
         `)
-        .eq('hotel_id', hotelData.id);
+        .eq('hotel_id', hotelId);
       
-      console.log('Reservations with relations:', { data, error, hotelDataId: hotelData.id });
+      console.log('Reservations with relations:', { data, error, hotelId });
 
       if (error) {
         console.error('Query error:', error);
@@ -147,7 +135,7 @@ export default function BookingManagement({ hotelId, rooms, onClose }: BookingMa
       const { data: roomsData } = await supabase
         .from('rooms')
         .select('quantity')
-        .eq('hotel_id', hotelData.id)
+        .eq('hotel_id', hotelId)
         .eq('is_active', true);
       
       const totalRooms = roomsData?.reduce((sum, r) => sum + (r.quantity || 0), 0) || 1;

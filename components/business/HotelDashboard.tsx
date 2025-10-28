@@ -91,7 +91,7 @@ export default function HotelDashboard({
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Toast Notification */}
-      <ToastNotification hotelId={business.id} />
+      <ToastNotification hotelId={hotel.id} />
       {/* Header */}
       <header className="bg-white shadow">
         <div className="mx-auto max-w-7xl px-4 py-4">
@@ -245,7 +245,7 @@ export default function HotelDashboard({
       {/* Modals */}
       {activeTab === 'availability' && (
         <IndividualRoomAvailabilityDashboard
-          hotelId={business.id}
+          hotelId={hotel.id}
           onClose={() => setActiveTab('info')}
         />
       )}

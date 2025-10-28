@@ -194,17 +194,6 @@ export default async function HotelsPage({ params, searchParams }: HotelsPagePro
 
       {/* Results Section */}
       <div className="mx-auto max-w-7xl px-4 py-8">
-        {/* Debug Info */}
-        <div className="mb-6 rounded-lg bg-yellow-50 p-4 text-sm">
-          <p><strong>Debug Info:</strong></p>
-          <p>OMD Slug: {params.omdSlug}</p>
-          <p>Check-in: {searchParams.checkIn || 'None'}</p>
-          <p>Check-out: {searchParams.checkOut || 'None'}</p>
-          <p>Total Hotels Found: {hotels?.length || 0}</p>
-          <p>Filtered Hotels: {filteredHotels?.length || 0}</p>
-          <p>Has Search Params: {hasSearchParams ? 'Yes' : 'No'}</p>
-        </div>
-
         {/* Results Header */}
         <div className="flex items-center justify-between mb-8">
           <div>

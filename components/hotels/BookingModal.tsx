@@ -10,9 +10,15 @@ interface BookingModalProps {
   roomId: string;
   roomName: string;
   roomPrice: number;
+  searchParams?: {
+    checkIn?: string;
+    checkOut?: string;
+    adults?: string;
+    children?: string;
+  };
 }
 
-export default function BookingModal({ isOpen, onClose, hotelId, roomId, roomName, roomPrice }: BookingModalProps) {
+export default function BookingModal({ isOpen, onClose, hotelId, roomId, roomName, roomPrice, searchParams }: BookingModalProps) {
   const supabase = createClient();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -23,10 +29,10 @@ export default function BookingModal({ isOpen, onClose, hotelId, roomId, roomNam
     last_name: '',
     email: '',
     phone: '',
-    check_in_date: '',
-    check_out_date: '',
-    adults: 2,
-    children: 0,
+    check_in_date: searchParams?.checkIn || '',
+    check_out_date: searchParams?.checkOut || '',
+    adults: parseInt(searchParams?.adults || '2'),
+    children: parseInt(searchParams?.children || '0'),
     infants: 0,
     special_requests: ''
   });

@@ -9,6 +9,12 @@ interface RoomCardProps {
   hotelSlug: string;
   omdSlug: string;
   hotelId: string;
+  searchParams?: {
+    checkIn?: string;
+    checkOut?: string;
+    adults?: string;
+    children?: string;
+  };
 }
 
 const formatBedConfiguration = (config: any): string => {
@@ -21,10 +27,26 @@ const formatBedConfiguration = (config: any): string => {
     .join(', ');
 };
 
-export default function RoomCard({ room, hotelSlug, omdSlug, hotelId }: RoomCardProps) {
+export default function RoomCard({ room, hotelSlug, omdSlug, hotelId, searchParams }: RoomCardProps) {
   const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
+  
+  // Check if room is available
+  const isAvailable = room.availability ? room.availability.is_available : true;
+  const availableQuantity = room.availability ? room.availability.available_quantity : room.quantity;
+  const dynamicPrice = room.availability ? room.availability.dynamic_price : room.base_price;
+  const minStayNights = room.availability ? room.availability.min_stay_nights : room.min_stay_nights || 1;
+  
+  // Check minimum stay requirement if dates are provided
+  const meetsMinStay = searchParams?.checkIn && searchParams?.checkOut ? 
+    (new Date(searchParams.checkOut).getTime() - new Date(searchParams.checkIn).getTime()) / (1000 * 60 * 60 * 24) >= minStayNights :
+    true;
+  
+  const canBook = isAvailable && meetsMinStay && availableQuantity > 0;
+  
   return (
-    <div className="overflow-hidden rounded-2xl bg-white shadow-sm transition-shadow hover:shadow-md">
+    <div className={`overflow-hidden rounded-2xl bg-white shadow-sm transition-shadow hover:shadow-md ${
+      !canBook ? 'opacity-75' : ''
+    }`}>
       <div className="grid gap-4 md:grid-cols-3">
         {/* Room Image Carousel */}
         <div className="md:col-span-1">
@@ -94,19 +116,45 @@ export default function RoomCard({ room, hotelSlug, omdSlug, hotelId }: RoomCard
             {/* Price & Booking */}
             <div className="ml-4 text-right">
               <div className="mb-2">
-                <div className="text-3xl font-bold text-gray-900">€{room.base_price}</div>
+                <div className="text-3xl font-bold text-gray-900">€{dynamicPrice}</div>
                 <div className="text-sm text-gray-600">per night</div>
+                {dynamicPrice !== room.base_price && (
+                  <div className="text-xs text-gray-500 line-through">€{room.base_price}</div>
+                )}
               </div>
-              {room.quantity && (
-                <div className="mb-3 text-sm text-gray-600">
-                  {room.quantity} {room.quantity === 1 ? 'room' : 'rooms'} available
+              
+              {/* Availability Status */}
+              <div className="mb-3 text-sm">
+                {!canBook ? (
+                  <div className="text-red-600 font-semibold">
+                    {!isAvailable ? 'Fully Booked' : 
+                     !meetsMinStay ? `Minimum ${minStayNights} night${minStayNights > 1 ? 's' : ''} required` :
+                     'Not Available'}
+                  </div>
+                ) : (
+                  <div className="text-green-600">
+                    {availableQuantity} {availableQuantity === 1 ? 'room' : 'rooms'} available
+                  </div>
+                )}
+              </div>
+              
+              {/* Minimum Stay Notice */}
+              {minStayNights > 1 && searchParams?.checkIn && searchParams?.checkOut && (
+                <div className="mb-2 text-xs text-gray-500">
+                  Min. {minStayNights} night{minStayNights > 1 ? 's' : ''}
                 </div>
               )}
+              
               <button
                 onClick={() => setIsBookingModalOpen(true)}
-                className="inline-block rounded-lg bg-blue-600 px-6 py-2 font-semibold text-white transition-colors hover:bg-blue-700"
+                disabled={!canBook}
+                className={`inline-block rounded-lg px-6 py-2 font-semibold transition-colors ${
+                  canBook 
+                    ? 'bg-blue-600 text-white hover:bg-blue-700' 
+                    : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                }`}
               >
-                Book Now
+                {canBook ? 'Book Now' : 'Not Available'}
               </button>
             </div>
           </div>
@@ -119,7 +167,8 @@ export default function RoomCard({ room, hotelSlug, omdSlug, hotelId }: RoomCard
         hotelId={hotelId}
         roomId={room.id}
         roomName={room.name}
-        roomPrice={room.base_price}
+        roomPrice={dynamicPrice}
+        searchParams={searchParams}
       />
     </div>
   );

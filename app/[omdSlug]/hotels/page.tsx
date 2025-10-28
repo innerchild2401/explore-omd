@@ -23,7 +23,7 @@ export default async function HotelsPage({ params, searchParams }: HotelsPagePro
   }
 
   // Get hotels in this OMD
-  const { data: hotels } = await supabase
+  let hotelsQuery = supabase
     .from('hotels')
     .select(`
       *,
@@ -41,6 +41,48 @@ export default async function HotelsPage({ params, searchParams }: HotelsPagePro
     `)
     .eq('businesses.omd_id', omd.id)
     .eq('businesses.is_active', true);
+
+  // If search dates are provided, filter by availability
+  if (searchParams.checkIn && searchParams.checkOut) {
+    const checkIn = searchParams.checkIn;
+    const checkOut = searchParams.checkOut;
+    
+    // Get hotels with availability for the specified dates
+    const { data: availableHotels } = await supabase
+      .rpc('check_hotel_availability', {
+        p_hotel_id: null, // We'll filter this in the application
+        p_check_in: checkIn,
+        p_check_out: checkOut,
+        p_adults: 1,
+        p_children: 0
+      });
+
+    // For now, we'll get all hotels and filter them in the application
+    // This is because the RPC function needs to be called per hotel
+  }
+
+  const { data: hotels } = await hotelsQuery;
+
+  // Filter hotels by availability if dates are provided
+  let filteredHotels = hotels || [];
+  if (searchParams.checkIn && searchParams.checkOut && hotels) {
+    const availabilityPromises = hotels.map(async (hotel) => {
+      const { data: isAvailable } = await supabase
+        .rpc('check_hotel_availability', {
+          p_hotel_id: hotel.id,
+          p_check_in: searchParams.checkIn,
+          p_check_out: searchParams.checkOut,
+          p_adults: 1,
+          p_children: 0
+        });
+      return { hotel, isAvailable };
+    });
+
+    const availabilityResults = await Promise.all(availabilityPromises);
+    filteredHotels = availabilityResults
+      .filter(result => result.isAvailable)
+      .map(result => result.hotel);
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -63,7 +105,7 @@ export default async function HotelsPage({ params, searchParams }: HotelsPagePro
 
       {/* Hotels List */}
       <main className="mx-auto max-w-7xl px-4 py-8">
-        {!hotels || hotels.length === 0 ? (
+        {!filteredHotels || filteredHotels.length === 0 ? (
           <div className="rounded-lg bg-white p-12 text-center shadow">
             <svg
               className="mx-auto h-16 w-16 text-gray-400"
@@ -78,12 +120,19 @@ export default async function HotelsPage({ params, searchParams }: HotelsPagePro
                 d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"
               />
             </svg>
-            <h2 className="mt-4 text-2xl font-semibold text-gray-900">No Hotels Yet</h2>
-            <p className="mt-2 text-gray-600">Check back soon for available accommodations!</p>
+            <h2 className="mt-4 text-2xl font-semibold text-gray-900">
+              {searchParams.checkIn && searchParams.checkOut ? 'No Available Hotels' : 'No Hotels Yet'}
+            </h2>
+            <p className="mt-2 text-gray-600">
+              {searchParams.checkIn && searchParams.checkOut 
+                ? 'No hotels have availability for your selected dates. Try different dates or check back later.'
+                : 'Check back soon for available accommodations!'
+              }
+            </p>
           </div>
         ) : (
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {hotels.map((hotel) => {
+            {filteredHotels.map((hotel) => {
               const business = hotel.businesses;
               const mainImage = business.images?.[0];
               

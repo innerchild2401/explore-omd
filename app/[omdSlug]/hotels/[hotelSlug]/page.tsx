@@ -15,9 +15,15 @@ interface HotelPageProps {
     omdSlug: string;
     hotelSlug: string;
   };
+  searchParams: { 
+    checkIn?: string; 
+    checkOut?: string;
+    adults?: string;
+    children?: string;
+  };
 }
 
-export default async function HotelDetailPage({ params }: HotelPageProps) {
+export default async function HotelDetailPage({ params, searchParams }: HotelPageProps) {
   const { omdSlug, hotelSlug } = params;
   const supabase = await createClient();
 
@@ -53,13 +59,51 @@ export default async function HotelDetailPage({ params }: HotelPageProps) {
     .eq('business_id', business.id)
     .single();
 
-  // Get active rooms
-  const { data: rooms } = await supabase
-    .from('rooms')
-    .select('*')
-    .eq('hotel_id', hotel?.id)
-    .eq('is_active', true)
-    .order('base_price', { ascending: true });
+  // Get active rooms with availability information
+  let rooms = [];
+  if (hotel?.id) {
+    if (searchParams.checkIn && searchParams.checkOut) {
+      // Get rooms with availability for specific dates
+      const { data: roomAvailability } = await supabase
+        .rpc('get_hotel_room_availability', {
+          p_hotel_id: hotel.id,
+          p_check_in: searchParams.checkIn,
+          p_check_out: searchParams.checkOut,
+          p_adults: parseInt(searchParams.adults || '1'),
+          p_children: parseInt(searchParams.children || '0')
+        });
+      
+      // Get full room details for available rooms
+      if (roomAvailability && roomAvailability.length > 0) {
+        const roomIds = roomAvailability.map((ra: any) => ra.room_id);
+        const { data: roomsData } = await supabase
+          .from('rooms')
+          .select('*')
+          .in('id', roomIds)
+          .eq('is_active', true)
+          .order('base_price', { ascending: true });
+        
+        // Merge availability data with room data
+        rooms = (roomsData || []).map(room => {
+          const availability = roomAvailability.find((ra: any) => ra.room_id === room.id);
+          return {
+            ...room,
+            availability: availability
+          };
+        });
+      }
+    } else {
+      // Get all active rooms when no dates specified
+      const { data: roomsData } = await supabase
+        .from('rooms')
+        .select('*')
+        .eq('hotel_id', hotel.id)
+        .eq('is_active', true)
+        .order('base_price', { ascending: true });
+      
+      rooms = roomsData || [];
+    }
+  }
 
   // Get hotel amenities
   const amenityIds = hotel?.selected_amenities || [];
@@ -193,6 +237,7 @@ export default async function HotelDetailPage({ params }: HotelPageProps) {
                         hotelSlug={hotelSlug}
                         omdSlug={omdSlug}
                         hotelId={hotel?.id}
+                        searchParams={searchParams}
                       />
                     </LazyLoadWrapper>
                   ))}

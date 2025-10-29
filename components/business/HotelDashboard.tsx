@@ -11,6 +11,8 @@ import IndividualRoomAvailabilityDashboard from './IndividualRoomAvailabilityDas
 import BookingManagement from './BookingManagement';
 import PendingReservations from './PendingReservations';
 import ToastNotification from './ToastNotification';
+import BusinessSwitcher from './BusinessSwitcher';
+import AddBusinessModal from './AddBusinessModal';
 
 interface Business {
   id: string;
@@ -82,6 +84,7 @@ export default function HotelDashboard({
   const router = useRouter();
   const supabase = createClient();
   const [activeTab, setActiveTab] = useState<'info' | 'rooms' | 'availability' | 'bookings' | 'reservations' | 'analytics'>('info');
+  const [showAddModal, setShowAddModal] = useState(false);
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
@@ -95,29 +98,49 @@ export default function HotelDashboard({
       {/* Header */}
       <header className="bg-white shadow">
         <div className="mx-auto max-w-7xl px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">{business.name}</h1>
-              <p className="text-sm text-gray-600">Hotel Management Dashboard</p>
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900">{business.name}</h1>
+                <p className="text-sm text-gray-600">Hotel Management Dashboard</p>
+              </div>
+              <div className="flex items-center gap-4">
+                <Link
+                  href={`/${omd.slug}/hotels/${business.slug}`}
+                  className="text-sm text-blue-600 hover:text-blue-700"
+                  target="_blank"
+                >
+                  View Public Page →
+                </Link>
+                <button
+                  onClick={handleSignOut}
+                  className="rounded-lg bg-gray-200 px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-300"
+                >
+                  Sign Out
+                </button>
+              </div>
             </div>
-            <div className="flex items-center gap-4">
-              <Link
-                href={`/${omd.slug}/hotels/${business.slug}`}
-                className="text-sm text-blue-600 hover:text-blue-700"
-                target="_blank"
-              >
-                View Public Page →
-              </Link>
+            
+            <div className="flex items-center justify-between border-t border-gray-200 pt-4">
+              <BusinessSwitcher currentBusinessSlug={business.slug} omdSlug={omd.slug} />
               <button
-                onClick={handleSignOut}
-                className="rounded-lg bg-gray-200 px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-300"
+                onClick={() => setShowAddModal(true)}
+                className="flex items-center gap-2 rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-green-700"
               >
-                Sign Out
+                <span>+</span>
+                Add New Business
               </button>
             </div>
           </div>
         </div>
       </header>
+      
+      <AddBusinessModal 
+        isOpen={showAddModal} 
+        onClose={() => setShowAddModal(false)} 
+        omdSlug={omd.slug}
+        omdId={omd.id}
+      />
 
       {/* Tabs */}
       <div className="border-b border-gray-200 bg-white">

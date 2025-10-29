@@ -6,6 +6,8 @@ import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import RestaurantBasicInfo from './RestaurantBasicInfo';
 import MenuManager from './MenuManager';
+import BusinessSwitcher from './BusinessSwitcher';
+import AddBusinessModal from './AddBusinessModal';
 
 interface Business {
   id: string;
@@ -49,6 +51,7 @@ export default function RestaurantDashboard({
 }: RestaurantDashboardProps) {
   const [activeTab, setActiveTab] = useState('overview');
   const [isLoading, setIsLoading] = useState(false);
+  const [showAddModal, setShowAddModal] = useState(false);
   const [toast, setToast] = useState<{
     type: 'success' | 'error';
     message: string;
@@ -77,38 +80,58 @@ export default function RestaurantDashboard({
       {/* Header */}
       <div className="bg-white shadow-sm border-b border-gray-200">
         <div className="mx-auto max-w-7xl px-4 py-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <Link 
-                href={`/${omd.slug}`} 
-                className="text-blue-600 hover:text-blue-700 text-sm font-medium"
-              >
-                ← Back to {omd.name}
-              </Link>
-              <h1 className="mt-2 text-3xl font-bold text-gray-900">
-                {business.name} Dashboard
-              </h1>
-              <p className="mt-1 text-gray-600">
-                Manage your restaurant information and menu
-              </p>
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <Link 
+                  href={`/${omd.slug}`} 
+                  className="text-blue-600 hover:text-blue-700 text-sm font-medium"
+                >
+                  ← Back to {omd.name}
+                </Link>
+                <h1 className="mt-2 text-3xl font-bold text-gray-900">
+                  {business.name} Dashboard
+                </h1>
+                <p className="mt-1 text-gray-600">
+                  Manage your restaurant information and menu
+                </p>
+              </div>
+              <div className="flex items-center space-x-4">
+                <Link
+                  href={`/${omd.slug}/restaurants/${business.slug}`}
+                  className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700"
+                >
+                  View Public Page
+                </Link>
+                <button
+                  onClick={handleSignOut}
+                  className="rounded-lg bg-gray-200 px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-300"
+                >
+                  Sign Out
+                </button>
+              </div>
             </div>
-            <div className="flex items-center space-x-4">
-              <Link
-                href={`/${omd.slug}/restaurants/${business.slug}`}
-                className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700"
-              >
-                View Public Page
-              </Link>
+            
+            <div className="flex items-center justify-between border-t border-gray-200 pt-4">
+              <BusinessSwitcher currentBusinessSlug={business.slug} omdSlug={omd.slug} />
               <button
-                onClick={handleSignOut}
-                className="rounded-lg bg-gray-200 px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-300"
+                onClick={() => setShowAddModal(true)}
+                className="flex items-center gap-2 rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-green-700"
               >
-                Sign Out
+                <span>+</span>
+                Add New Business
               </button>
             </div>
           </div>
         </div>
       </div>
+      
+      <AddBusinessModal 
+        isOpen={showAddModal} 
+        onClose={() => setShowAddModal(false)} 
+        omdSlug={omd.slug}
+        omdId={omd.id}
+      />
 
       {/* Navigation Tabs */}
       <div className="bg-white border-b border-gray-200">

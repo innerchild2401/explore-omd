@@ -149,36 +149,13 @@ export default function SearchBar({ omdSlug }: SearchBarProps) {
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="flex flex-col gap-3 md:flex-row md:items-center"
+            className="flex justify-center"
           >
-            <div className="flex-1">
-              <label className="mb-1 block text-sm font-medium text-gray-600">
-                Date
-              </label>
-              <input
-                type="date"
-                value={reservationDate}
-                onChange={(e) => setReservationDate(e.target.value)}
-                min={new Date().toISOString().split('T')[0]}
-                className="w-full rounded-lg border-2 border-gray-200 px-4 py-3 text-gray-900 outline-none transition-all focus:border-blue-600"
-              />
-            </div>
-            <div className="flex-1">
-              <label className="mb-1 block text-sm font-medium text-gray-600">
-                Time
-              </label>
-              <input
-                type="time"
-                value={reservationTime}
-                onChange={(e) => setReservationTime(e.target.value)}
-                className="w-full rounded-lg border-2 border-gray-200 px-4 py-3 text-gray-900 outline-none transition-all focus:border-blue-600"
-              />
-            </div>
             <button
-              onClick={handleRestaurantSearch}
-              className="mt-auto rounded-lg bg-blue-600 px-8 py-3 font-semibold text-white transition-colors hover:bg-blue-700"
+              onClick={() => router.push(`/${omdSlug}/restaurants`)}
+              className="rounded-lg bg-blue-600 px-8 py-3 font-semibold text-white transition-colors hover:bg-blue-700"
             >
-              Explore Restaurants
+              See All Restaurants
             </button>
           </motion.div>
         )}

@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server';
 import { redirect, notFound } from 'next/navigation';
 import Link from 'next/link';
 import HotelDashboard from '@/components/business/HotelDashboard';
+import RestaurantDashboard from '@/components/business/RestaurantDashboard';
 
 interface PageProps {
   params: {
@@ -141,6 +142,35 @@ export default async function BusinessDashboardPage({ params }: PageProps) {
           omd={omd}
           rooms={rooms || []}
           amenities={amenities || []}
+        />
+      </div>
+    );
+  }
+
+  if (business.type === 'restaurant') {
+    // Get restaurant details (or create if not exists)
+    let { data: restaurant } = await supabase
+      .from('restaurants')
+      .select('*')
+      .eq('business_id', business.id)
+      .maybeSingle();
+
+    if (!restaurant) {
+      // Create restaurant entry
+      const { data: newRestaurant } = await supabase
+        .from('restaurants')
+        .insert({ business_id: business.id })
+        .select()
+        .single();
+      restaurant = newRestaurant;
+    }
+
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <RestaurantDashboard 
+          business={business} 
+          restaurant={restaurant} 
+          omd={omd}
         />
       </div>
     );

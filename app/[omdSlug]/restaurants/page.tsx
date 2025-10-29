@@ -124,6 +124,16 @@ export default async function RestaurantsPage({ params, searchParams }: Restaura
                     {business.address && (
                       <p className="mt-2 text-sm text-gray-500">📍 {business.address}</p>
                     )}
+                    {business.contact?.phone && restaurant.accepts_reservations && (
+                      <div className="mt-3">
+                        <a
+                          href={`tel:${business.contact.phone}`}
+                          className="inline-flex items-center px-3 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700"
+                        >
+                          📞 Call for Reservations
+                        </a>
+                      </div>
+                    )}
                   </div>
                 </Link>
               );

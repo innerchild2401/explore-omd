@@ -5,7 +5,6 @@ import ImageGallery from '@/components/hotels/ImageGallery';
 
 interface PageProps {
   params: { omdSlug: string; experienceSlug: string };
-  searchParams: { date?: string };
 }
 
 export default async function ExperienceDetailPage({ params, searchParams }: PageProps) {
@@ -47,26 +46,6 @@ export default async function ExperienceDetailPage({ params, searchParams }: Pag
   if (!experience) {
     notFound();
   }
-
-  // Get available time slots
-  let timeSlots: any[] = [];
-  const selectedDate = searchParams.date ? new Date(searchParams.date) : new Date();
-  const startDate = new Date(selectedDate);
-  startDate.setDate(startDate.getDate() - 3);
-  const endDate = new Date(selectedDate);
-  endDate.setDate(endDate.getDate() + 3);
-
-  const { data: slots } = await supabase
-    .from('experience_time_slots')
-    .select('*')
-    .eq('experience_id', experience.id)
-    .eq('is_available', true)
-    .gte('start_date', startDate.toISOString().split('T')[0])
-    .lte('start_date', endDate.toISOString().split('T')[0])
-    .order('start_date', { ascending: true })
-    .order('start_time', { ascending: true });
-
-  timeSlots = slots || [];
 
   // Prepare gallery images
   const gallery = (business.images || []).map((img: any) => 

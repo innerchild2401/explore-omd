@@ -40,7 +40,7 @@ export default async function RestaurantsPage({ params, searchParams }: Restaura
       )
     `)
     .eq('businesses.omd_id', omd.id)
-    .eq('businesses.is_active', true);
+    .eq('businesses.status', 'active');
 
   return (
     <div className="min-h-screen bg-gray-50">

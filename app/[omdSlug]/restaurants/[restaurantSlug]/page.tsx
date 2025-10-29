@@ -25,7 +25,7 @@ export default async function RestaurantPage({ params }: RestaurantPageProps) {
   }
 
   // Get restaurant with business info
-  const { data: restaurant } = await supabase
+  const { data: restaurant, error: restaurantError } = await supabase
     .from('restaurants')
     .select(`
       *,
@@ -42,10 +42,15 @@ export default async function RestaurantPage({ params }: RestaurantPageProps) {
     `)
     .eq('businesses.slug', params.restaurantSlug)
     .eq('businesses.omd_id', omd.id)
-    .eq('businesses.is_active', true)
+    .eq('businesses.status', 'active')
     .single();
 
+  if (restaurantError) {
+    console.error('Restaurant query error:', restaurantError);
+  }
+
   if (!restaurant) {
+    console.log('No restaurant found for slug:', params.restaurantSlug, 'in OMD:', omd.id);
     notFound();
   }
 

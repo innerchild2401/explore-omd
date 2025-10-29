@@ -39,8 +39,7 @@ export default async function RestaurantPage({ params }: RestaurantPageProps) {
         slug,
         images,
         contact,
-        location,
-        website
+        location
       )
     `)
     .eq('businesses.slug', restaurantSlug)
@@ -226,11 +225,11 @@ export default async function RestaurantPage({ params }: RestaurantPageProps) {
                   </div>
                 )}
                 
-                {business.website && (
+                {business.contact?.website && (
                   <div>
                     <h4 className="font-medium text-gray-900">Website</h4>
                     <a 
-                      href={business.website}
+                      href={business.contact.website}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="text-blue-600 hover:text-blue-700"

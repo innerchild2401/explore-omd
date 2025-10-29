@@ -36,10 +36,8 @@ export default async function RestaurantsPage({ params, searchParams }: Restaura
         description,
         slug,
         images,
-        address,
-        phone,
-        email,
-        website
+        contact,
+        location
       )
     `)
     .eq('businesses.omd_id', omd.id)
@@ -124,8 +122,8 @@ export default async function RestaurantsPage({ params, searchParams }: Restaura
                         Price: {restaurant.price_range}
                       </p>
                     )}
-                    {business.address && (
-                      <p className="mt-2 text-sm text-gray-500">📍 {business.address}</p>
+                    {business.location?.address && (
+                      <p className="mt-2 text-sm text-gray-500">📍 {business.location.address}</p>
                     )}
                     {business.contact?.phone && restaurant.accepts_reservations && (
                       <div className="mt-3">

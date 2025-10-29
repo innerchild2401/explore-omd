@@ -1,7 +1,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
-import OptimizedImage from '@/components/ui/OptimizedImage';
+import RestaurantImageGallery from '@/components/restaurants/RestaurantImageGallery';
 
 interface RestaurantPageProps {
   params: {
@@ -94,18 +94,10 @@ export default async function RestaurantPage({ params }: RestaurantPageProps) {
           {/* Main Content */}
           <div className="lg:col-span-2 space-y-8 min-w-0">
             {/* Restaurant Images */}
-            {business.images && business.images.length > 0 && (
-              <div className="rounded-lg overflow-hidden shadow w-full" style={{ minWidth: 0, maxWidth: '100%' }}>
-                <OptimizedImage
-                  src={typeof business.images[0] === 'string' ? business.images[0] : (business.images[0] as any)?.url || '/placeholder-restaurant.jpg'}
-                  alt={business.name}
-                  width={800}
-                  height={400}
-                  className="w-full h-64 object-cover"
-                  sizes="(max-width: 1024px) 100vw, 66vw"
-                />
-              </div>
-            )}
+            <RestaurantImageGallery 
+              images={business.images || []} 
+              restaurantName={business.name}
+            />
 
             {/* Restaurant Info */}
             <div className="rounded-lg bg-white p-6 shadow border border-gray-200 min-w-0">

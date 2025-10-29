@@ -12,7 +12,7 @@ export async function getOMDBySlug(slug: string): Promise<OMD | null> {
     .from('omds')
     .select('*')
     .eq('slug', slug)
-    .single();
+    .maybeSingle();
 
   if (error) {
     console.error('Error fetching OMD:', error);

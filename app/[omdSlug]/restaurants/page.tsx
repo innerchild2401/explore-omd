@@ -19,7 +19,7 @@ export default async function RestaurantsPage({ params, searchParams }: Restaura
     .from('omds')
     .select('*')
     .eq('slug', omdSlug)
-    .single();
+    .maybeSingle();
 
   if (!omd) {
     notFound();
@@ -44,14 +44,14 @@ export default async function RestaurantsPage({ params, searchParams }: Restaura
     .eq('businesses.status', 'active');
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 w-full overflow-x-hidden">
       {/* Header */}
-      <header className="bg-white shadow-sm">
-        <div className="mx-auto max-w-7xl px-4 py-6">
-          <Link href={`/${omdSlug}`} className="text-blue-600 hover:text-blue-700">
+      <header className="bg-white shadow-sm w-full">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6 w-full min-w-0">
+          <Link href={`/${omdSlug}`} className="text-blue-600 hover:text-blue-700 break-words inline-block">
             ← Back to {omd.name}
           </Link>
-          <h1 className="mt-2 text-3xl font-bold text-gray-900">Restaurants & Dining</h1>
+          <h1 className="mt-2 text-3xl font-bold text-gray-900 break-words">Restaurants & Dining</h1>
           {(searchParams.date || searchParams.time) && (
             <p className="mt-2 text-gray-600">
               {searchParams.date && `Date: ${searchParams.date}`}
@@ -63,7 +63,7 @@ export default async function RestaurantsPage({ params, searchParams }: Restaura
       </header>
 
       {/* Restaurants List */}
-      <main className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8 w-full">
+      <main className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8 w-full min-w-0">
         {!restaurants || restaurants.length === 0 ? (
           <div className="text-center py-16">
             <div className="mx-auto w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mb-6">
@@ -85,13 +85,13 @@ export default async function RestaurantsPage({ params, searchParams }: Restaura
             <p className="text-gray-600 mb-8 max-w-md mx-auto">Check back soon for dining options!</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 gap-6 sm:gap-8 sm:grid-cols-2 lg:grid-cols-3 w-full">
+          <div className="grid grid-cols-1 gap-6 sm:gap-8 sm:grid-cols-2 lg:grid-cols-3 w-full min-w-0">
             {restaurants.map((restaurant) => {
               const business = restaurant.businesses;
               const mainImage = business.images?.[0];
               
               return (
-                <div key={restaurant.id} className="bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow duration-300 w-full">
+                <div key={restaurant.id} className="bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow duration-300 w-full min-w-0">
                   {/* Restaurant Image */}
                   <div className="relative w-full aspect-[4/3] overflow-hidden bg-gray-100">
                     {mainImage ? (
@@ -121,11 +121,11 @@ export default async function RestaurantsPage({ params, searchParams }: Restaura
                   </div>
 
                   {/* Restaurant Info */}
-                  <div className="p-4 sm:p-6">
-                    <div className="flex items-start justify-between mb-3">
-                      <h3 className="text-xl font-bold text-gray-900 line-clamp-1">{business.name}</h3>
+                  <div className="p-4 sm:p-6 min-w-0">
+                    <div className="flex items-start justify-between gap-2 mb-3 min-w-0">
+                      <h3 className="text-xl font-bold text-gray-900 line-clamp-1 min-w-0 flex-1">{business.name}</h3>
                       {restaurant.cuisine_type && (
-                        <span className="inline-block rounded-full bg-blue-100 px-3 py-1 text-sm font-medium text-blue-800 flex-shrink-0 ml-2">
+                        <span className="inline-block rounded-full bg-blue-100 px-3 py-1 text-sm font-medium text-blue-800 flex-shrink-0">
                           {restaurant.cuisine_type}
                         </span>
                       )}
@@ -156,7 +156,6 @@ export default async function RestaurantsPage({ params, searchParams }: Restaura
                     {business.contact?.phone && restaurant.accepts_reservations && (
                       <a
                         href={`tel:${business.contact.phone}`}
-                        onClick={(e) => e.stopPropagation()}
                         className="mt-3 w-full inline-flex items-center justify-center px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 transition-colors"
                       >
                         📞 Call for Reservations

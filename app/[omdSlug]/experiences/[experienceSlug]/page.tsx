@@ -2,7 +2,6 @@ import { createClient } from '@/lib/supabase/server';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import ImageGallery from '@/components/hotels/ImageGallery';
-import ExperienceBooking from '@/components/experiences/ExperienceBooking';
 
 interface PageProps {
   params: { omdSlug: string; experienceSlug: string };
@@ -153,26 +152,40 @@ export default async function ExperienceDetailPage({ params, searchParams }: Pag
               )}
             </div>
 
-            {/* Right Column - Booking */}
+            {/* Right Column - Contact */}
             <div className="lg:col-span-1">
               <div className="sticky top-4">
-                {experience.price_from && (
-                  <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-200">
-                    <div className="mb-4">
+                <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-200">
+                  {experience.price_from && (
+                    <div className="mb-6">
                       <p className="text-3xl font-bold text-gray-900">
                         {experience.currency || 'USD'} {experience.price_from}
                       </p>
                       <p className="text-sm text-gray-600">per person</p>
                     </div>
+                  )}
 
-                    <ExperienceBooking
-                      experienceId={experience.id}
-                      businessId={business.id}
-                      timeSlots={timeSlots}
-                      selectedDate={searchParams.date}
-                    />
-                  </div>
-                )}
+                  {(business.contact?.phone || business.contact?.email) && (
+                    <div className="space-y-4">
+                      {business.contact?.phone && (
+                        <a
+                          href={`tel:${business.contact.phone}`}
+                          className="block w-full text-center px-6 py-3 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700 transition-colors"
+                        >
+                          📞 Call to Book
+                        </a>
+                      )}
+                      {business.contact?.email && (
+                        <a
+                          href={`mailto:${business.contact.email}`}
+                          className="block w-full text-center px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-colors"
+                        >
+                          ✉️ Email for Details
+                        </a>
+                      )}
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           </div>

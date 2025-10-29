@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import OptimizedImage from '@/components/ui/OptimizedImage';
 
@@ -11,6 +11,14 @@ interface RestaurantImageGalleryProps {
 
 export default function RestaurantImageGallery({ images, restaurantName }: RestaurantImageGalleryProps) {
   const [selectedImage, setSelectedImage] = useState<number | null>(null);
+  const [imageError, setImageError] = useState<number | null>(null);
+
+  // Reset error state when image changes
+  useEffect(() => {
+    if (selectedImage !== null) {
+      setImageError(null);
+    }
+  }, [selectedImage]);
 
   // Normalize images to always have url and description
   // Handle both string arrays and object arrays from JSON decodes
@@ -226,22 +234,38 @@ export default function RestaurantImageGallery({ images, restaurantName }: Resta
             </motion.button>
 
             {/* Main Image */}
-            <div className="relative max-h-[90vh] max-w-[90vw]">
+            <div className="relative flex items-center justify-center max-h-[90vh] max-w-[90vw]">
               <motion.div
                 initial={{ scale: 0.8, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 exit={{ scale: 0.8, opacity: 0 }}
                 transition={{ duration: 0.3 }}
+                className="relative max-h-[90vh] max-w-[90vw] flex items-center justify-center"
               >
-                <OptimizedImage
-                  src={normalizedImages[selectedImage].url}
-                  alt={`${restaurantName} - ${selectedImage + 1}`}
-                  width={1200}
-                  height={800}
-                  className="max-h-[90vh] max-w-[90vw] object-contain rounded-lg shadow-2xl"
-                  onClick={(e) => e?.stopPropagation()}
-                  quality={95}
-                />
+                {imageError === selectedImage ? (
+                  <div className="flex items-center justify-center bg-gray-800 rounded-lg shadow-2xl" style={{ minHeight: '400px', minWidth: '400px' }}>
+                    <div className="text-center text-white p-8">
+                      <svg className="mx-auto h-16 w-16 mb-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                      </svg>
+                      <p className="text-lg font-medium">Failed to load image</p>
+                    </div>
+                  </div>
+                ) : (
+                  <img
+                    src={normalizedImages[selectedImage].url}
+                    alt={`${restaurantName} - ${selectedImage + 1}`}
+                    className="max-h-[90vh] max-w-[90vw] w-auto h-auto object-contain rounded-lg shadow-2xl"
+                    onClick={(e) => e?.stopPropagation()}
+                    style={{ maxHeight: '90vh', maxWidth: '90vw', width: 'auto', height: 'auto' }}
+                    onError={() => setImageError(selectedImage)}
+                    onLoad={() => {
+                      if (imageError === selectedImage) {
+                        setImageError(null);
+                      }
+                    }}
+                  />
+                )}
               </motion.div>
               
               {/* Description in lightbox */}

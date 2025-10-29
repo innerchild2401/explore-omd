@@ -128,11 +128,22 @@ export default function ExperienceBasicInfo({
       // Helper function to convert empty strings to null
       const toNullIfEmpty = (value: any) => (value === '' || value === undefined) ? null : value;
 
+      // Special handling for difficulty_level - must be valid or null
+      let difficultyLevel = formData.difficulty_level;
+      if (difficultyLevel === '' || difficultyLevel === undefined) {
+        difficultyLevel = null;
+      }
+      // Ensure it's one of the valid values
+      const validDifficulties = ['easy', 'moderate', 'challenging', 'expert'];
+      if (difficultyLevel && !validDifficulties.includes(difficultyLevel)) {
+        difficultyLevel = null;
+      }
+
       // Update experience information
       const updateData: any = {
         category: toNullIfEmpty(formData.category),
         duration: toNullIfEmpty(formData.duration),
-        difficulty_level: toNullIfEmpty(formData.difficulty_level),
+        difficulty_level: difficultyLevel,
         min_participants: formData.min_participants || 1,
         max_participants: formData.max_participants && formData.max_participants !== '' ? parseInt(formData.max_participants.toString()) : null,
         price_from: formData.price_from && formData.price_from !== '' ? parseFloat(formData.price_from.toString()) : null,

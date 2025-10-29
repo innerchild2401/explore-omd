@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import OptimizedImage from '@/components/ui/OptimizedImage';
+import DimensionLogger from '@/components/debug/DimensionLogger';
 
 interface RestaurantPageProps {
   params: {
@@ -77,37 +78,38 @@ export default async function RestaurantPage({ params }: RestaurantPageProps) {
   }, {} as Record<string, any[]>) || {};
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <DimensionLogger label="ROOT" className="min-h-screen bg-gray-50 w-full overflow-x-hidden" style={{ maxWidth: '100vw', boxSizing: 'border-box' as const }}>
       {/* Header */}
-      <header className="bg-white shadow-sm">
-        <div className="mx-auto max-w-7xl px-4 py-6">
-          <Link href={`/${omdSlug}/restaurants`} className="text-blue-600 hover:text-blue-700">
+      <header className="bg-white shadow-sm w-full">
+        <DimensionLogger label="HEADER-CONTAINER" className="mx-auto max-w-7xl px-4 py-6 w-full min-w-0">
+          <Link href={`/${omdSlug}/restaurants`} className="text-blue-600 hover:text-blue-700 break-words inline-block">
             ← Back to Restaurants
           </Link>
-          <h1 className="mt-2 text-3xl font-bold text-gray-900">{business.name}</h1>
-          <p className="mt-1 text-gray-600">{business.description}</p>
-        </div>
+          <h1 className="mt-2 text-3xl font-bold text-gray-900 break-words">{business.name}</h1>
+          <p className="mt-1 text-gray-600 break-words">{business.description}</p>
+        </DimensionLogger>
       </header>
 
-      <div className="mx-auto max-w-7xl px-4 py-8">
-        <div className="grid gap-8 lg:grid-cols-3">
+      <DimensionLogger label="MAIN-CONTAINER" className="mx-auto max-w-7xl px-4 py-8 w-full min-w-0" style={{ maxWidth: '100%', boxSizing: 'border-box' as const }}>
+        <DimensionLogger label="GRID" className="grid gap-8 lg:grid-cols-3 w-full min-w-0">
           {/* Main Content */}
-          <div className="lg:col-span-2 space-y-8">
+          <DimensionLogger label="MAIN-CONTENT" className="lg:col-span-2 space-y-8 min-w-0">
             {/* Restaurant Images */}
             {business.images && business.images.length > 0 && (
-              <div className="rounded-lg overflow-hidden shadow">
+              <DimensionLogger label="IMAGE-WRAPPER" className="rounded-lg overflow-hidden shadow w-full" style={{ minWidth: 0, maxWidth: '100%' }}>
                 <OptimizedImage
-                  src={business.images[0]}
+                  src={typeof business.images[0] === 'string' ? business.images[0] : (business.images[0] as any)?.url || '/placeholder-restaurant.jpg'}
                   alt={business.name}
                   width={800}
                   height={400}
                   className="w-full h-64 object-cover"
+                  sizes="(max-width: 1024px) 100vw, 66vw"
                 />
-              </div>
+              </DimensionLogger>
             )}
 
             {/* Restaurant Info */}
-            <div className="rounded-lg bg-white p-6 shadow border border-gray-200">
+            <DimensionLogger label="RESTAURANT-INFO" className="rounded-lg bg-white p-6 shadow border border-gray-200 min-w-0">
               <h2 className="text-xl font-semibold text-gray-900 mb-4">About {business.name}</h2>
               
               <div className="grid gap-4 md:grid-cols-2">
@@ -143,11 +145,11 @@ export default async function RestaurantPage({ params }: RestaurantPageProps) {
                   </div>
                 </div>
               </div>
-            </div>
+            </DimensionLogger>
 
             {/* Menu */}
             {Object.keys(groupedMenuItems).length > 0 && (
-              <div className="rounded-lg bg-white shadow border border-gray-200">
+              <DimensionLogger label="MENU" className="rounded-lg bg-white shadow border border-gray-200 min-w-0">
                 <div className="px-6 py-4 border-b border-gray-200">
                   <h2 className="text-xl font-semibold text-gray-900">Menu</h2>
                 </div>
@@ -190,14 +192,14 @@ export default async function RestaurantPage({ params }: RestaurantPageProps) {
                     </div>
                   ))}
                 </div>
-              </div>
+              </DimensionLogger>
             )}
-          </div>
+          </DimensionLogger>
 
           {/* Sidebar */}
-          <div className="space-y-6">
+          <DimensionLogger label="SIDEBAR" className="space-y-6 min-w-0">
             {/* Contact & Location */}
-            <div className="rounded-lg bg-white p-6 shadow border border-gray-200">
+            <DimensionLogger label="CONTACT-LOCATION" className="rounded-lg bg-white p-6 shadow border border-gray-200 min-w-0">
               <h3 className="text-lg font-semibold text-gray-900 mb-4">Contact & Location</h3>
               
               <div className="space-y-3">
@@ -246,11 +248,11 @@ export default async function RestaurantPage({ params }: RestaurantPageProps) {
                   </div>
                 )}
               </div>
-            </div>
+            </DimensionLogger>
 
             {/* Reservations */}
             {restaurant.accepts_reservations && (
-              <div className="rounded-lg bg-blue-50 p-6 border border-blue-200">
+              <DimensionLogger label="RESERVATIONS" className="rounded-lg bg-blue-50 p-6 border border-blue-200 min-w-0">
                 <h3 className="text-lg font-semibold text-blue-900 mb-2">Make a Reservation</h3>
                 <p className="text-blue-800 mb-4">
                   Call us to make a reservation
@@ -263,11 +265,11 @@ export default async function RestaurantPage({ params }: RestaurantPageProps) {
                     📞 Call {business.contact.phone}
                   </a>
                 )}
-              </div>
+              </DimensionLogger>
             )}
-          </div>
-        </div>
-      </div>
-    </div>
+          </DimensionLogger>
+        </DimensionLogger>
+      </DimensionLogger>
+    </DimensionLogger>
   );
 }

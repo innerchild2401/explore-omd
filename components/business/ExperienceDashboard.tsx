@@ -76,6 +76,11 @@ export default function ExperienceDashboard({
     setTimeout(() => setToast(null), 5000);
   };
 
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
+    router.push(`/${omd.slug}/business/login`);
+  };
+
   const tabs = [
     { id: 'overview', label: 'Overview', icon: '📊' },
     { id: 'basic-info', label: 'Basic Info', icon: 'ℹ️' },

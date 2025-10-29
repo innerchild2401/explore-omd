@@ -129,7 +129,7 @@ export default function ExperienceBasicInfo({
       const toNullIfEmpty = (value: any) => (value === '' || value === undefined) ? null : value;
 
       // Special handling for difficulty_level - must be valid or null
-      let difficultyLevel = formData.difficulty_level;
+      let difficultyLevel: string | null = formData.difficulty_level || null;
       if (difficultyLevel === '' || difficultyLevel === undefined) {
         difficultyLevel = null;
       }

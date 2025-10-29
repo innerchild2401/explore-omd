@@ -5,6 +5,7 @@ import ImageGallery from '@/components/hotels/ImageGallery';
 
 interface PageProps {
   params: { omdSlug: string; experienceSlug: string };
+  searchParams: { [key: string]: string | string[] | undefined };
 }
 
 export default async function ExperienceDetailPage({ params, searchParams }: PageProps) {

@@ -120,39 +120,52 @@ export default function ExperienceBasicInfo({
         })
         .eq('id', business.id);
 
-      if (businessError) throw businessError;
+      if (businessError) {
+        console.error('Business update error:', businessError);
+        throw businessError;
+      }
 
       // Update experience information
+      const updateData: any = {
+        category: formData.category || null,
+        duration: formData.duration || null,
+        difficulty_level: formData.difficulty_level || null,
+        min_participants: formData.min_participants || 1,
+        max_participants: formData.max_participants ? parseInt(formData.max_participants.toString()) : null,
+        price_from: formData.price_from ? parseFloat(formData.price_from.toString()) : null,
+        currency: formData.currency || 'USD',
+        meeting_point: {
+          address: formData.meeting_point_address || null,
+          description: formData.meeting_point_description || null,
+        },
+        included: includedItems,
+        not_included: notIncludedItems,
+        important_info: importantInfoItems,
+        tags: tags,
+        cancellation_policy: formData.cancellation_policy || null,
+        instant_confirmation: formData.instant_confirmation || false,
+        wheelchair_accessible: formData.wheelchair_accessible || false,
+      };
+
+      // Only add languages if provided
+      if (formData.languages) {
+        updateData.languages = formData.languages.split(',').map((l: string) => l.trim()).filter((l: string) => l);
+      }
+
       const { error: experienceError } = await supabase
         .from('experiences')
-        .update({
-          category: formData.category,
-          duration: formData.duration,
-          difficulty_level: formData.difficulty_level,
-          min_participants: formData.min_participants,
-          max_participants: formData.max_participants ? parseInt(formData.max_participants.toString()) : null,
-          price_from: formData.price_from ? parseFloat(formData.price_from.toString()) : null,
-          currency: formData.currency,
-          meeting_point: {
-            address: formData.meeting_point_address,
-            description: formData.meeting_point_description,
-          },
-          included: includedItems,
-          not_included: notIncludedItems,
-          important_info: importantInfoItems,
-          tags: tags,
-          cancellation_policy: formData.cancellation_policy,
-          instant_confirmation: formData.instant_confirmation,
-          wheelchair_accessible: formData.wheelchair_accessible,
-          languages: formData.languages.split(',').map(l => l.trim()).filter(l => l),
-        })
+        .update(updateData)
         .eq('id', experience.id);
 
-      if (experienceError) throw experienceError;
+      if (experienceError) {
+        console.error('Experience update error:', experienceError);
+        throw experienceError;
+      }
 
       onUpdate();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error updating experience:', error);
+      alert('Error: ' + (error.message || 'Failed to save changes'));
     } finally {
       setIsLoading(false);
     }

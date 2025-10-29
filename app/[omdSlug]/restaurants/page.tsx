@@ -44,7 +44,7 @@ export default async function RestaurantsPage({ params, searchParams }: Restaura
     .eq('businesses.status', 'active');
 
   return (
-    <div className="min-h-screen bg-gray-50 w-full overflow-x-hidden">
+    <div className="min-h-screen bg-gray-50 w-full overflow-x-hidden" style={{ maxWidth: '100vw', boxSizing: 'border-box' }}>
       {/* Header */}
       <header className="bg-white shadow-sm w-full">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6 w-full min-w-0">
@@ -63,7 +63,7 @@ export default async function RestaurantsPage({ params, searchParams }: Restaura
       </header>
 
       {/* Restaurants List */}
-      <main className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8 w-full min-w-0">
+      <main className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8 w-full min-w-0" style={{ maxWidth: '100%', boxSizing: 'border-box' }}>
         {!restaurants || restaurants.length === 0 ? (
           <div className="text-center py-16">
             <div className="mx-auto w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mb-6">
@@ -85,15 +85,15 @@ export default async function RestaurantsPage({ params, searchParams }: Restaura
             <p className="text-gray-600 mb-8 max-w-md mx-auto">Check back soon for dining options!</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 gap-6 sm:gap-8 sm:grid-cols-2 lg:grid-cols-3 w-full min-w-0">
+          <div className="grid grid-cols-1 gap-6 sm:gap-8 sm:grid-cols-2 lg:grid-cols-3 w-full min-w-0 max-w-full">
             {restaurants.map((restaurant) => {
               const business = restaurant.businesses;
               const mainImage = business.images?.[0];
               
               return (
-                <div key={restaurant.id} className="bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow duration-300 w-full min-w-0">
+                <div key={restaurant.id} className="bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow duration-300 w-full" style={{ minWidth: 0, maxWidth: '100%' }}>
                   {/* Restaurant Image */}
-                  <div className="relative w-full aspect-[4/3] overflow-hidden bg-gray-100">
+                  <div className="relative w-full aspect-[4/3] overflow-hidden bg-gray-100" style={{ width: '100%', minWidth: 0, maxWidth: '100%' }}>
                     {mainImage ? (
                       <OptimizedImage
                         src={typeof mainImage === 'string' ? mainImage : (mainImage as any)?.url || '/placeholder-restaurant.jpg'}

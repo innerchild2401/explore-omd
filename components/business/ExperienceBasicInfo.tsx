@@ -100,7 +100,7 @@ export default function ExperienceBasicInfo({
     setIsLoading(true);
 
     try {
-      const supabase = await createClient();
+      const supabase = createClient();
 
       // Update business information
       const { error: businessError } = await supabase

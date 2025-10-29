@@ -1,7 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import ImageUpload from '@/components/admin/ImageUpload';
 
 interface Business {
   id: string;
@@ -38,6 +39,11 @@ export default function RestaurantBasicInfo({
   onUpdate,
 }: RestaurantBasicInfoProps) {
   const [isLoading, setIsLoading] = useState(false);
+  const [images, setImages] = useState<Array<{url: string; description: string}>>(
+    (business.images || []).map((img: any) => 
+      typeof img === 'string' ? { url: img, description: '' } : img
+    )
+  );
   const [formData, setFormData] = useState({
     // Business fields
     name: business.name || '',
@@ -56,6 +62,14 @@ export default function RestaurantBasicInfo({
     takeaway_available: restaurant.takeaway_available || false,
   });
 
+  // Sync images state when business prop changes (after refresh)
+  useEffect(() => {
+    const updatedImages = (business.images || []).map((img: any) => 
+      typeof img === 'string' ? { url: img, description: '' } : img
+    );
+    setImages(updatedImages);
+  }, [business.images]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
@@ -69,6 +83,7 @@ export default function RestaurantBasicInfo({
         .update({
           name: formData.name,
           description: formData.description,
+          images,
           contact: {
             phone: formData.phone,
             email: formData.email,
@@ -331,6 +346,61 @@ export default function RestaurantBasicInfo({
                   Takeaway available
                 </span>
               </label>
+            </div>
+          </div>
+
+          {/* Restaurant Images */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold text-gray-900">Restaurant Images</h3>
+            <p className="text-sm text-gray-600">
+              Upload 3-10 photos showing your restaurant (exterior, interior, dining areas). First image will be the main thumbnail.
+            </p>
+            
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              {images.map((img, idx) => (
+                <div key={idx} className="relative group">
+                  <div className="aspect-square rounded-lg overflow-hidden bg-gray-100">
+                    <img
+                      src={img.url}
+                      alt={`Restaurant image ${idx + 1}`}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                  
+                  <button
+                    type="button"
+                    className="absolute top-2 right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm opacity-0 group-hover:opacity-100 transition-opacity"
+                    onClick={() => setImages(images.filter((_, i) => i !== idx))}
+                  >
+                    ×
+                  </button>
+                  
+                  <div className="mt-2">
+                    <input
+                      type="text"
+                      placeholder="Image description (optional)"
+                      value={img.description}
+                      onChange={(e) => {
+                        const newImages = [...images];
+                        newImages[idx] = { ...newImages[idx], description: e.target.value };
+                        setImages(newImages);
+                      }}
+                      className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900"
+                    />
+                  </div>
+                </div>
+              ))}
+              
+              {images.length < 10 && (
+                <div className="aspect-square border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center">
+                  <ImageUpload
+                    value=""
+                    onChange={(url) => setImages([...images, { url, description: '' }])}
+                    bucket="images"
+                    folder="restaurants"
+                  />
+                </div>
+              )}
             </div>
           </div>
 

@@ -54,10 +54,16 @@ export default function RestaurantDashboard({
     message: string;
   } | null>(null);
   const router = useRouter();
+  const supabase = createClient();
 
   const showToast = (type: 'success' | 'error', message: string) => {
     setToast({ type, message });
     setTimeout(() => setToast(null), 5000);
+  };
+
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
+    router.push(`/${omd.slug}/business/login`);
   };
 
   const tabs = [
@@ -93,6 +99,12 @@ export default function RestaurantDashboard({
               >
                 View Public Page
               </Link>
+              <button
+                onClick={handleSignOut}
+                className="rounded-lg bg-gray-200 px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-300"
+              >
+                Sign Out
+              </button>
             </div>
           </div>
         </div>

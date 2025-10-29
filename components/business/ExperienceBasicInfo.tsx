@@ -132,20 +132,39 @@ export default function ExperienceBasicInfo({
         difficulty_level: formData.difficulty_level || null,
         min_participants: formData.min_participants || 1,
         max_participants: formData.max_participants ? parseInt(formData.max_participants.toString()) : null,
-        price_from: formData.price_from ? parseFloat(formData.price_from.toString()) : null,
-        currency: formData.currency || 'USD',
-        meeting_point: {
+      };
+
+      // Add new fields only if columns exist (added in migration 38)
+      // Check if formData has values for these fields before adding them
+      if (formData.price_from || formData.price_from === '') {
+        updateData.price_from = formData.price_from ? parseFloat(formData.price_from.toString()) : null;
+      }
+      if (formData.currency) {
+        updateData.currency = formData.currency;
+      }
+      if (formData.meeting_point_address || formData.meeting_point_description) {
+        updateData.meeting_point = {
           address: formData.meeting_point_address || null,
           description: formData.meeting_point_description || null,
-        },
-        included: includedItems,
-        not_included: notIncludedItems,
-        important_info: importantInfoItems,
-        tags: tags,
-        cancellation_policy: formData.cancellation_policy || null,
-        instant_confirmation: formData.instant_confirmation || false,
-        wheelchair_accessible: formData.wheelchair_accessible || false,
-      };
+        };
+      }
+      if (includedItems && includedItems.length >= 0) {
+        updateData.included = includedItems;
+      }
+      if (notIncludedItems && notIncludedItems.length >= 0) {
+        updateData.not_included = notIncludedItems;
+      }
+      if (importantInfoItems && importantInfoItems.length >= 0) {
+        updateData.important_info = importantInfoItems;
+      }
+      if (tags && tags.length >= 0) {
+        updateData.tags = tags;
+      }
+      if (formData.cancellation_policy || formData.cancellation_policy === '') {
+        updateData.cancellation_policy = formData.cancellation_policy || null;
+      }
+      updateData.instant_confirmation = formData.instant_confirmation || false;
+      updateData.wheelchair_accessible = formData.wheelchair_accessible || false;
 
       // Only add languages if provided
       if (formData.languages) {

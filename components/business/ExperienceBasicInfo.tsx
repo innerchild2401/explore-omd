@@ -131,8 +131,13 @@ export default function ExperienceBasicInfo({
         duration: formData.duration || null,
         difficulty_level: formData.difficulty_level || null,
         min_participants: formData.min_participants || 1,
-        max_participants: formData.max_participants ? parseInt(formData.max_participants.toString()) : null,
+        max_participants: formData.max_participants && formData.max_participants !== '' ? parseInt(formData.max_participants.toString()) : null,
       };
+
+      // Ensure difficulty_level is valid or null (not empty string)
+      if (updateData.difficulty_level === '') {
+        updateData.difficulty_level = null;
+      }
 
       // Add new fields only if columns exist (added in migration 38)
       // Check if formData has values for these fields before adding them

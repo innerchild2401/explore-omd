@@ -10,12 +10,15 @@ interface RestaurantsPageProps {
 
 export default async function RestaurantsPage({ params, searchParams }: RestaurantsPageProps) {
   const supabase = await createClient();
+  
+  // Await params for Next.js 15 compatibility
+  const { omdSlug } = await params;
 
   // Get OMD
   const { data: omd } = await supabase
     .from('omds')
     .select('*')
-    .eq('slug', params.omdSlug)
+    .eq('slug', omdSlug)
     .single();
 
   if (!omd) {
@@ -47,7 +50,7 @@ export default async function RestaurantsPage({ params, searchParams }: Restaura
       {/* Header */}
       <header className="bg-white shadow-sm">
         <div className="mx-auto max-w-7xl px-4 py-6">
-          <Link href={`/${params.omdSlug}`} className="text-blue-600 hover:text-blue-700">
+          <Link href={`/${omdSlug}`} className="text-blue-600 hover:text-blue-700">
             ← Back to {omd.name}
           </Link>
           <h1 className="mt-2 text-3xl font-bold text-gray-900">Restaurants & Dining</h1>
@@ -90,7 +93,7 @@ export default async function RestaurantsPage({ params, searchParams }: Restaura
               return (
                 <Link
                   key={restaurant.id}
-                  href={`/${params.omdSlug}/restaurants/${business.slug}`}
+                  href={`/${omdSlug}/restaurants/${business.slug}`}
                   className="group overflow-hidden rounded-lg bg-white shadow transition-all hover:shadow-lg"
                 >
                   {mainImage && (

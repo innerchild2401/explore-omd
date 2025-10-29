@@ -12,12 +12,15 @@ interface RestaurantPageProps {
 
 export default async function RestaurantPage({ params }: RestaurantPageProps) {
   const supabase = await createClient();
+  
+  // Await params for Next.js 15 compatibility
+  const { omdSlug, restaurantSlug } = await params;
 
   // Get OMD
   const { data: omd } = await supabase
     .from('omds')
     .select('*')
-    .eq('slug', params.omdSlug)
+    .eq('slug', omdSlug)
     .single();
 
   if (!omd) {
@@ -40,7 +43,7 @@ export default async function RestaurantPage({ params }: RestaurantPageProps) {
         website
       )
     `)
-    .eq('businesses.slug', params.restaurantSlug)
+    .eq('businesses.slug', restaurantSlug)
     .eq('businesses.omd_id', omd.id)
     .eq('businesses.status', 'active')
     .single();
@@ -50,7 +53,7 @@ export default async function RestaurantPage({ params }: RestaurantPageProps) {
   }
 
   if (!restaurant) {
-    console.log('No restaurant found for slug:', params.restaurantSlug, 'in OMD:', omd.id);
+    console.log('No restaurant found for slug:', restaurantSlug, 'in OMD:', omd.id);
     notFound();
   }
 
@@ -79,7 +82,7 @@ export default async function RestaurantPage({ params }: RestaurantPageProps) {
       {/* Header */}
       <header className="bg-white shadow-sm">
         <div className="mx-auto max-w-7xl px-4 py-6">
-          <Link href={`/${params.omdSlug}/restaurants`} className="text-blue-600 hover:text-blue-700">
+          <Link href={`/${omdSlug}/restaurants`} className="text-blue-600 hover:text-blue-700">
             ← Back to Restaurants
           </Link>
           <h1 className="mt-2 text-3xl font-bold text-gray-900">{business.name}</h1>

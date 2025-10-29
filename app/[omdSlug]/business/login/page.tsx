@@ -37,19 +37,33 @@ export default function BusinessLoginPage({ params }: PageProps) {
       }
 
       if (data.user) {
-        // Check if user has a business registered
-        const { data: business } = await supabase
+        // Get OMD to filter businesses by omd_id
+        const { data: omd } = await supabase
+          .from('omds')
+          .select('id')
+          .eq('slug', omdSlug)
+          .single();
+
+        if (!omd) {
+          setError('OMD not found');
+          return;
+        }
+
+        // Check if user has a business registered in this OMD
+        const { data: businesses } = await supabase
           .from('businesses')
           .select('slug, status')
           .eq('owner_id', data.user.id)
-          .maybeSingle();
+          .eq('omd_id', omd.id)
+          .order('created_at', { ascending: false })
+          .limit(1);
 
-        if (!business) {
+        if (!businesses || businesses.length === 0) {
           // No business yet, redirect to onboarding
           router.push(`/${omdSlug}/business/onboarding`);
         } else {
-          // Has business, redirect to their dashboard
-          router.push(`/${omdSlug}/business/${business.slug}`);
+          // Has business, redirect to their most recent dashboard
+          router.push(`/${omdSlug}/business/${businesses[0].slug}`);
         }
       }
     } catch (err: any) {

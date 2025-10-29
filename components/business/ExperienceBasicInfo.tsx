@@ -125,55 +125,36 @@ export default function ExperienceBasicInfo({
         throw businessError;
       }
 
+      // Helper function to convert empty strings to null
+      const toNullIfEmpty = (value: any) => (value === '' || value === undefined) ? null : value;
+
       // Update experience information
       const updateData: any = {
-        category: formData.category || null,
-        duration: formData.duration || null,
-        difficulty_level: formData.difficulty_level || null,
+        category: toNullIfEmpty(formData.category),
+        duration: toNullIfEmpty(formData.duration),
+        difficulty_level: toNullIfEmpty(formData.difficulty_level),
         min_participants: formData.min_participants || 1,
         max_participants: formData.max_participants && formData.max_participants !== '' ? parseInt(formData.max_participants.toString()) : null,
+        price_from: formData.price_from && formData.price_from !== '' ? parseFloat(formData.price_from.toString()) : null,
+        currency: toNullIfEmpty(formData.currency) || 'USD',
+        meeting_point: toNullIfEmpty(formData.meeting_point_address) || toNullIfEmpty(formData.meeting_point_description) ? {
+          address: toNullIfEmpty(formData.meeting_point_address),
+          description: toNullIfEmpty(formData.meeting_point_description),
+        } : null,
+        included: includedItems.length > 0 ? includedItems : null,
+        not_included: notIncludedItems.length > 0 ? notIncludedItems : null,
+        important_info: importantInfoItems.length > 0 ? importantInfoItems : null,
+        tags: tags.length > 0 ? tags : null,
+        cancellation_policy: toNullIfEmpty(formData.cancellation_policy),
+        instant_confirmation: formData.instant_confirmation || false,
+        wheelchair_accessible: formData.wheelchair_accessible || false,
       };
 
-      // Ensure difficulty_level is valid or null (not empty string)
-      if (updateData.difficulty_level === '') {
-        updateData.difficulty_level = null;
-      }
-
-      // Add new fields only if columns exist (added in migration 38)
-      // Check if formData has values for these fields before adding them
-      if (formData.price_from || formData.price_from === '') {
-        updateData.price_from = formData.price_from ? parseFloat(formData.price_from.toString()) : null;
-      }
-      if (formData.currency) {
-        updateData.currency = formData.currency;
-      }
-      if (formData.meeting_point_address || formData.meeting_point_description) {
-        updateData.meeting_point = {
-          address: formData.meeting_point_address || null,
-          description: formData.meeting_point_description || null,
-        };
-      }
-      if (includedItems && includedItems.length >= 0) {
-        updateData.included = includedItems;
-      }
-      if (notIncludedItems && notIncludedItems.length >= 0) {
-        updateData.not_included = notIncludedItems;
-      }
-      if (importantInfoItems && importantInfoItems.length >= 0) {
-        updateData.important_info = importantInfoItems;
-      }
-      if (tags && tags.length >= 0) {
-        updateData.tags = tags;
-      }
-      if (formData.cancellation_policy || formData.cancellation_policy === '') {
-        updateData.cancellation_policy = formData.cancellation_policy || null;
-      }
-      updateData.instant_confirmation = formData.instant_confirmation || false;
-      updateData.wheelchair_accessible = formData.wheelchair_accessible || false;
-
       // Only add languages if provided
-      if (formData.languages) {
-        updateData.languages = formData.languages.split(',').map((l: string) => l.trim()).filter((l: string) => l);
+      if (formData.languages && formData.languages.trim() !== '') {
+        updateData.languages = formData.languages.split(',').map((l: string) => l.trim()).filter((l: string) => l.length > 0);
+      } else {
+        updateData.languages = null;
       }
 
       console.log('Updating experience with data:', updateData);

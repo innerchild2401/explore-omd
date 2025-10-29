@@ -2,7 +2,6 @@ import { createClient } from '@/lib/supabase/server';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import OptimizedImage from '@/components/ui/OptimizedImage';
-import DimensionLogger from '@/components/debug/DimensionLogger';
 
 interface RestaurantPageProps {
   params: {

@@ -2,7 +2,6 @@ import { createClient } from '@/lib/supabase/server';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import OptimizedImage from '@/components/ui/OptimizedImage';
-import DimensionLogger from '@/components/debug/DimensionLogger';
 
 interface RestaurantsPageProps {
   params: { omdSlug: string };
@@ -45,10 +44,10 @@ export default async function RestaurantsPage({ params, searchParams }: Restaura
     .eq('businesses.status', 'active');
 
   return (
-    <DimensionLogger label="ROOT" className="min-h-screen bg-gray-50 w-full overflow-x-hidden" style={{ maxWidth: '100vw', boxSizing: 'border-box' as const }}>
+    <div className="min-h-screen bg-gray-50 w-full overflow-x-hidden" style={{ maxWidth: '100vw', boxSizing: 'border-box' as const }}>
       {/* Header */}
       <header className="bg-white shadow-sm w-full">
-        <DimensionLogger label="HEADER-CONTAINER" className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6 w-full min-w-0">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6 w-full min-w-0">
           <Link href={`/${omdSlug}`} className="text-blue-600 hover:text-blue-700 break-words inline-block">
             ← Back to {omd.name}
           </Link>
@@ -60,11 +59,11 @@ export default async function RestaurantsPage({ params, searchParams }: Restaura
               {searchParams.time && `Time: ${searchParams.time}`}
             </p>
           )}
-        </DimensionLogger>
+        </div>
       </header>
 
       {/* Restaurants List */}
-      <DimensionLogger label="MAIN" className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8 w-full min-w-0" style={{ maxWidth: '100%', boxSizing: 'border-box' }}>
+      <main className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8 w-full min-w-0" style={{ maxWidth: '100%', boxSizing: 'border-box' }}>
         {!restaurants || restaurants.length === 0 ? (
           <div className="text-center py-16">
             <div className="mx-auto w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mb-6">
@@ -86,15 +85,15 @@ export default async function RestaurantsPage({ params, searchParams }: Restaura
             <p className="text-gray-600 mb-8 max-w-md mx-auto">Check back soon for dining options!</p>
           </div>
         ) : (
-          <DimensionLogger label="GRID" className="grid grid-cols-1 gap-6 sm:gap-8 sm:grid-cols-2 lg:grid-cols-3 w-full min-w-0 max-w-full">
+          <div className="grid grid-cols-1 gap-6 sm:gap-8 sm:grid-cols-2 lg:grid-cols-3 w-full min-w-0 max-w-full">
             {restaurants.map((restaurant) => {
               const business = restaurant.businesses;
               const mainImage = business.images?.[0];
               
               return (
-                <DimensionLogger key={restaurant.id} label={`CARD-${business.slug}`} className="bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow duration-300 w-full" style={{ minWidth: 0, maxWidth: '100%' }}>
+                <div key={restaurant.id} className="bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow duration-300 w-full" style={{ minWidth: 0, maxWidth: '100%' }}>
                   {/* Restaurant Image */}
-                  <DimensionLogger label={`IMAGE-CONTAINER-${business.slug}`} className="relative w-full aspect-[4/3] overflow-hidden bg-gray-100" style={{ width: '100%', minWidth: 0, maxWidth: '100%' }}>
+                  <div className="relative w-full aspect-[4/3] overflow-hidden bg-gray-100" style={{ width: '100%', minWidth: 0, maxWidth: '100%' }}>
                     {mainImage ? (
                       <OptimizedImage
                         src={typeof mainImage === 'string' ? mainImage : (mainImage as any)?.url || '/placeholder-restaurant.jpg'}
@@ -119,10 +118,10 @@ export default async function RestaurantsPage({ params, searchParams }: Restaura
                         <span className="text-sm font-semibold text-gray-700">{restaurant.price_range}</span>
                       </div>
                     )}
-                  </DimensionLogger>
+                  </div>
 
                   {/* Restaurant Info */}
-                  <DimensionLogger label={`INFO-${business.slug}`} className="p-4 sm:p-6 min-w-0">
+                  <div className="p-4 sm:p-6 min-w-0">
                     <div className="flex items-start justify-between gap-2 mb-3 min-w-0">
                       <h3 className="text-xl font-bold text-gray-900 line-clamp-1 min-w-0 flex-1">{business.name}</h3>
                       {restaurant.cuisine_type && (
@@ -162,13 +161,13 @@ export default async function RestaurantsPage({ params, searchParams }: Restaura
                         📞 Call for Reservations
                       </a>
                     )}
-                  </DimensionLogger>
-                </DimensionLogger>
+                  </div>
+                </div>
               );
             })}
-          </DimensionLogger>
+          </div>
         )}
-      </DimensionLogger>
-    </DimensionLogger>
+      </main>
+    </div>
   );
 }

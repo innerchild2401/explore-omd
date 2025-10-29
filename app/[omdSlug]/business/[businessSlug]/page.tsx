@@ -3,6 +3,7 @@ import { redirect, notFound } from 'next/navigation';
 import Link from 'next/link';
 import HotelDashboard from '@/components/business/HotelDashboard';
 import RestaurantDashboard from '@/components/business/RestaurantDashboard';
+import ExperienceDashboard from '@/components/business/ExperienceDashboard';
 
 interface PageProps {
   params: {
@@ -176,7 +177,36 @@ export default async function BusinessDashboardPage({ params }: PageProps) {
     );
   }
 
-  // For restaurant and experience - show coming soon for now
+  if (business.type === 'experience') {
+    // Get experience details (or create if not exists)
+    let { data: experience } = await supabase
+      .from('experiences')
+      .select('*')
+      .eq('business_id', business.id)
+      .maybeSingle();
+
+    if (!experience) {
+      // Create experience entry
+      const { data: newExperience } = await supabase
+        .from('experiences')
+        .insert({ business_id: business.id })
+        .select()
+        .single();
+      experience = newExperience;
+    }
+
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <ExperienceDashboard 
+          business={business} 
+          experience={experience} 
+          omd={omd}
+        />
+      </div>
+    );
+  }
+
+  // Fallback for unknown business types
   return (
     <div className="min-h-screen bg-gray-50 p-6">
       <div className="mx-auto max-w-7xl">

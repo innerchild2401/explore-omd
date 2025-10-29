@@ -63,7 +63,7 @@ export default async function RestaurantsPage({ params, searchParams }: Restaura
       </header>
 
       {/* Restaurants List */}
-      <main className="mx-auto max-w-7xl px-4 py-8">
+      <main className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8 w-full">
         {!restaurants || restaurants.length === 0 ? (
           <div className="text-center py-16">
             <div className="mx-auto w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mb-6">
@@ -85,22 +85,24 @@ export default async function RestaurantsPage({ params, searchParams }: Restaura
             <p className="text-gray-600 mb-8 max-w-md mx-auto">Check back soon for dining options!</p>
           </div>
         ) : (
-          <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
+          <div className="grid grid-cols-1 gap-6 sm:gap-8 sm:grid-cols-2 lg:grid-cols-3 w-full">
             {restaurants.map((restaurant) => {
               const business = restaurant.businesses;
               const mainImage = business.images?.[0];
               
               return (
-                <div key={restaurant.id} className="bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow duration-300">
+                <div key={restaurant.id} className="bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow duration-300 w-full">
                   {/* Restaurant Image */}
-                  <div className="relative h-64 overflow-hidden">
+                  <div className="relative w-full aspect-[4/3] overflow-hidden bg-gray-100">
                     {mainImage ? (
                       <OptimizedImage
                         src={typeof mainImage === 'string' ? mainImage : (mainImage as any)?.url || '/placeholder-restaurant.jpg'}
                         alt={business.name}
                         fill
                         className="object-cover hover:scale-105 transition-transform duration-300"
-                        sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                        sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                        quality={65}
+                        priority={false}
                       />
                     ) : (
                       <div className="w-full h-full bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center">
@@ -119,7 +121,7 @@ export default async function RestaurantsPage({ params, searchParams }: Restaura
                   </div>
 
                   {/* Restaurant Info */}
-                  <div className="p-6">
+                  <div className="p-4 sm:p-6">
                     <div className="flex items-start justify-between mb-3">
                       <h3 className="text-xl font-bold text-gray-900 line-clamp-1">{business.name}</h3>
                       {restaurant.cuisine_type && (

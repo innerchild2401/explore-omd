@@ -205,7 +205,7 @@ export default async function ExperiencesPage({ params, searchParams }: Experien
                     {/* Tags */}
                     {experience.tags && experience.tags.length > 0 && (
                       <div className="mt-3 flex flex-wrap gap-2">
-                        {experience.tags.slice(0, 3).map((tag, idx) => (
+                        {experience.tags.slice(0, 3).map((tag: string, idx: number) => (
                           <span key={idx} className="text-xs bg-blue-50 text-blue-700 px-2 py-1 rounded">
                             {tag}
                           </span>

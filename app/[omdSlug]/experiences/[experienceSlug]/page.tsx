@@ -193,9 +193,9 @@ export default async function ExperienceDetailPage({ params, searchParams }: Pag
         {/* What's Included */}
         {experience.included && experience.included.length > 0 && (
           <div className="mb-8">
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">What's included</h2>
+            <h2 className="text-2xl font-bold text-gray-900 mb-4">What&apos;s included</h2>
             <ul className="space-y-2">
-              {experience.included.map((item, idx) => (
+              {experience.included.map((item: string, idx: number) => (
                 <li key={idx} className="flex items-start gap-3">
                   <svg className="h-6 w-6 text-green-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
@@ -210,9 +210,9 @@ export default async function ExperienceDetailPage({ params, searchParams }: Pag
         {/* What's NOT Included */}
         {experience.not_included && experience.not_included.length > 0 && (
           <div className="mb-8">
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">What's not included</h2>
+            <h2 className="text-2xl font-bold text-gray-900 mb-4">What&apos;s not included</h2>
             <ul className="space-y-2">
-              {experience.not_included.map((item, idx) => (
+              {experience.not_included.map((item: string, idx: number) => (
                 <li key={idx} className="flex items-start gap-3">
                   <svg className="h-6 w-6 text-red-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -244,7 +244,7 @@ export default async function ExperienceDetailPage({ params, searchParams }: Pag
           <div className="mb-8">
             <h2 className="text-2xl font-bold text-gray-900 mb-4">Important Information</h2>
             <ul className="space-y-2">
-              {experience.important_info.map((info, idx) => (
+              {experience.important_info.map((info: string, idx: number) => (
                 <li key={idx} className="flex items-start gap-3 text-gray-700">
                   <svg className="h-5 w-5 text-yellow-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />

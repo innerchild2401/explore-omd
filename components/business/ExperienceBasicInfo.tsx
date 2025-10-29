@@ -411,7 +411,7 @@ export default function ExperienceBasicInfo({
 
           {/* What's Included */}
           <div className="space-y-4">
-            <h3 className="text-lg font-semibold text-gray-900">What's Included</h3>
+            <h3 className="text-lg font-semibold text-gray-900">What&apos;s Included</h3>
             <div className="space-y-2">
               {includedItems.map((item, idx) => (
                 <div key={idx} className="flex items-center justify-between bg-gray-50 px-3 py-2 rounded">
@@ -427,7 +427,7 @@ export default function ExperienceBasicInfo({
               ))}
               <input
                 type="text"
-                placeholder="Add what's included (e.g., Professional guide, Equipment, Lunch)"
+                placeholder="Add what&apos;s included (e.g., Professional guide, Equipment, Lunch)"
                 onKeyPress={(e) => {
                   if (e.key === 'Enter') {
                     e.preventDefault();
@@ -442,7 +442,7 @@ export default function ExperienceBasicInfo({
 
           {/* What's NOT Included */}
           <div className="space-y-4">
-            <h3 className="text-lg font-semibold text-gray-900">What's NOT Included</h3>
+            <h3 className="text-lg font-semibold text-gray-900">What&apos;s NOT Included</h3>
             <div className="space-y-2">
               {notIncludedItems.map((item, idx) => (
                 <div key={idx} className="flex items-center justify-between bg-gray-50 px-3 py-2 rounded">
@@ -458,7 +458,7 @@ export default function ExperienceBasicInfo({
               ))}
               <input
                 type="text"
-                placeholder="Add what's not included (e.g., Hotel pickup, Gratuities)"
+                placeholder="Add what&apos;s not included (e.g., Hotel pickup, Gratuities)"
                 onKeyPress={(e) => {
                   if (e.key === 'Enter') {
                     e.preventDefault();

@@ -249,7 +249,7 @@ export default function ExperienceDashboard({
                 </div>
                 {experience.included && experience.included.length > 0 && (
                   <div className="md:col-span-2">
-                    <p className="text-sm font-medium text-gray-600">What's Included</p>
+                    <p className="text-sm font-medium text-gray-600">What&apos;s Included</p>
                     <ul className="list-disc list-inside text-gray-900">
                       {experience.included.map((item, idx) => (
                         <li key={idx}>{item}</li>

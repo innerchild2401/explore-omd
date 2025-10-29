@@ -171,15 +171,22 @@ export default function ExperienceBasicInfo({
         updateData.languages = formData.languages.split(',').map((l: string) => l.trim()).filter((l: string) => l);
       }
 
-      const { error: experienceError } = await supabase
+      console.log('Updating experience with data:', updateData);
+      console.log('Experience ID:', experience.id);
+      
+      const { error: experienceError, data: updatedData } = await supabase
         .from('experiences')
         .update(updateData)
-        .eq('id', experience.id);
+        .eq('id', experience.id)
+        .select();
 
       if (experienceError) {
         console.error('Experience update error:', experienceError);
+        console.error('Error details:', JSON.stringify(experienceError, null, 2));
         throw experienceError;
       }
+      
+      console.log('Update successful:', updatedData);
 
       onUpdate();
     } catch (error: any) {

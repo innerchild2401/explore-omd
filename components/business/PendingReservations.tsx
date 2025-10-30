@@ -20,6 +20,7 @@ interface PendingReservation {
   payment_status: 'pending';
   total_amount: number;
   currency: string;
+  room_id?: string;
   special_requests?: string;
   created_at: string;
   guest_profiles: {
@@ -29,8 +30,10 @@ interface PendingReservation {
     phone?: string;
   };
   rooms: {
+    id?: string;
     name: string;
     room_type: string;
+    base_price?: number;
   };
   booking_channels: {
     name: string;
@@ -64,8 +67,10 @@ export default function PendingReservations({ hotelId, onClose }: PendingReserva
             phone
           ),
           rooms!left(
+            id,
             name,
-            room_type
+            room_type,
+            base_price
           ),
           booking_channels!left(
             name,
@@ -90,12 +95,40 @@ export default function PendingReservations({ hotelId, onClose }: PendingReserva
   const handleApproveReservation = async (reservationId: string) => {
     setProcessingReservation(reservationId);
     try {
+      // Find the reservation to get room details
+      const reservation = reservations.find(r => r.id === reservationId);
+      if (!reservation) {
+        setError('Reservation not found');
+        setProcessingReservation(null);
+        return;
+      }
+
+      // Calculate pricing if it hasn't been calculated yet
+      let updateData: any = {
+        reservation_status: 'confirmed',
+        confirmation_sent: true
+      };
+
+      if (reservation.total_amount === 0 && reservation.rooms.base_price) {
+        // Calculate pricing based on number of nights
+        const checkIn = new Date(reservation.check_in_date);
+        const checkOut = new Date(reservation.check_out_date);
+        const nights = Math.ceil((checkOut.getTime() - checkIn.getTime()) / (1000 * 60 * 60 * 24));
+        
+        const baseRate = reservation.rooms.base_price * nights;
+        const taxes = baseRate * 0.1; // 10% tax
+        const fees = 0;
+        const totalAmount = baseRate + taxes + fees;
+
+        updateData.base_rate = baseRate;
+        updateData.taxes = taxes;
+        updateData.fees = fees;
+        updateData.total_amount = totalAmount;
+      }
+
       const { error } = await supabase
         .from('reservations')
-        .update({ 
-          reservation_status: 'confirmed',
-          confirmation_sent: true
-        })
+        .update(updateData)
         .eq('id', reservationId);
 
       if (error) throw error;

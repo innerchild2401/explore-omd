@@ -136,19 +136,19 @@ export default function AnalyticsDashboard({ omdId }: AnalyticsDashboardProps) {
       : businesses.filter((b) => b.type === selectedType);
 
   return (
-    <div className="space-y-6 dark:text-white">
+    <div className="space-y-6 text-gray-900">
       {/* Filters */}
-      <div className="rounded-lg bg-white p-6 shadow dark:bg-gray-800">
+      <div className="rounded-lg bg-white p-6 shadow">
         <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
           {/* Date Range */}
           <div>
-            <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
+            <label className="mb-2 block text-sm font-medium text-gray-700">
               Date Range
             </label>
             <select
               value={dateRange}
               onChange={(e) => setDateRange(e.target.value)}
-              className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:border-blue-500 focus:outline-none focus:ring"
+              className="w-full rounded-lg border border-gray-300 px-4 py-2 text-gray-900 focus:border-blue-500 focus:outline-none focus:ring"
             >
               <option value="7">Last 7 days</option>
               <option value="30">Last 30 days</option>
@@ -159,13 +159,13 @@ export default function AnalyticsDashboard({ omdId }: AnalyticsDashboardProps) {
 
           {/* Business Type */}
           <div>
-            <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
+            <label className="mb-2 block text-sm font-medium text-gray-700">
               Business Type
             </label>
             <select
               value={selectedType}
               onChange={(e) => setSelectedType(e.target.value)}
-              className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:border-blue-500 focus:outline-none focus:ring"
+              className="w-full rounded-lg border border-gray-300 px-4 py-2 text-gray-900 focus:border-blue-500 focus:outline-none focus:ring"
             >
               <option value="all">All Types</option>
               <option value="hotel">Hotels</option>
@@ -176,13 +176,13 @@ export default function AnalyticsDashboard({ omdId }: AnalyticsDashboardProps) {
 
           {/* Individual Business */}
           <div>
-            <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
+            <label className="mb-2 block text-sm font-medium text-gray-700">
               Business
             </label>
             <select
               value={selectedBusiness}
               onChange={(e) => setSelectedBusiness(e.target.value)}
-              className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:border-blue-500 focus:outline-none focus:ring"
+              className="w-full rounded-lg border border-gray-300 px-4 py-2 text-gray-900 focus:border-blue-500 focus:outline-none focus:ring"
             >
               <option value="all">All Businesses</option>
               {filteredBusinesses.map((business) => (
@@ -198,16 +198,16 @@ export default function AnalyticsDashboard({ omdId }: AnalyticsDashboardProps) {
       {/* Metrics Cards */}
       {loading ? (
         <div className="text-center py-12">
-          <p className="text-gray-600 dark:text-gray-400">Loading analytics...</p>
+          <p className="text-gray-600">Loading analytics...</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
           {/* Total Visitors */}
-          <div className="rounded-lg bg-white p-6 shadow dark:bg-gray-800">
+          <div className="rounded-lg bg-white p-6 shadow">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Visitors</p>
-                <p className="mt-2 text-3xl font-bold text-gray-900 dark:text-white">{metrics.totalVisitors}</p>
+                <p className="text-sm font-medium text-gray-600">Total Visitors</p>
+                <p className="mt-2 text-3xl font-bold text-gray-900">{metrics.totalVisitors}</p>
               </div>
               <div className="rounded-full bg-blue-100 p-3">
                 <svg className="h-6 w-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -219,11 +219,11 @@ export default function AnalyticsDashboard({ omdId }: AnalyticsDashboardProps) {
           </div>
 
           {/* Detail Views */}
-          <div className="rounded-lg bg-white p-6 shadow dark:bg-gray-800">
+          <div className="rounded-lg bg-white p-6 shadow">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Detail Views</p>
-                <p className="mt-2 text-3xl font-bold text-gray-900 dark:text-white">{metrics.detailViews}</p>
+                <p className="text-sm font-medium text-gray-600">Detail Views</p>
+                <p className="mt-2 text-3xl font-bold text-gray-900">{metrics.detailViews}</p>
               </div>
               <div className="rounded-full bg-green-100 p-3">
                 <svg className="h-6 w-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -235,11 +235,11 @@ export default function AnalyticsDashboard({ omdId }: AnalyticsDashboardProps) {
           </div>
 
           {/* Contact Clicks */}
-          <div className="rounded-lg bg-white p-6 shadow dark:bg-gray-800">
+          <div className="rounded-lg bg-white p-6 shadow">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Contact Clicks</p>
-                <p className="mt-2 text-3xl font-bold text-gray-900 dark:text-white">{metrics.contactClicks}</p>
+                <p className="text-sm font-medium text-gray-600">Contact Clicks</p>
+                <p className="mt-2 text-3xl font-bold text-gray-900">{metrics.contactClicks}</p>
               </div>
               <div className="rounded-full bg-purple-100 p-3">
                 <svg className="h-6 w-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -250,11 +250,11 @@ export default function AnalyticsDashboard({ omdId }: AnalyticsDashboardProps) {
           </div>
 
           {/* Bookings */}
-          <div className="rounded-lg bg-white p-6 shadow dark:bg-gray-800">
+          <div className="rounded-lg bg-white p-6 shadow">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Bookings</p>
-                <p className="mt-2 text-3xl font-bold text-gray-900 dark:text-white">{metrics.bookings}</p>
+                <p className="text-sm font-medium text-gray-600">Bookings</p>
+                <p className="mt-2 text-3xl font-bold text-gray-900">{metrics.bookings}</p>
               </div>
               <div className="rounded-full bg-yellow-100 p-3">
                 <svg className="h-6 w-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -265,11 +265,11 @@ export default function AnalyticsDashboard({ omdId }: AnalyticsDashboardProps) {
           </div>
 
           {/* Total Revenue */}
-          <div className="rounded-lg bg-white p-6 shadow dark:bg-gray-800">
+          <div className="rounded-lg bg-white p-6 shadow">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Revenue</p>
-                <p className="mt-2 text-3xl font-bold text-gray-900 dark:text-white">€{metrics.totalRevenue.toFixed(2)}</p>
+                <p className="text-sm font-medium text-gray-600">Total Revenue</p>
+                <p className="mt-2 text-3xl font-bold text-gray-900">€{metrics.totalRevenue.toFixed(2)}</p>
               </div>
               <div className="rounded-full bg-emerald-100 p-3">
                 <svg className="h-6 w-6 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -280,11 +280,11 @@ export default function AnalyticsDashboard({ omdId }: AnalyticsDashboardProps) {
           </div>
 
           {/* Conversion Rate */}
-          <div className="rounded-lg bg-white p-6 shadow dark:bg-gray-800">
+          <div className="rounded-lg bg-white p-6 shadow">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Conversion Rate</p>
-                <p className="mt-2 text-3xl font-bold text-gray-900 dark:text-white">{metrics.conversionRate}%</p>
+                <p className="text-sm font-medium text-gray-600">Conversion Rate</p>
+                <p className="mt-2 text-3xl font-bold text-gray-900">{metrics.conversionRate}%</p>
               </div>
               <div className="rounded-full bg-indigo-100 p-3">
                 <svg className="h-6 w-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">

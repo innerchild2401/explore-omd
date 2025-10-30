@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import ImageGallery from '@/components/hotels/ImageGallery';
+import TrackPageView from '@/components/analytics/TrackPageView';
 
 interface PageProps {
   params: { omdSlug: string; experienceSlug: string };
@@ -57,6 +58,7 @@ export default async function ExperienceDetailPage({ params, searchParams }: Pag
     <div className="min-h-screen bg-gray-50">
       {/* Hero Section */}
       <section className="bg-gradient-to-b from-blue-50 to-white">
+        <TrackPageView businessId={business.id} eventType="detail_view" />
         <div className="mx-auto max-w-7xl px-4 py-8">
           <Link 
             href={`/${omdSlug}/experiences`} 

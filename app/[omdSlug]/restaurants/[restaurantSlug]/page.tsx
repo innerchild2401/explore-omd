@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server';
 import { notFound } from 'next/navigation';
+import TrackPageView from '@/components/analytics/TrackPageView';
 import Link from 'next/link';
 import RestaurantImageGallery from '@/components/restaurants/RestaurantImageGallery';
 
@@ -78,6 +79,7 @@ export default async function RestaurantPage({ params }: RestaurantPageProps) {
 
   return (
     <div className="min-h-screen bg-gray-50 w-full overflow-x-hidden" style={{ maxWidth: '100vw', boxSizing: 'border-box' as const }}>
+      <TrackPageView businessId={business.id} eventType="detail_view" />
       {/* Header */}
       <header className="bg-white shadow-sm w-full">
         <div className="mx-auto max-w-7xl px-4 py-6 w-full min-w-0">

@@ -8,6 +8,7 @@ import LandmarksList from '@/components/hotels/LandmarksList';
 import LazyLoadWrapper from '@/components/ui/LazyLoadWrapper';
 import RoomCardSkeleton from '@/components/hotels/RoomCardSkeleton';
 import ScrollToRoomsButton from '@/components/hotels/ScrollToRoomsButton';
+import TrackPageView from '@/components/analytics/TrackPageView';
 
 export const revalidate = 60;
 
@@ -108,6 +109,7 @@ export default async function HotelDetailPage({ params, searchParams }: HotelPag
 
   return (
     <main className="min-h-screen bg-gray-50">
+      <TrackPageView businessId={business.id} eventType="detail_view" />
       {/* Header Navigation */}
       <header className="sticky top-0 z-40 bg-white shadow-sm">
         <div className="mx-auto max-w-7xl px-4 py-4">

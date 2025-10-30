@@ -220,8 +220,31 @@ Have questions? Contact us at filip.alex24@gmail.com
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Error sending approval email:', error);
+    
+    // More detailed error logging
+    let errorMessage = 'Unknown error';
+    let errorDetails: any = null;
+    
+    if (error instanceof Error) {
+      errorMessage = error.message;
+      errorDetails = {
+        message: error.message,
+        stack: error.stack,
+        name: error.name,
+      };
+      
+      // If it's a MailerSend error, extract more details
+      if ((error as any).body) {
+        errorDetails.mailersendError = (error as any).body;
+      }
+    }
+    
     return NextResponse.json(
-      { error: 'Failed to send email', details: error instanceof Error ? error.message : 'Unknown error' },
+      { 
+        error: 'Failed to send email', 
+        details: errorMessage,
+        fullError: errorDetails 
+      },
       { status: 500 }
     );
   }

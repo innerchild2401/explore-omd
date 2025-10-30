@@ -96,7 +96,9 @@ export default function BusinessApprovalList({
             });
 
             if (!emailResponse.ok) {
-              throw new Error('Failed to send email');
+              const errorData = await emailResponse.json();
+              console.error('Failed to send email - Response:', errorData);
+              throw new Error(errorData.details || 'Failed to send email');
             }
           } catch (emailError) {
             console.error('Failed to send approval email:', emailError);
@@ -144,6 +146,60 @@ export default function BusinessApprovalList({
     } catch (error) {
       console.error('Rejection error:', error);
       alert('Failed to reject business');
+    } finally {
+      setLoading(null);
+    }
+  };
+
+  const handleResendEmail = async (businessId: string) => {
+    setLoading(businessId);
+    
+    try {
+      // Get business details
+      const { data: business, error: fetchError } = await supabase
+        .from('businesses')
+        .select('name, type, contact')
+        .eq('id', businessId)
+        .single();
+
+      if (fetchError) throw fetchError;
+
+      if (!business) {
+        throw new Error('Business not found');
+      }
+
+      const ownerName = business.contact?.name || 'Business Owner';
+      const ownerEmail = business.contact?.email || '';
+      
+      if (!ownerEmail) {
+        alert('Business does not have a contact email');
+        return;
+      }
+
+      // Send approval email
+      const emailResponse = await fetch('/api/email/send-approval', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          recipientName: ownerName,
+          businessName: business.name,
+          businessType: business.type,
+          recipientEmail: ownerEmail,
+        }),
+      });
+
+      if (!emailResponse.ok) {
+        const errorData = await emailResponse.json();
+        console.error('Failed to send email - Response:', errorData);
+        throw new Error(errorData.details || 'Failed to send email');
+      }
+
+      alert('Confirmation email sent successfully!');
+    } catch (error) {
+      console.error('Error resending approval email:', error);
+      alert('Failed to send email: ' + (error instanceof Error ? error.message : 'Unknown error'));
     } finally {
       setLoading(null);
     }
@@ -275,6 +331,16 @@ export default function BusinessApprovalList({
                   <p className="text-gray-400">
                     Approved: {new Date(business.created_at).toLocaleDateString()}
                   </p>
+                </div>
+
+                <div className="mt-4">
+                  <button
+                    onClick={() => handleResendEmail(business.id)}
+                    disabled={loading === business.id}
+                    className="w-full rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-blue-700 disabled:bg-blue-300"
+                  >
+                    {loading === business.id ? 'Sending...' : '📧 Resend Email'}
+                  </button>
                 </div>
               </div>
             ))}

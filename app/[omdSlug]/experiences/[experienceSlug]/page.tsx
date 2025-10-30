@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
+import ContactLink from '@/components/analytics/ContactLink';
 import ImageGallery from '@/components/hotels/ImageGallery';
 import TrackPageView from '@/components/analytics/TrackPageView';
 
@@ -150,20 +151,24 @@ export default async function ExperienceDetailPage({ params, searchParams }: Pag
                   {(business.contact?.phone || business.contact?.email) && (
                     <div className="space-y-4">
                       {business.contact?.phone && (
-                        <a
-                          href={`tel:${business.contact.phone}`}
+                        <ContactLink
+                          businessId={business.id}
+                          type="phone"
+                          value={business.contact.phone}
                           className="block w-full text-center px-6 py-3 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700 transition-colors"
                         >
                           📞 Call to Book
-                        </a>
+                        </ContactLink>
                       )}
                       {business.contact?.email && (
-                        <a
-                          href={`mailto:${business.contact.email}`}
+                        <ContactLink
+                          businessId={business.id}
+                          type="email"
+                          value={business.contact.email}
                           className="block w-full text-center px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-colors"
                         >
                           ✉️ Email for Details
-                        </a>
+                        </ContactLink>
                       )}
                     </div>
                   )}

@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server';
 import { notFound } from 'next/navigation';
 import TrackPageView from '@/components/analytics/TrackPageView';
 import Link from 'next/link';
+import ContactLink from '@/components/analytics/ContactLink';
 import RestaurantImageGallery from '@/components/restaurants/RestaurantImageGallery';
 
 interface RestaurantPageProps {
@@ -199,24 +200,24 @@ export default async function RestaurantPage({ params }: RestaurantPageProps) {
                 {business.contact?.phone && (
                   <div>
                     <h4 className="font-medium text-gray-900">Phone</h4>
-                    <a 
-                      href={`tel:${business.contact.phone}`}
+                    <ContactLink 
+                      businessId={business.id}
+                      type="phone"
+                      value={business.contact.phone}
                       className="text-blue-600 hover:text-blue-700"
-                    >
-                      {business.contact.phone}
-                    </a>
+                    />
                   </div>
                 )}
                 
                 {business.contact?.email && (
                   <div>
                     <h4 className="font-medium text-gray-900">Email</h4>
-                    <a 
-                      href={`mailto:${business.contact.email}`}
+                    <ContactLink 
+                      businessId={business.id}
+                      type="email"
+                      value={business.contact.email}
                       className="text-blue-600 hover:text-blue-700"
-                    >
-                      {business.contact.email}
-                    </a>
+                    />
                   </div>
                 )}
                 
@@ -251,12 +252,14 @@ export default async function RestaurantPage({ params }: RestaurantPageProps) {
                   Call us to make a reservation
                 </p>
                 {business.contact?.phone && (
-                  <a
-                    href={`tel:${business.contact.phone}`}
+                  <ContactLink
+                    businessId={business.id}
+                    type="phone"
+                    value={business.contact.phone}
                     className="inline-flex items-center px-4 py-2 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700"
                   >
                     📞 Call {business.contact.phone}
-                  </a>
+                  </ContactLink>
                 )}
               </div>
             )}

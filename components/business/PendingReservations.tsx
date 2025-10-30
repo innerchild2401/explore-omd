@@ -57,17 +57,17 @@ export default function PendingReservations({ hotelId, onClose }: PendingReserva
         .from('reservations')
         .select(`
           *,
-          guest_profiles!inner(
+          guest_profiles!left(
             first_name,
             last_name,
             email,
             phone
           ),
-          rooms!inner(
+          rooms!left(
             name,
             room_type
           ),
-          booking_channels!inner(
+          booking_channels!left(
             name,
             display_name,
             channel_type

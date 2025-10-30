@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import { LineChart, Line, AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 
 interface AnalyticsDashboardProps {
   omdId: string;
@@ -22,6 +23,21 @@ interface Business {
   type: string;
 }
 
+interface TimeSeriesData {
+  date: string;
+  visitors: number;
+  views: number;
+  contacts: number;
+  bookings: number;
+  revenue: number;
+}
+
+interface TopBusiness {
+  name: string;
+  visitors: number;
+  revenue: number;
+}
+
 export default function AnalyticsDashboard({ omdId }: AnalyticsDashboardProps) {
   const supabase = createClient();
   const [loading, setLoading] = useState(true);
@@ -37,6 +53,8 @@ export default function AnalyticsDashboard({ omdId }: AnalyticsDashboardProps) {
   const [selectedBusiness, setSelectedBusiness] = useState<string>('all');
   const [selectedType, setSelectedType] = useState<string>('all');
   const [dateRange, setDateRange] = useState<string>('30');
+  const [timeSeriesData, setTimeSeriesData] = useState<TimeSeriesData[]>([]);
+  const [topBusinesses, setTopBusinesses] = useState<TopBusiness[]>([]);
 
   useEffect(() => {
     fetchData();
@@ -62,7 +80,7 @@ export default function AnalyticsDashboard({ omdId }: AnalyticsDashboardProps) {
       // Build query filter
       let analyticsQuery = supabase
         .from('business_analytics')
-        .select('event_type, revenue_amount');
+        .select('event_type, revenue_amount, created_at, business_id');
 
       // Apply filters
       if (selectedBusiness !== 'all') {
@@ -123,6 +141,60 @@ export default function AnalyticsDashboard({ omdId }: AnalyticsDashboardProps) {
         totalRevenue,
         conversionRate,
       });
+
+      // Calculate time series data
+      const dailyData = new Map<string, { visitors: number; views: number; contacts: number; bookings: number; revenue: number }>();
+      const businessesMap = new Map(businesses.map(b => [b.id, b]));
+
+      analyticsData?.forEach(event => {
+        const date = new Date(event.created_at).toISOString().split('T')[0];
+        if (!dailyData.has(date)) {
+          dailyData.set(date, { visitors: 0, views: 0, contacts: 0, bookings: 0, revenue: 0 });
+        }
+        const dayData = dailyData.get(date)!;
+        
+        if (event.event_type === 'page_view') dayData.visitors++;
+        if (event.event_type === 'detail_view') dayData.views++;
+        if (event.event_type === 'contact_click') dayData.contacts++;
+        if (event.event_type === 'booking_completed') {
+          dayData.bookings++;
+          dayData.revenue += event.revenue_amount || 0;
+        }
+      });
+
+      const sortedDailyData = Array.from(dailyData.entries())
+        .map(([date, data]) => ({ date, ...data }))
+        .sort((a, b) => a.date.localeCompare(b.date));
+
+      setTimeSeriesData(sortedDailyData);
+
+      // Calculate top performing businesses
+      const businessStats = new Map<string, { visitors: number; revenue: number }>();
+      analyticsData?.forEach(event => {
+        const businessId = event.business_id;
+        const business = businessesMap.get(businessId);
+        if (!business) return;
+
+        if (!businessStats.has(businessId)) {
+          businessStats.set(businessId, { visitors: 0, revenue: 0 });
+        }
+        const stats = businessStats.get(businessId)!;
+
+        if (event.event_type === 'page_view') stats.visitors++;
+        if (event.event_type === 'booking_completed' && event.revenue_amount) {
+          stats.revenue += event.revenue_amount;
+        }
+      });
+
+      const sortedBusinesses = Array.from(businessStats.entries())
+        .map(([businessId, stats]) => {
+          const business = businessesMap.get(businessId);
+          return { name: business?.name || 'Unknown', visitors: stats.visitors, revenue: stats.revenue };
+        })
+        .sort((a, b) => b.visitors - a.visitors)
+        .slice(0, 5);
+
+      setTopBusinesses(sortedBusinesses);
     } catch (error) {
       console.error('Error fetching analytics:', error);
     } finally {
@@ -293,6 +365,117 @@ export default function AnalyticsDashboard({ omdId }: AnalyticsDashboardProps) {
               </div>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Charts Section */}
+      {!loading && (
+        <div className="grid gap-6 lg:grid-cols-2">
+          {/* Traffic Over Time */}
+          {timeSeriesData.length > 0 && (
+            <div className="rounded-lg bg-white p-6 shadow">
+              <h3 className="mb-4 text-lg font-semibold text-gray-900">Traffic Over Time</h3>
+              <ResponsiveContainer width="100%" height={300}>
+                <AreaChart data={timeSeriesData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                  <XAxis 
+                    dataKey="date" 
+                    tick={{ fontSize: 12 }}
+                    stroke="#666"
+                  />
+                  <YAxis 
+                    tick={{ fontSize: 12 }}
+                    stroke="#666"
+                  />
+                  <Tooltip 
+                    contentStyle={{ backgroundColor: '#fff', border: '1px solid #e5e7eb', borderRadius: '8px' }}
+                  />
+                  <Legend />
+                  <Area type="monotone" dataKey="visitors" stackId="1" stroke="#3b82f6" fill="#3b82f6" fillOpacity={0.6} />
+                  <Area type="monotone" dataKey="views" stackId="2" stroke="#10b981" fill="#10b981" fillOpacity={0.6} />
+                  <Area type="monotone" dataKey="contacts" stackId="3" stroke="#8b5cf6" fill="#8b5cf6" fillOpacity={0.6} />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+          )}
+
+          {/* Revenue Over Time */}
+          {timeSeriesData.length > 0 && (
+            <div className="rounded-lg bg-white p-6 shadow">
+              <h3 className="mb-4 text-lg font-semibold text-gray-900">Revenue Over Time</h3>
+              <ResponsiveContainer width="100%" height={300}>
+                <LineChart data={timeSeriesData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                  <XAxis 
+                    dataKey="date" 
+                    tick={{ fontSize: 12 }}
+                    stroke="#666"
+                  />
+                  <YAxis 
+                    tick={{ fontSize: 12 }}
+                    stroke="#666"
+                  />
+                  <Tooltip 
+                    contentStyle={{ backgroundColor: '#fff', border: '1px solid #e5e7eb', borderRadius: '8px' }}
+                    formatter={(value: number) => `€${value.toFixed(2)}`}
+                  />
+                  <Legend />
+                  <Line type="monotone" dataKey="revenue" stroke="#10b981" strokeWidth={3} dot={{ fill: '#10b981', r: 4 }} />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          )}
+
+          {/* Conversion Funnel */}
+          <div className="rounded-lg bg-white p-6 shadow">
+            <h3 className="mb-4 text-lg font-semibold text-gray-900">Conversion Funnel</h3>
+            <ResponsiveContainer width="100%" height={300}>
+              <BarChart data={[
+                { name: 'Visitors', value: metrics.totalVisitors },
+                { name: 'Detail Views', value: metrics.detailViews },
+                { name: 'Contact Clicks', value: metrics.contactClicks },
+                { name: 'Bookings', value: metrics.bookings },
+              ]} layout="vertical">
+                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                <XAxis type="number" tick={{ fontSize: 12 }} stroke="#666" />
+                <YAxis dataKey="name" type="category" width={100} tick={{ fontSize: 12 }} stroke="#666" />
+                <Tooltip 
+                  contentStyle={{ backgroundColor: '#fff', border: '1px solid #e5e7eb', borderRadius: '8px' }}
+                />
+                <Bar dataKey="value" fill="#3b82f6" radius={[0, 8, 8, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+
+          {/* Top Performing Businesses */}
+          {topBusinesses.length > 0 && (
+            <div className="rounded-lg bg-white p-6 shadow">
+              <h3 className="mb-4 text-lg font-semibold text-gray-900">Top Performing Businesses</h3>
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={topBusinesses}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                  <XAxis 
+                    dataKey="name" 
+                    angle={-45}
+                    textAnchor="end"
+                    height={80}
+                    tick={{ fontSize: 10 }}
+                    stroke="#666"
+                  />
+                  <YAxis 
+                    tick={{ fontSize: 12 }}
+                    stroke="#666"
+                  />
+                  <Tooltip 
+                    contentStyle={{ backgroundColor: '#fff', border: '1px solid #e5e7eb', borderRadius: '8px' }}
+                  />
+                  <Legend />
+                  <Bar dataKey="visitors" fill="#3b82f6" name="Visitors" />
+                  <Bar dataKey="revenue" fill="#10b981" name="Revenue (€)" />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          )}
         </div>
       )}
     </div>

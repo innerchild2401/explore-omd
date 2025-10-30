@@ -169,7 +169,7 @@ export default async function ExperiencesPage({ params, searchParams }: Experien
                     {experience.price_from && (
                       <div className="absolute top-4 left-4 bg-white/90 backdrop-blur-sm rounded-full px-3 py-1">
                         <span className="text-sm font-semibold text-gray-700">
-                          {experience.currency || 'USD'} {experience.price_from}
+                          {require('@/lib/utils').formatPrice(experience.price_from || 0, 'RON')}
                         </span>
                       </div>
                     )}

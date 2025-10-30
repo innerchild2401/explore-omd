@@ -78,7 +78,7 @@ export default function ExperienceBasicInfo({
     min_participants: experience.min_participants || 1,
     max_participants: experience.max_participants || '',
     price_from: experience.price_from || '',
-    currency: experience.currency || 'USD',
+    currency: experience.currency || 'RON',
     meeting_point_address: experience.meeting_point?.address || '',
     meeting_point_description: experience.meeting_point?.description || '',
     cancellation_policy: experience.cancellation_policy || '',
@@ -147,7 +147,7 @@ export default function ExperienceBasicInfo({
         min_participants: formData.min_participants || 1,
         max_participants: formData.max_participants && formData.max_participants !== '' ? parseInt(formData.max_participants.toString()) : null,
         price_from: formData.price_from && formData.price_from !== '' ? parseFloat(formData.price_from.toString()) : null,
-        currency: toNullIfEmpty(formData.currency) || 'USD',
+        currency: toNullIfEmpty(formData.currency) || 'RON',
         meeting_point: toNullIfEmpty(formData.meeting_point_address) || toNullIfEmpty(formData.meeting_point_description) ? {
           address: toNullIfEmpty(formData.meeting_point_address),
           description: toNullIfEmpty(formData.meeting_point_description),
@@ -367,8 +367,9 @@ export default function ExperienceBasicInfo({
                   onChange={handleInputChange}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900"
                 >
-                  <option value="USD">USD ($)</option>
+                  <option value="RON">RON (lei)</option>
                   <option value="EUR">EUR (€)</option>
+                  <option value="USD">USD ($)</option>
                   <option value="GBP">GBP (£)</option>
                   <option value="CAD">CAD (C$)</option>
                   <option value="AUD">AUD (A$)</option>

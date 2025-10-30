@@ -109,7 +109,7 @@ export default function ExperienceBooking({ experienceId, businessId, timeSlots,
                 {new Date(slot.start_date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}{' '}
                 at {slot.start_time}
                 {slot.duration_minutes && ` (${slot.duration_minutes} min)`}
-                {' '}- {slot.price_per_person} {selectedTimeSlot?.currency || 'USD'} per person
+                {' '}- {require('@/lib/utils').formatPrice(slot.price_per_person, 'RON')} per person
               </option>
             ))}
           </select>
@@ -147,13 +147,13 @@ export default function ExperienceBooking({ experienceId, businessId, timeSlots,
           <div className="flex justify-between items-center mb-2">
             <span className="text-gray-700">Price per person:</span>
             <span className="font-semibold text-gray-900">
-              {selectedTimeSlot.price_per_person} {selectedTimeSlot.currency || 'USD'}
+              {require('@/lib/utils').formatPrice(selectedTimeSlot.price_per_person, 'RON')}
             </span>
           </div>
           <div className="flex justify-between items-center pt-2 border-t border-blue-200">
             <span className="font-semibold text-gray-900">Total:</span>
             <span className="text-xl font-bold text-blue-600">
-              {(selectedTimeSlot.price_per_person * formData.participants).toFixed(2)} {selectedTimeSlot.currency || 'USD'}
+              {require('@/lib/utils').formatPrice(selectedTimeSlot.price_per_person * formData.participants, 'RON')}
             </span>
           </div>
         </div>

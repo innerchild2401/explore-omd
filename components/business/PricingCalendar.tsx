@@ -476,7 +476,7 @@ export default function PricingCalendar({ room, onClose }: PricingCalendarProps)
                         <div className="text-sm font-medium text-gray-700">
                           {template.base_price_adjustment_type === 'percentage' && '+'}
                           {template.base_price_adjustment_value}
-                          {template.base_price_adjustment_type === 'percentage' ? '%' : '€'}
+                          {template.base_price_adjustment_type === 'percentage' ? '%' : 'RON'}
                         </div>
                       </button>
                     ))}

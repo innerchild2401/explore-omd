@@ -341,7 +341,7 @@ export default function AnalyticsDashboard({ omdId }: AnalyticsDashboardProps) {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600">Total Revenue</p>
-                <p className="mt-2 text-3xl font-bold text-gray-900">€{metrics.totalRevenue.toFixed(2)}</p>
+                <p className="mt-2 text-3xl font-bold text-gray-900">{require('@/lib/utils').formatPrice(metrics.totalRevenue, 'RON')}</p>
               </div>
               <div className="rounded-full bg-emerald-100 p-3">
                 <svg className="h-6 w-6 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -417,7 +417,7 @@ export default function AnalyticsDashboard({ omdId }: AnalyticsDashboardProps) {
                   />
                   <Tooltip 
                     contentStyle={{ backgroundColor: '#fff', border: '1px solid #e5e7eb', borderRadius: '8px' }}
-                    formatter={(value: number) => `€${value.toFixed(2)}`}
+                    formatter={(value: number) => require('@/lib/utils').formatPrice(value, 'RON')}
                   />
                   <Legend />
                   <Line type="monotone" dataKey="revenue" stroke="#10b981" strokeWidth={3} dot={{ fill: '#10b981', r: 4 }} />
@@ -471,7 +471,7 @@ export default function AnalyticsDashboard({ omdId }: AnalyticsDashboardProps) {
                   />
                   <Legend />
                   <Bar dataKey="visitors" fill="#3b82f6" name="Visitors" />
-                  <Bar dataKey="revenue" fill="#10b981" name="Revenue (€)" />
+                  <Bar dataKey="revenue" fill="#10b981" name="Revenue (RON)" />
                 </BarChart>
               </ResponsiveContainer>
             </div>

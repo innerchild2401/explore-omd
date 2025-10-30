@@ -196,7 +196,7 @@ export default function ExperienceDashboard({
                     <p className="text-sm font-medium text-gray-600">Price From</p>
                     <p className="text-lg font-semibold text-gray-900">
                       {experience.price_from 
-                        ? `${experience.currency || 'USD'} ${experience.price_from}`
+                        ? require('@/lib/utils').formatPrice(experience.price_from, 'RON')
                         : 'Not set'}
                     </p>
                   </div>

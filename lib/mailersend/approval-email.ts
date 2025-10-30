@@ -20,7 +20,7 @@ export async function sendBusinessApprovalEmail({
   // Determine sender email based on OMD (for now using a generic one)
   // In production, this should come from OMD settings
   const sender = new Sender(
-    "noreply@yourdomain.com", 
+    "test-z0vklo6pvy7l7qrx.mlsender.net", 
     "Your OMD Team"
   );
 

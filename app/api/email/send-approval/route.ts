@@ -23,7 +23,7 @@ export async function POST(request: NextRequest) {
     }
 
     const sender = new Sender(
-      "filip.alex24@gmail.com",
+      "test-z0vklo6pvy7l7qrx.mlsender.net",
       "Your OMD Team"
     );
 

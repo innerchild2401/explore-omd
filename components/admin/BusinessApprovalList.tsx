@@ -192,13 +192,16 @@ export default function BusinessApprovalList({
 
       if (!emailResponse.ok) {
         const errorData = await emailResponse.json();
-        console.error('Failed to send email - Response:', errorData);
+        console.error('Failed to send email - Full Response:', JSON.stringify(errorData, null, 2));
+        console.error('Error details:', errorData.details);
+        console.error('Full error object:', errorData.fullError);
         throw new Error(errorData.details || 'Failed to send email');
       }
 
       alert('Confirmation email sent successfully!');
     } catch (error) {
       console.error('Error resending approval email:', error);
+      console.error('Error object:', error);
       alert('Failed to send email: ' + (error instanceof Error ? error.message : 'Unknown error'));
     } finally {
       setLoading(null);

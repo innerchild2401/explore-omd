@@ -27,8 +27,13 @@ export async function POST(request: NextRequest) {
       "Your OMD Team"
     );
 
+    // For trial accounts, MailerSend only allows sending to verified admin email
+    // Temporarily override recipient to admin email while in trial mode
+    const isTrialMode = process.env.MAILER_SEND_TRIAL_MODE === 'true';
+    const actualRecipient = isTrialMode ? 'filip.alex24@gmail.com' : recipientEmail;
+    
     const recipients = [
-      new Recipient(recipientEmail, recipientName),
+      new Recipient(actualRecipient, recipientName),
     ];
 
     // Determine the welcome message based on business type
@@ -217,7 +222,13 @@ Have questions? Contact us at filip.alex24@gmail.com
 
     await mailerSend.email.send(emailParams);
 
-    return NextResponse.json({ success: true });
+    return NextResponse.json({ 
+      success: true,
+      trialMode: isTrialMode,
+      message: isTrialMode 
+        ? `Email sent to admin (trial mode): ${actualRecipient}. Original recipient: ${recipientEmail}`
+        : 'Email sent successfully'
+    });
   } catch (error) {
     console.error('Error sending approval email:', error);
     

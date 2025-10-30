@@ -68,7 +68,7 @@ export default function NewReservationModal({ hotelId, rooms, onClose, onSuccess
     taxes: 0,
     fees: 0,
     total_amount: 0,
-    currency: 'EUR'
+    currency: 'RON'
   });
 
   const [confirmationData, setConfirmationData] = useState({
@@ -177,7 +177,7 @@ export default function NewReservationModal({ hotelId, rooms, onClose, onSuccess
       taxes: taxes,
       fees: fees,
       total_amount: totalAmount,
-      currency: 'EUR'
+      currency: 'RON'
     });
   };
 
@@ -388,9 +388,9 @@ export default function NewReservationModal({ hotelId, rooms, onClose, onSuccess
   };
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
+    return new Intl.NumberFormat('ro-RO', {
       style: 'currency',
-      currency: 'EUR'
+      currency: 'RON'
     }).format(amount);
   };
 

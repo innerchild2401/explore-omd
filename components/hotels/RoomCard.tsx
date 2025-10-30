@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { formatPrice } from '@/lib/utils';
 import RoomImageCarousel from './RoomImageCarousel';
 import BookingModal from './BookingModal';
 
@@ -121,10 +122,10 @@ export default function RoomCard({ room, hotelSlug, omdSlug, hotelId, amenities 
             {/* Price & Booking */}
             <div className="ml-4 text-right">
               <div className="mb-2">
-                <div className="text-3xl font-bold text-gray-900">€{dynamicPrice}</div>
+                <div className="text-3xl font-bold text-gray-900">{formatPrice(dynamicPrice, 'RON')}</div>
                 <div className="text-sm text-gray-600">per night</div>
                 {dynamicPrice !== room.base_price && (
-                  <div className="text-xs text-gray-500 line-through">€{room.base_price}</div>
+                  <div className="text-xs text-gray-500 line-through">{formatPrice(room.base_price, 'RON')}</div>
                 )}
               </div>
               

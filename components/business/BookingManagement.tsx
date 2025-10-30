@@ -288,8 +288,8 @@ export default function BookingManagement({ hotelId, rooms, onClose }: BookingMa
     });
   };
 
-  const formatCurrency = (amount: number, currency: string = 'EUR') => {
-    return new Intl.NumberFormat('en-US', {
+  const formatCurrency = (amount: number, currency: string = 'RON') => {
+    return new Intl.NumberFormat('ro-RO', {
       style: 'currency',
       currency: currency
     }).format(amount);

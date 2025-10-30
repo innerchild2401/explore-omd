@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
+import { formatPrice } from '@/lib/utils';
 
 interface AvailabilityDashboardProps {
   hotelId: string;
@@ -472,7 +473,7 @@ export default function AvailabilityDashboard({ hotelId, onClose }: Availability
                     <div className="p-3 bg-white border border-gray-200 rounded-lg">
                       <div className="font-medium text-gray-900">{room.name}</div>
                       <div className="text-sm text-gray-600 capitalize">{room.room_type.replace('_', ' ')}</div>
-                      <div className="text-sm text-gray-600">€{room.base_price}/night</div>
+                      <div className="text-sm text-gray-600">{formatPrice(room.base_price, 'RON')}/night</div>
                     </div>
 
                     {/* Availability Cells */}

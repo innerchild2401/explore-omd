@@ -9,6 +9,7 @@ import LazyLoadWrapper from '@/components/ui/LazyLoadWrapper';
 import RoomCardSkeleton from '@/components/hotels/RoomCardSkeleton';
 import ScrollToRoomsButton from '@/components/hotels/ScrollToRoomsButton';
 import TrackPageView from '@/components/analytics/TrackPageView';
+import { formatPrice } from '@/lib/utils';
 import ContactLink from '@/components/analytics/ContactLink';
 
 export const revalidate = 60;
@@ -287,7 +288,7 @@ export default async function HotelDetailPage({ params, searchParams }: HotelPag
                   <div className="mb-2">
                     <span className="text-sm text-gray-600">Starting from</span>
                     <div className="text-3xl font-bold text-gray-900">
-                      €{Math.min(...rooms.map(r => r.base_price))}
+                      {formatPrice(Math.min(...rooms.map(r => r.base_price)), 'RON')}
                       <span className="text-lg font-normal text-gray-600">/night</span>
                     </div>
                   </div>

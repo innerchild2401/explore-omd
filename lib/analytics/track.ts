@@ -50,7 +50,7 @@ export async function trackEvent(params: TrackEventParams, request?: Request) {
       p_page_url: pageUrl,
       p_metadata: params.metadata || {},
       p_revenue_amount: null,
-      p_currency: 'EUR',
+      p_currency: 'RON',
     });
     
     if (error) {

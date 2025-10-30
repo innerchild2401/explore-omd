@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
+import { formatPrice as formatPriceUtil } from '@/lib/utils';
 
 interface PricingCalendarProps {
   room: any;
@@ -339,7 +340,7 @@ export default function PricingCalendar({ room, onClose }: PricingCalendarProps)
   };
 
   const formatPrice = (price: number) => {
-    return `€${price.toFixed(0)}`;
+    return formatPriceUtil(price, 'RON');
   };
 
   const days = getDaysInMonth(currentMonth);

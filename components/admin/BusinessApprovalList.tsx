@@ -45,6 +45,15 @@ export default function BusinessApprovalList({
     setLoading(businessId);
     
     try {
+      // First, get the business details for email
+      const { data: business, error: fetchError } = await supabase
+        .from('businesses')
+        .select('name, type')
+        .eq('id', businessId)
+        .single();
+
+      if (fetchError) throw fetchError;
+
       // Approve the business
       const { error: businessError } = await supabase
         .from('businesses')
@@ -62,6 +71,39 @@ export default function BusinessApprovalList({
         .eq('id', ownerId);
 
       if (profileError) throw profileError;
+
+      // Find the business in the pending list to get owner info
+      const businessData = pendingBusinesses.find(b => b.id === businessId);
+      
+      if (businessData && business) {
+        // Send approval email
+        const ownerName = businessData.contact?.name || 'Business Owner';
+        const ownerEmail = businessData.contact?.email || '';
+        
+        if (ownerEmail) {
+          try {
+            const emailResponse = await fetch('/api/email/send-approval', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                recipientName: ownerName,
+                businessName: business.name,
+                businessType: business.type,
+                recipientEmail: ownerEmail,
+              }),
+            });
+
+            if (!emailResponse.ok) {
+              throw new Error('Failed to send email');
+            }
+          } catch (emailError) {
+            console.error('Failed to send approval email:', emailError);
+            // Don't fail the approval if email fails
+          }
+        }
+      }
 
       router.refresh();
     } catch (error) {

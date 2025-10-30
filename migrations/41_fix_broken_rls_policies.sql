@@ -72,6 +72,7 @@ USING (
 -- Drop old policies (both the new one and the old duplicate)
 DROP POLICY IF EXISTS "Hotel owners can manage reservations" ON reservations;
 DROP POLICY IF EXISTS "Hotel owners can manage their reservations" ON reservations;
+DROP POLICY IF EXISTS "OMD admins can view reservations in their OMD" ON reservations;
 
 -- Create new policy with correct schema
 CREATE POLICY "Hotel owners can manage reservations"
@@ -83,6 +84,21 @@ USING (
     SELECT 1 FROM businesses b
     WHERE b.id = reservations.hotel_id  -- hotel_id references businesses.id directly
     AND b.owner_id = auth.uid()
+  )
+);
+
+-- Create OMD admin policy with correct schema
+CREATE POLICY "OMD admins can view reservations in their OMD"
+ON reservations
+FOR SELECT
+TO authenticated
+USING (
+  EXISTS (
+    SELECT 1 FROM businesses b
+    JOIN user_profiles up ON up.omd_id = b.omd_id
+    WHERE b.id = reservations.hotel_id  -- hotel_id references businesses.id directly
+    AND up.id = auth.uid()
+    AND up.role IN ('omd_admin', 'super_admin')
   )
 );
 

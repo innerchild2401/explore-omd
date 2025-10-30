@@ -268,14 +268,14 @@ export default function HotelDashboard({
       {/* Modals */}
       {activeTab === 'availability' && (
         <IndividualRoomAvailabilityDashboard
-          hotelId={hotel.business_id}
+          hotelId={hotel.id}
           onClose={() => setActiveTab('info')}
         />
       )}
 
         {activeTab === 'bookings' && (
           <BookingManagement
-            hotelId={hotel.business_id}
+            hotelId={hotel.id}
             rooms={rooms}
             onClose={() => setActiveTab('info')}
           />
@@ -283,7 +283,7 @@ export default function HotelDashboard({
 
         {activeTab === 'reservations' && (
           <PendingReservations
-            hotelId={hotel.business_id}
+            hotelId={hotel.id}
             onClose={() => setActiveTab('info')}
           />
         )}

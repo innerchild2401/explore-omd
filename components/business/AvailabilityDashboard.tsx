@@ -74,30 +74,14 @@ export default function AvailabilityDashboard({ hotelId, onClose }: Availability
       const startDate = getStartDate();
       const endDate = getEndDate();
       
-      // hotelId is now business.id, not hotel.id
-      console.log('Business ID (hotelId):', hotelId);
+      // hotelId is hotels.id
+      console.log('Hotel ID:', hotelId);
       
-      // First, get the hotel record using business_id
-      const { data: hotelData } = await supabase
-        .from('hotels')
-        .select('id')
-        .eq('business_id', hotelId)
-        .single();
-
-      if (!hotelData) {
-        console.error('No hotel found for business_id:', hotelId);
-        setRooms([]);
-        setAvailability([]);
-        setReservations([]);
-        setLoading(false);
-        return;
-      }
-      
-      // Now fetch rooms using the actual hotel.id
+      // Fetch rooms using the hotel.id
       const { data: roomsData, error: roomsError } = await supabase
         .from('rooms')
         .select('*')
-        .eq('hotel_id', hotelData.id)
+        .eq('hotel_id', hotelId)
         .eq('is_active', true)
         .order('name');
 

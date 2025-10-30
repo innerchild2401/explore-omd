@@ -47,7 +47,8 @@ CREATE TRIGGER trigger_auto_track_hotel_revenue
 -- 1. DROP AND RECREATE GUEST PROFILES RLS POLICIES
 -- =============================================
 
--- Drop old policies
+-- Drop old policies - only drop the one that joins through reservations
+-- Keep the other ones (search, update, create, delete) that use businesses directly
 DROP POLICY IF EXISTS "Hotel owners can manage guest profiles" ON guest_profiles;
 
 -- Create new policy with correct schema
@@ -68,8 +69,9 @@ USING (
 -- 2. DROP AND RECREATE RESERVATIONS RLS POLICIES
 -- =============================================
 
--- Drop old policies
+-- Drop old policies (both the new one and the old duplicate)
 DROP POLICY IF EXISTS "Hotel owners can manage reservations" ON reservations;
+DROP POLICY IF EXISTS "Hotel owners can manage their reservations" ON reservations;
 
 -- Create new policy with correct schema
 CREATE POLICY "Hotel owners can manage reservations"
@@ -88,8 +90,9 @@ USING (
 -- 3. DROP AND RECREATE BOOKING EVENTS RLS POLICIES
 -- =============================================
 
--- Drop old policies
+-- Drop old policies (both the new one and the old duplicate)
 DROP POLICY IF EXISTS "Hotel owners can view booking events" ON booking_events;
+DROP POLICY IF EXISTS "Hotel owners can manage booking events" ON booking_events;
 
 -- Create new policy with correct schema
 CREATE POLICY "Hotel owners can view booking events"

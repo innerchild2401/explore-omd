@@ -264,6 +264,7 @@ export default async function HotelDetailPage({ params, searchParams }: HotelPag
                         hotelSlug={hotelSlug}
                         omdSlug={omdSlug}
                         hotelId={hotel?.id}
+                        amenities={amenities}
                         searchParams={searchParams}
                       />
                     </LazyLoadWrapper>

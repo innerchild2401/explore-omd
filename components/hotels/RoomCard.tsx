@@ -9,6 +9,7 @@ interface RoomCardProps {
   hotelSlug: string;
   omdSlug: string;
   hotelId: string;
+  amenities?: Array<{ id: string; name: string; icon?: string }>;
   searchParams?: {
     checkIn?: string;
     checkOut?: string;
@@ -27,7 +28,7 @@ const formatBedConfiguration = (config: any): string => {
     .join(', ');
 };
 
-export default function RoomCard({ room, hotelSlug, omdSlug, hotelId, searchParams }: RoomCardProps) {
+export default function RoomCard({ room, hotelSlug, omdSlug, hotelId, amenities = [], searchParams }: RoomCardProps) {
   const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
   
   // Check if room is available
@@ -95,14 +96,18 @@ export default function RoomCard({ room, hotelSlug, omdSlug, hotelId, searchPara
               {room.room_amenities && room.room_amenities.length > 0 && (
                 <div className="mb-4">
                   <div className="flex flex-wrap gap-2">
-                    {room.room_amenities.slice(0, 5).map((amenity: string, idx: number) => (
-                      <span
-                        key={idx}
-                        className="rounded-full bg-blue-50 px-3 py-1 text-sm text-blue-700"
-                      >
-                        {amenity}
-                      </span>
-                    ))}
+                    {room.room_amenities.slice(0, 5).map((amenity: string, idx: number) => {
+                      const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(amenity);
+                      const name = isUuid ? (amenities.find(a => a.id === amenity)?.name || amenity) : amenity;
+                      return (
+                        <span
+                          key={idx}
+                          className="rounded-full bg-blue-50 px-3 py-1 text-sm text-blue-700"
+                        >
+                          {name}
+                        </span>
+                      );
+                    })}
                     {room.room_amenities.length > 5 && (
                       <span className="rounded-full bg-gray-100 px-3 py-1 text-sm text-gray-700">
                         +{room.room_amenities.length - 5} more

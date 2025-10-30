@@ -51,6 +51,47 @@ CREATE TRIGGER trigger_auto_track_hotel_revenue
 -- Keep the other ones (search, update, create, delete) that use businesses directly
 DROP POLICY IF EXISTS "Hotel owners can manage guest profiles" ON guest_profiles;
 
+-- Ensure anonymous users can create guest profiles (for booking form)
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies 
+    WHERE tablename = 'guest_profiles' 
+    AND policyname = 'Anonymous users can create guest profiles'
+  ) THEN
+    CREATE POLICY "Anonymous users can create guest profiles"
+    ON guest_profiles
+    FOR INSERT
+    TO anon, authenticated
+    WITH CHECK (true);
+  END IF;
+  
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies 
+    WHERE tablename = 'guest_profiles' 
+    AND policyname = 'Anonymous users can read guest profiles'
+  ) THEN
+    CREATE POLICY "Anonymous users can read guest profiles"
+    ON guest_profiles
+    FOR SELECT
+    TO anon, authenticated
+    USING (true);
+  END IF;
+  
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies 
+    WHERE tablename = 'guest_profiles' 
+    AND policyname = 'Anonymous users can update guest profiles'
+  ) THEN
+    CREATE POLICY "Anonymous users can update guest profiles"
+    ON guest_profiles
+    FOR UPDATE
+    TO anon, authenticated
+    USING (true)
+    WITH CHECK (true);
+  END IF;
+END $$;
+
 -- Create new policy with correct schema
 CREATE POLICY "Hotel owners can manage guest profiles"
 ON guest_profiles

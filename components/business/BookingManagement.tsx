@@ -81,8 +81,8 @@ export default function BookingManagement({ hotelId, rooms, onClose }: BookingMa
     try {
       setLoading(true);
       
-      // hotelId is now the actual hotel.id, not business.id
-      console.log('Hotel ID:', hotelId);
+      // hotelId is now business.id, not hotel.id
+      console.log('Business ID (hotelId):', hotelId);
       
       const { data, error } = await supabase
         .from('reservations')
@@ -133,31 +133,51 @@ export default function BookingManagement({ hotelId, rooms, onClose }: BookingMa
       ).length || 0;
       
       // Get total rooms count for occupancy calculation
-      const { data: roomsData } = await supabase
-        .from('rooms')
-        .select('quantity')
-        .eq('hotel_id', hotelId)
-        .eq('is_active', true);
+      // First, find the hotel record using business_id
+      const { data: hotelData } = await supabase
+        .from('hotels')
+        .select('id')
+        .eq('business_id', hotelId)
+        .single();
       
-      const totalRooms = roomsData?.reduce((sum, r) => sum + (r.quantity || 0), 0) || 1;
-      const occupancyRate = (todayReservations / totalRooms) * 100;
+      if (hotelData) {
+        const { data: roomsData } = await supabase
+          .from('rooms')
+          .select('quantity')
+          .eq('hotel_id', hotelData.id)
+          .eq('is_active', true);
+        
+        const totalRooms = roomsData?.reduce((sum, r) => sum + (r.quantity || 0), 0) || 1;
+        const occupancyRate = (todayReservations / totalRooms) * 100;
 
-      setReservations(data || []);
-      console.log('Set reservations (detailed):', JSON.stringify(data?.map(r => ({
-        id: r.id,
-        confirmation_number: r.confirmation_number,
-        individual_room_id: r.individual_room_id,
-        individual_room: r.individual_rooms,
-        rooms: r.rooms
-      })), null, 2));
-      setStats({
-        total_reservations: totalReservations,
-        confirmed_reservations: confirmedReservations,
-        checked_in: checkedIn,
-        pending_payments: pendingPayments,
-        total_revenue: totalRevenue,
-        occupancy_rate: occupancyRate
-      });
+        setReservations(data || []);
+        console.log('Set reservations (detailed):', JSON.stringify(data?.map(r => ({
+          id: r.id,
+          confirmation_number: r.confirmation_number,
+          individual_room_id: r.individual_room_id,
+          individual_room: r.individual_rooms,
+          rooms: r.rooms
+        })), null, 2));
+        setStats({
+          total_reservations: totalReservations,
+          confirmed_reservations: confirmedReservations,
+          checked_in: checkedIn,
+          pending_payments: pendingPayments,
+          total_revenue: totalRevenue,
+          occupancy_rate: occupancyRate
+        });
+      } else {
+        // No hotel record found
+        setReservations([]);
+        setStats({
+          total_reservations: 0,
+          confirmed_reservations: 0,
+          checked_in: 0,
+          pending_payments: 0,
+          total_revenue: 0,
+          occupancy_rate: 0
+        });
+      }
     } catch (err: any) {
       console.error('Error fetching reservations:', err);
       setError(err.message);

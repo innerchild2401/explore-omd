@@ -362,16 +362,16 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 CREATE OR REPLACE FUNCTION auto_track_hotel_revenue()
 RETURNS TRIGGER AS $$
 BEGIN
-  -- Only track for completed bookings (status = 'confirmed')
-  IF NEW.status = 'confirmed' AND (OLD.status IS NULL OR OLD.status != 'confirmed') THEN
+  -- Only track for completed bookings (reservation_status = 'confirmed')
+  IF NEW.reservation_status = 'confirmed' AND (OLD.reservation_status IS NULL OR OLD.reservation_status != 'confirmed') THEN
     PERFORM track_business_revenue(
-      p_business_id := (SELECT business_id FROM rooms WHERE id = NEW.room_id),
+      p_business_id := NEW.hotel_id,  -- hotel_id references businesses.id directly
       p_source_type := 'hotel_reservation',
       p_source_id := NEW.id,
-      p_gross_amount := NEW.total_price,
-      p_check_in_date := NEW.check_in,
-      p_check_out_date := NEW.check_out,
-      p_payment_status := 'pending'
+      p_gross_amount := NEW.total_amount,
+      p_check_in_date := NEW.check_in_date,
+      p_check_out_date := NEW.check_out_date,
+      p_payment_status := COALESCE(NEW.payment_status, 'pending')
     );
   END IF;
   

@@ -136,13 +136,13 @@ export default function AnalyticsDashboard({ omdId }: AnalyticsDashboardProps) {
       : businesses.filter((b) => b.type === selectedType);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 dark:text-white">
       {/* Filters */}
-      <div className="rounded-lg bg-white p-6 shadow">
+      <div className="rounded-lg bg-white p-6 shadow dark:bg-gray-800">
         <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
           {/* Date Range */}
           <div>
-            <label className="mb-2 block text-sm font-medium text-gray-700">
+            <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
               Date Range
             </label>
             <select
@@ -159,7 +159,7 @@ export default function AnalyticsDashboard({ omdId }: AnalyticsDashboardProps) {
 
           {/* Business Type */}
           <div>
-            <label className="mb-2 block text-sm font-medium text-gray-700">
+            <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
               Business Type
             </label>
             <select
@@ -176,7 +176,7 @@ export default function AnalyticsDashboard({ omdId }: AnalyticsDashboardProps) {
 
           {/* Individual Business */}
           <div>
-            <label className="mb-2 block text-sm font-medium text-gray-700">
+            <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
               Business
             </label>
             <select
@@ -198,16 +198,16 @@ export default function AnalyticsDashboard({ omdId }: AnalyticsDashboardProps) {
       {/* Metrics Cards */}
       {loading ? (
         <div className="text-center py-12">
-          <p className="text-gray-600">Loading analytics...</p>
+          <p className="text-gray-600 dark:text-gray-400">Loading analytics...</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
           {/* Total Visitors */}
-          <div className="rounded-lg bg-white p-6 shadow">
+          <div className="rounded-lg bg-white p-6 shadow dark:bg-gray-800">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Total Visitors</p>
-                <p className="mt-2 text-3xl font-bold text-gray-900">{metrics.totalVisitors}</p>
+                <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Visitors</p>
+                <p className="mt-2 text-3xl font-bold text-gray-900 dark:text-white">{metrics.totalVisitors}</p>
               </div>
               <div className="rounded-full bg-blue-100 p-3">
                 <svg className="h-6 w-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -219,11 +219,11 @@ export default function AnalyticsDashboard({ omdId }: AnalyticsDashboardProps) {
           </div>
 
           {/* Detail Views */}
-          <div className="rounded-lg bg-white p-6 shadow">
+          <div className="rounded-lg bg-white p-6 shadow dark:bg-gray-800">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Detail Views</p>
-                <p className="mt-2 text-3xl font-bold text-gray-900">{metrics.detailViews}</p>
+                <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Detail Views</p>
+                <p className="mt-2 text-3xl font-bold text-gray-900 dark:text-white">{metrics.detailViews}</p>
               </div>
               <div className="rounded-full bg-green-100 p-3">
                 <svg className="h-6 w-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -235,11 +235,11 @@ export default function AnalyticsDashboard({ omdId }: AnalyticsDashboardProps) {
           </div>
 
           {/* Contact Clicks */}
-          <div className="rounded-lg bg-white p-6 shadow">
+          <div className="rounded-lg bg-white p-6 shadow dark:bg-gray-800">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Contact Clicks</p>
-                <p className="mt-2 text-3xl font-bold text-gray-900">{metrics.contactClicks}</p>
+                <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Contact Clicks</p>
+                <p className="mt-2 text-3xl font-bold text-gray-900 dark:text-white">{metrics.contactClicks}</p>
               </div>
               <div className="rounded-full bg-purple-100 p-3">
                 <svg className="h-6 w-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -250,11 +250,11 @@ export default function AnalyticsDashboard({ omdId }: AnalyticsDashboardProps) {
           </div>
 
           {/* Bookings */}
-          <div className="rounded-lg bg-white p-6 shadow">
+          <div className="rounded-lg bg-white p-6 shadow dark:bg-gray-800">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Bookings</p>
-                <p className="mt-2 text-3xl font-bold text-gray-900">{metrics.bookings}</p>
+                <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Bookings</p>
+                <p className="mt-2 text-3xl font-bold text-gray-900 dark:text-white">{metrics.bookings}</p>
               </div>
               <div className="rounded-full bg-yellow-100 p-3">
                 <svg className="h-6 w-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -265,11 +265,11 @@ export default function AnalyticsDashboard({ omdId }: AnalyticsDashboardProps) {
           </div>
 
           {/* Total Revenue */}
-          <div className="rounded-lg bg-white p-6 shadow">
+          <div className="rounded-lg bg-white p-6 shadow dark:bg-gray-800">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Total Revenue</p>
-                <p className="mt-2 text-3xl font-bold text-gray-900">€{metrics.totalRevenue.toFixed(2)}</p>
+                <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Revenue</p>
+                <p className="mt-2 text-3xl font-bold text-gray-900 dark:text-white">€{metrics.totalRevenue.toFixed(2)}</p>
               </div>
               <div className="rounded-full bg-emerald-100 p-3">
                 <svg className="h-6 w-6 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -280,11 +280,11 @@ export default function AnalyticsDashboard({ omdId }: AnalyticsDashboardProps) {
           </div>
 
           {/* Conversion Rate */}
-          <div className="rounded-lg bg-white p-6 shadow">
+          <div className="rounded-lg bg-white p-6 shadow dark:bg-gray-800">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Conversion Rate</p>
-                <p className="mt-2 text-3xl font-bold text-gray-900">{metrics.conversionRate}%</p>
+                <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Conversion Rate</p>
+                <p className="mt-2 text-3xl font-bold text-gray-900 dark:text-white">{metrics.conversionRate}%</p>
               </div>
               <div className="rounded-full bg-indigo-100 p-3">
                 <svg className="h-6 w-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">

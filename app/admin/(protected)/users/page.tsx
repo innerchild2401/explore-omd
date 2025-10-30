@@ -47,29 +47,50 @@ export default async function AdminUsersPage() {
     );
   }
 
-  // Fetch users in the same OMD with businesses they manage (via businesses.owner_id)
-  const { data: users } = await supabase
-    .from('user_profiles')
-    .select(`
-      id,
-      role,
-      profile,
-      businesses:businesses!businesses_owner_id_fkey (
-        id,
-        name,
-        type,
-        status
-      )
-    `)
+  // First, get all businesses for this OMD to find unique business owners
+  const { data: businesses } = await supabase
+    .from('businesses')
+    .select('owner_id')
     .eq('omd_id', currentProfile.omd_id)
-    .order('created_at', { ascending: false }) as unknown as { data: UserRow[] | null };
+    .not('owner_id', 'is', null);
 
-  const rows: UserRow[] = Array.isArray(users) ? (users as unknown as UserRow[]) : [];
+  // Extract unique owner IDs
+  const ownerIds = businesses
+    ? Array.from(new Set(businesses.map((b) => b.owner_id).filter(Boolean)))
+    : [];
+
+  let rows: UserRow[] = [];
+
+  // Only query users if there are business owners
+  if (ownerIds.length > 0) {
+    // Fetch users who own businesses in this OMD with their businesses
+    const { data: users } = await supabase
+      .from('user_profiles')
+      .select(`
+        id,
+        role,
+        profile,
+        businesses:businesses!businesses_owner_id_fkey (
+          id,
+          name,
+          type,
+          status
+        )
+      `)
+      .in('id', ownerIds)
+      .eq('omd_id', currentProfile.omd_id)
+      .order('created_at', { ascending: false }) as unknown as { data: UserRow[] | null };
+
+    rows = Array.isArray(users) ? (users as unknown as UserRow[]) : [];
+  }
 
   return (
     <div>
       <div className="mb-6 flex items-center justify-between">
-        <h1 className="text-3xl font-bold">Users</h1>
+        <div>
+          <h1 className="text-3xl font-bold">Business Users</h1>
+          <p className="mt-1 text-sm text-gray-500">Users who own businesses in this OMD</p>
+        </div>
       </div>
 
       <div className="overflow-hidden rounded-lg border border-gray-200 bg-white">
@@ -119,7 +140,7 @@ export default async function AdminUsersPage() {
           </tbody>
         </table>
         {rows.length === 0 && (
-          <div className="p-6 text-sm text-gray-500">No users found for this OMD.</div>
+          <div className="p-6 text-sm text-gray-500">No business users found for this OMD.</div>
         )}
       </div>
     </div>

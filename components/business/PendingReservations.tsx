@@ -18,6 +18,7 @@ interface PendingReservation {
   infants: number;
   reservation_status: 'tentative';
   payment_status: 'pending';
+  base_rate: number;
   total_amount: number;
   currency: string;
   room_id?: string;
@@ -103,28 +104,26 @@ export default function PendingReservations({ hotelId, onClose }: PendingReserva
         return;
       }
 
-      // Calculate pricing if it hasn't been calculated yet
-      let updateData: any = {
+      // Calculate pricing based on number of nights
+      const checkIn = new Date(reservation.check_in_date);
+      const checkOut = new Date(reservation.check_out_date);
+      const nights = Math.ceil((checkOut.getTime() - checkIn.getTime()) / (1000 * 60 * 60 * 24));
+      
+      // Use base_rate from reservation (which is the nightly rate) or fall back to room base_price
+      const nightlyRate = reservation.base_rate || reservation.rooms.base_price || 0;
+      const baseRate = nightlyRate * nights;
+      const taxes = baseRate * 0.1; // 10% tax
+      const fees = 0;
+      const totalAmount = baseRate + taxes + fees;
+
+      const updateData: any = {
         reservation_status: 'confirmed',
-        confirmation_sent: true
+        confirmation_sent: true,
+        base_rate: baseRate,
+        taxes: taxes,
+        fees: fees,
+        total_amount: totalAmount
       };
-
-      if (reservation.total_amount === 0 && reservation.rooms.base_price) {
-        // Calculate pricing based on number of nights
-        const checkIn = new Date(reservation.check_in_date);
-        const checkOut = new Date(reservation.check_out_date);
-        const nights = Math.ceil((checkOut.getTime() - checkIn.getTime()) / (1000 * 60 * 60 * 24));
-        
-        const baseRate = reservation.rooms.base_price * nights;
-        const taxes = baseRate * 0.1; // 10% tax
-        const fees = 0;
-        const totalAmount = baseRate + taxes + fees;
-
-        updateData.base_rate = baseRate;
-        updateData.taxes = taxes;
-        updateData.fees = fees;
-        updateData.total_amount = totalAmount;
-      }
 
       const { error } = await supabase
         .from('reservations')

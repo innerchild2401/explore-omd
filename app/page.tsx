@@ -327,7 +327,7 @@ export default function HomePage() {
                 </div>
                 {/* Arrow for desktop */}
                 {index < 2 && (
-                  <div className="hidden items-center justify-center md:absolute md:right-0 md:top-1/2 md:flex md:-translate-y-1/2 md:translate-x-1/2">
+                  <div className="hidden items-center justify-center md:absolute md:right-0 md:top-1/2 md:z-10 md:flex md:-translate-y-1/2 md:translate-x-[1rem]">
                     <svg className="h-8 w-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                     </svg>

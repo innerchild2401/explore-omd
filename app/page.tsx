@@ -80,7 +80,7 @@ export default function HomePage() {
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
             >
-              Solicitează o prezentare
+              Solicită o prezentare
             </motion.a>
           </motion.div>
 
@@ -563,8 +563,8 @@ export default function HomePage() {
             <p>
               © {new Date().getFullYear()} Dest Explore. Toate drepturile rezervate.
             </p>
-          </div>
         </div>
+      </div>
       </footer>
     </main>
   );

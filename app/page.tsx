@@ -357,20 +357,40 @@ export default function HomePage() {
             </p>
           </motion.div>
 
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6 }}
-            className="rounded-xl bg-white p-12 text-center shadow-md"
-          >
-            <p className="text-lg text-gray-600">
-              În curând vom adăuga exemple de destinații pilot care folosesc platforma noastră.
-            </p>
-            <p className="mt-4 text-gray-500">
-              Contactează-ne pentru a afla mai multe despre programul nostru pilot.
-            </p>
-          </motion.div>
+          <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
+            {/* Mangalia Pilot Destination */}
+            <motion.a
+              href="https://www.destexplore.eu/mangalia"
+              target="_blank"
+              rel="noopener noreferrer"
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6 }}
+              className="group rounded-xl bg-white p-8 shadow-md transition-all hover:shadow-xl"
+            >
+              <div className="mb-4 flex items-center justify-center">
+                <div className="rounded-full bg-blue-100 p-4 text-blue-600">
+                  <svg className="h-8 w-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                  </svg>
+                </div>
+              </div>
+              <h3 className="mb-2 text-2xl font-bold text-gray-900">
+                Mangalia
+              </h3>
+              <p className="mb-4 text-gray-600">
+                Destinația de top a Marii Negre
+              </p>
+              <div className="flex items-center text-blue-600 transition-colors group-hover:text-blue-700">
+                <span className="mr-2 font-semibold">Explorează destinația</span>
+                <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </div>
+            </motion.a>
+          </div>
         </div>
       </section>
 

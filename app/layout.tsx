@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Explore OMD - Local Destination Management Platform",
-  description: "Discover, book, and experience local destinations",
+  title: "Dest Explore - Soluții complete pentru gestionarea destinațiilor turistice",
+  description: "Soluții complete pentru gestionarea și promovarea destinațiilor turistice. Platformă unificată pentru OMD-uri și parteneri locali.",
 };
 
 export default function RootLayout({
@@ -12,7 +12,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="ro">
       <body>{children}</body>
     </html>
   );

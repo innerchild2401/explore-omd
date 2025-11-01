@@ -54,6 +54,18 @@ export default function AdminSidebar({ userRole, omdId }: AdminSidebarProps) {
       icon: '🌐',
     },
     {
+      label: 'OMD Approvals',
+      href: '/admin/omd-approvals',
+      icon: '🏛️',
+      adminOnly: true,
+    },
+    {
+      label: 'Contact Inquiries',
+      href: '/admin/contact-inquiries',
+      icon: '📧',
+      adminOnly: true,
+    },
+    {
       label: 'Users',
       href: '/admin/users',
       icon: '👥',

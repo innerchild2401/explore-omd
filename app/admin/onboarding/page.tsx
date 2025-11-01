@@ -60,12 +60,13 @@ export default function AdminOnboarding() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
 
-      // Create the OMD
+      // Create the OMD with pending status (requires super admin approval)
       const { data: newOMD, error: omdError } = await supabase
         .from('omds')
         .insert({
           name: destinationName,
           slug: slug,
+          status: 'pending',
         })
         .select()
         .single();
@@ -109,7 +110,9 @@ export default function AdminOnboarding() {
         });
       }
 
-      router.push('/admin');
+      // Show success message that OMD is pending approval
+      alert('OMD created successfully! Your destination is pending super admin approval. You will be notified once approved.');
+      router.push('/admin/login');
     } catch (err: any) {
       setError(err.message || 'An unexpected error occurred');
       setLoading(false);

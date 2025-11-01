@@ -18,12 +18,31 @@ export default function HomePage() {
     setIsSubmitting(true);
     setFormError('');
 
-    // TODO: Implement actual form submission logic
-    setTimeout(() => {
+    try {
+      const response = await fetch('/api/contact/submit', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        setFormError(data.error || 'A apărut o eroare. Vă rugăm încercați din nou.');
+        setIsSubmitting(false);
+        return;
+      }
+
       setFormSubmitted(true);
-      setIsSubmitting(false);
       setFormData({ nume: '', email: '', mesaj: '' });
-    }, 1000);
+    } catch (error) {
+      console.error('Error submitting form:', error);
+      setFormError('A apărut o eroare. Vă rugăm încercați din nou.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (

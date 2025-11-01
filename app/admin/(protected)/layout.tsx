@@ -36,6 +36,19 @@ export default async function ProtectedAdminLayout({
     redirect('/');
   }
 
+  // Check if OMD admin's OMD is pending approval
+  if (profile.role === 'omd_admin' && profile.omd_id) {
+    const { data: omd } = await supabase
+      .from('omds')
+      .select('status')
+      .eq('id', profile.omd_id)
+      .single();
+    
+    if (omd?.status === 'pending') {
+      // OMD is pending, allow access but show warning
+    }
+  }
+
   return (
     <div className="flex h-screen bg-gray-100">
       {/* Sidebar */}

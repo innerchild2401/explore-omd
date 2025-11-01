@@ -118,6 +118,27 @@ export default function BookingForm({ hotelId, roomId, roomName, onBookingSubmit
 
       if (reservationError) throw reservationError;
 
+      // Send booking confirmation emails
+      try {
+        const emailResponse = await fetch('/api/email/booking-confirmation', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            reservationId: reservation.id,
+          }),
+        });
+
+        if (!emailResponse.ok) {
+          console.error('Failed to send booking confirmation email');
+          // Don't fail the booking if email fails
+        }
+      } catch (emailError) {
+        console.error('Error sending booking confirmation email:', emailError);
+        // Don't fail the booking if email fails
+      }
+
       setSuccess(true);
       onBookingSubmitted?.();
 

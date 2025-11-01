@@ -361,9 +361,14 @@ export default function NewReservationModal({ hotelId, rooms, onClose, onSuccess
           }),
         });
 
+        const emailResult = await emailResponse.json();
+        
         if (!emailResponse.ok) {
-          console.error('Failed to send booking confirmation email');
-          // Don't fail the booking if email fails
+          console.error('Failed to send booking confirmation email:', emailResult);
+          console.error('Response status:', emailResponse.status);
+          console.error('Error details:', emailResult.error, emailResult.details);
+        } else {
+          console.log('Booking confirmation email sent successfully:', emailResult);
         }
       } catch (emailError) {
         console.error('Error sending booking confirmation email:', emailError);

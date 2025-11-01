@@ -15,7 +15,10 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { reservationId } = body;
 
+    console.log('Booking confirmation email request received:', { reservationId });
+
     if (!reservationId) {
+      console.error('Missing reservationId in request');
       return NextResponse.json(
         { error: 'Missing reservationId' },
         { status: 400 }
@@ -59,9 +62,22 @@ export async function POST(request: NextRequest) {
     const room = (reservation as any).rooms;
     const hotel = (reservation as any).hotels;
 
+    console.log('Reservation data extracted:', {
+      hasGuest: !!guest,
+      hasRoom: !!room,
+      hasHotel: !!hotel,
+      guestEmail: guest?.email,
+      hotelBusinessId: hotel?.business_id,
+    });
+
     if (!guest || !room || !hotel) {
+      console.error('Missing required reservation data:', {
+        guest: !!guest,
+        room: !!room,
+        hotel: !!hotel,
+      });
       return NextResponse.json(
-        { error: 'Missing required reservation data' },
+        { error: 'Missing required reservation data', details: { guest: !!guest, room: !!room, hotel: !!hotel } },
         { status: 400 }
       );
     }
@@ -120,9 +136,15 @@ export async function POST(request: NextRequest) {
     // Get business email from contact JSONB
     const businessEmail = (business.contact as any)?.email;
     
+    console.log('Business contact info:', {
+      contact: business.contact,
+      email: businessEmail,
+    });
+    
     if (!businessEmail) {
+      console.error('Business email not found in contact information:', business.contact);
       return NextResponse.json(
-        { error: 'Business email not found in contact information' },
+        { error: 'Business email not found in contact information', details: { contact: business.contact } },
         { status: 400 }
       );
     }
@@ -170,33 +192,64 @@ export async function POST(request: NextRequest) {
       data: emailVariables,
     }));
 
+    // Prepare MailerSend request payload
+    // Note: MailerSend v1 API uses different structure - let's try both formats
+    const mailerSendPayload = {
+      from: {
+        email: 'no-reply@destexplore.eu',
+        name: 'DestExplore',
+      },
+      to: recipients,
+      template_id: 'pr9084zy03vgw63d',
+      personalization: personalization,
+    };
+
+    console.log('Sending email via MailerSend:', {
+      template_id: mailerSendPayload.template_id,
+      recipients: recipients.map(r => r.email),
+      variables: emailVariables,
+      payload: JSON.stringify(mailerSendPayload, null, 2),
+    });
+
     // Send email via MailerSend REST API
+    // Using v1 endpoint for email sending
     const mailerSendResponse = await fetch('https://api.mailersend.com/v1/email', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${mailerSendApiKey}`,
         'Content-Type': 'application/json',
-        'X-Requested-With': 'XMLHttpRequest',
+        'Accept': 'application/json',
       },
-      body: JSON.stringify({
-        from: {
-          email: 'no-reply@destexplore.eu',
-          name: 'DestExplore',
-        },
-        to: recipients,
-        template_id: 'pr9084zy03vgw63d',
-        personalization: personalization,
-      }),
+      body: JSON.stringify(mailerSendPayload),
     });
 
-    const mailerSendResult = await mailerSendResponse.json();
+    // Handle different response types
+    let mailerSendResult;
+    const contentType = mailerSendResponse.headers.get('content-type');
+    
+    if (contentType && contentType.includes('application/json')) {
+      mailerSendResult = await mailerSendResponse.json();
+    } else {
+      const textResult = await mailerSendResponse.text();
+      console.log('MailerSend non-JSON response:', textResult);
+      mailerSendResult = { message: textResult };
+    }
+
+    console.log('MailerSend response status:', mailerSendResponse.status);
+    console.log('MailerSend response headers:', Object.fromEntries(mailerSendResponse.headers.entries()));
+    console.log('MailerSend response body:', JSON.stringify(mailerSendResult, null, 2));
 
     if (!mailerSendResponse.ok) {
-      console.error('MailerSend API error:', mailerSendResult);
+      console.error('MailerSend API error:', {
+        status: mailerSendResponse.status,
+        statusText: mailerSendResponse.statusText,
+        body: mailerSendResult,
+      });
       return NextResponse.json(
         {
           error: 'Failed to send email via MailerSend',
           details: mailerSendResult,
+          status: mailerSendResponse.status,
         },
         { status: 500 }
       );

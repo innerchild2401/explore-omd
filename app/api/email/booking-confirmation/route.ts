@@ -223,16 +223,26 @@ export async function POST(request: NextRequest) {
     const numberOfGuests = reservation.adults + (reservation.children || 0) + (reservation.infants || 0);
 
     // Prepare email variables (matching MailerSend template exactly - lowercase with underscores)
-    const emailVariables = {
-      name: guest.first_name || '',
-      destination_name: omd.slug || '',
-      business_name: finalBusiness.name || '',
+    // CRITICAL: All values must be strings for MailerSend template variables
+    // Variable names must match EXACTLY what's in the template (case-sensitive, no spaces)
+    const emailVariables: Record<string, string> = {
+      name: String(guest.first_name || ''),
+      destination_name: String(omd.slug || ''),
+      business_name: String(finalBusiness.name || ''),
       total_due: `${totalDue.toFixed(2)} ${reservation.currency || 'EUR'}`,
       check_in_date: formatDate(reservation.check_in_date),
       check_out_date: formatDate(reservation.check_out_date),
-      number_of_guests: numberOfGuests.toString(),
-      room_type: room.name || room.room_type || 'Room',
+      number_of_guests: String(numberOfGuests),
+      room_type: String(room.name || room.room_type || 'Room'),
     };
+    
+    // Verify all variables are strings and non-empty where expected
+    console.log('Variable type check:', Object.entries(emailVariables).map(([key, value]) => ({
+      key,
+      value,
+      type: typeof value,
+      isEmpty: value === '',
+    })));
 
     console.log('Email variables prepared:', JSON.stringify(emailVariables, null, 2));
     console.log('Variables breakdown:', {
@@ -285,7 +295,14 @@ export async function POST(request: NextRequest) {
     }
 
     // Prepare personalization for each recipient
-    const personalization = recipients.map(recipient => ({
+    // IMPORTANT: Email addresses in 'to' and 'personalization' must match EXACTLY (case-sensitive)
+    // Normalize emails to ensure exact matching
+    const normalizedRecipients = recipients.map(r => ({
+      ...r,
+      email: r.email.toLowerCase().trim(),
+    }));
+    
+    const personalization = normalizedRecipients.map(recipient => ({
       email: recipient.email,
       data: emailVariables,
     }));
@@ -299,11 +316,23 @@ export async function POST(request: NextRequest) {
         email: 'no-reply@destexplore.eu',
         name: 'DestExplore',
       },
-      to: recipients.map(r => ({ email: r.email })),
+      to: normalizedRecipients.map(r => ({ 
+        email: r.email, // Already normalized
+        name: r.name 
+      })),
       subject: `Booking Confirmation - ${finalBusiness.name}`, // Required even with templates
       template_id: 'pr9084zy03vgw63d',
       personalization: personalization,
     };
+    
+    console.log('DEBUG: Email matching verification:', {
+      to_emails: mailerSendPayload.to.map(t => t.email),
+      personalization_emails: personalization.map(p => p.email),
+      all_match: mailerSendPayload.to.map(t => t.email).every((email, idx) => 
+        email === personalization[idx]?.email
+      ),
+      variable_keys: Object.keys(emailVariables),
+    });
 
     console.log('Sending email via MailerSend:', {
       template_id: mailerSendPayload.template_id,

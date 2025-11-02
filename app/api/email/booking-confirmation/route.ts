@@ -222,38 +222,171 @@ export async function POST(request: NextRequest) {
     // Calculate number of guests
     const numberOfGuests = reservation.adults + (reservation.children || 0) + (reservation.infants || 0);
 
-    // Prepare email variables (matching MailerSend template exactly - lowercase with underscores)
-    // CRITICAL: All values must be strings for MailerSend template variables
-    // Variable names must match EXACTLY what's in the template (case-sensitive, no spaces)
-    const emailVariables: Record<string, string> = {
-      name: String(guest.first_name || ''),
-      destination_name: String(omd.slug || ''),
-      business_name: String(finalBusiness.name || ''),
+    // Prepare email variables
+    const emailVariables = {
+      name: guest.first_name || '',
+      destination_name: omd.slug || '',
+      business_name: finalBusiness.name || '',
       total_due: `${totalDue.toFixed(2)} ${reservation.currency || 'EUR'}`,
       check_in_date: formatDate(reservation.check_in_date),
       check_out_date: formatDate(reservation.check_out_date),
       number_of_guests: String(numberOfGuests),
-      room_type: String(room.name || room.room_type || 'Room'),
+      room_type: room.name || room.room_type || 'Room',
     };
-    
-    // Verify all variables are strings and non-empty where expected
-    console.log('Variable type check:', Object.entries(emailVariables).map(([key, value]) => ({
-      key,
-      value,
-      type: typeof value,
-      isEmpty: value === '',
-    })));
 
-    console.log('Email variables prepared:', JSON.stringify(emailVariables, null, 2));
-    console.log('Variables breakdown:', {
-      'name (first_name)': guest.first_name,
-      'Destination_name (OMD slug)': omd.slug,
-      'Business_name': finalBusiness.name,
-      'Total_due (calculated)': totalDue,
-      'Check_in_date (formatted)': formatDate(reservation.check_in_date),
-      'Check_out_date (formatted)': formatDate(reservation.check_out_date),
-      'Number_of_guests': numberOfGuests,
-      'Room_type': room.name || room.room_type,
+    // Create beautiful HTML email template
+    const contactFormUrl = `https://www.destexplore.eu/${omd.slug}/contact`;
+    
+    const htmlEmail = `
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Confirmare Rezervare</title>
+</head>
+<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f5f5f5;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color: #f5f5f5; padding: 20px 0;">
+    <tr>
+      <td align="center">
+        <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+          <!-- Header -->
+          <tr>
+            <td style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 40px 30px; text-align: center;">
+              <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: 600;">Confirmare Rezervare</h1>
+            </td>
+          </tr>
+          
+          <!-- Main Content -->
+          <tr>
+            <td style="padding: 40px 30px;">
+              <p style="color: #333333; font-size: 16px; line-height: 1.6; margin: 0 0 20px 0;">
+                Multumim pentru alegerea facuta!
+              </p>
+              
+              <p style="color: #333333; font-size: 16px; line-height: 1.6; margin: 0 0 30px 0;">
+                <strong style="color: #667eea;">${emailVariables.name}</strong>, ne bucuram ca ai ales <strong>${emailVariables.destination_name}</strong> si <strong>${emailVariables.business_name}</strong> pentru a-ti petrece vacanta!
+              </p>
+              
+              <div style="background-color: #f8f9fa; border-left: 4px solid #667eea; padding: 20px; margin: 30px 0; border-radius: 4px;">
+                <h2 style="color: #333333; font-size: 20px; font-weight: 600; margin: 0 0 20px 0;">Detalii Rezervare</h2>
+                
+                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin: 0;">
+                  <tr>
+                    <td style="padding: 10px 0; border-bottom: 1px solid #e0e0e0;">
+                      <strong style="color: #667eea; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px;">Total</strong>
+                      <div style="color: #333333; font-size: 18px; font-weight: 600; margin-top: 5px;">${emailVariables.total_due}</div>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 10px 0; border-bottom: 1px solid #e0e0e0;">
+                      <strong style="color: #667eea; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px;">Check In</strong>
+                      <div style="color: #333333; font-size: 16px; margin-top: 5px;">${emailVariables.check_in_date}</div>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 10px 0; border-bottom: 1px solid #e0e0e0;">
+                      <strong style="color: #667eea; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px;">Check Out</strong>
+                      <div style="color: #333333; font-size: 16px; margin-top: 5px;">${emailVariables.check_out_date}</div>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 10px 0; border-bottom: 1px solid #e0e0e0;">
+                      <strong style="color: #667eea; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px;">Numar Oaspeti</strong>
+                      <div style="color: #333333; font-size: 16px; margin-top: 5px;">${emailVariables.number_of_guests}</div>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 10px 0;">
+                      <strong style="color: #667eea; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px;">Tip Camera</strong>
+                      <div style="color: #333333; font-size: 16px; margin-top: 5px;">${emailVariables.room_type}</div>
+                    </td>
+                  </tr>
+                </table>
+              </div>
+              
+              <p style="color: #666666; font-size: 15px; line-height: 1.6; margin: 30px 0;">
+                Cererea ta de rezervare a fost transmisa departamentului de rezervari al <strong>${emailVariables.business_name}</strong> si urmeaza sa fii contactat in cel mult 48 de ore de catre acestia pentru a stabili toate detaliile suplimentare.
+              </p>
+              
+              <p style="color: #666666; font-size: 15px; line-height: 1.6; margin: 30px 0;">
+                Disponibilitatea camerelor pe aceasta platforma este garantata de catre parteneri!
+              </p>
+              
+              <!-- Problem Button -->
+              <div style="margin: 40px 0; text-align: center;">
+                <h3 style="color: #333333; font-size: 18px; font-weight: 600; margin: 0 0 15px 0;">Ai intampinat probleme?</h3>
+                <p style="color: #666666; font-size: 15px; line-height: 1.6; margin: 0 0 20px 0;">
+                  Suntem aici sa mediem orice probleme aparute intre tine si partenerii prezenti pe platforma noastra. Apasa butonul de mai jos, completeaza formularul cu un scurt rezumat al interactiunii avute si un membru al echipei noastre va prelua problema ridicata de tine in cel mai scurt timp.
+                </p>
+                <a href="${contactFormUrl}" style="display: inline-block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #ffffff; text-decoration: none; padding: 14px 32px; border-radius: 6px; font-weight: 600; font-size: 16px; box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);">
+                  Raporteaza Problema
+                </a>
+              </div>
+              
+              <div style="margin-top: 40px; padding-top: 30px; border-top: 1px solid #e0e0e0; text-align: center;">
+                <p style="color: #666666; font-size: 14px; margin: 0 0 10px 0;">
+                  Echipa OMD <strong style="color: #667eea;">${emailVariables.destination_name}</strong> iti ureaza sejur de poveste!
+                </p>
+                <p style="color: #999999; font-size: 12px; margin: 20px 0 0 0;">
+                  <a href="https://www.destexplore.eu" style="color: #667eea; text-decoration: none;">Terms</a> | 
+                  <a href="https://www.destexplore.eu" style="color: #667eea; text-decoration: none;">Privacy</a> | 
+                  <a href="https://www.destexplore.eu" style="color: #667eea; text-decoration: none;">Preferences</a> | 
+                  <a href="https://www.destexplore.eu" style="color: #667eea; text-decoration: none;">Help center</a>
+                </p>
+                <p style="color: #999999; font-size: 12px; margin: 10px 0 0 0;">
+                  © 2026 Platforma gestionata prin destexplore.eu
+                </p>
+              </div>
+            </td>
+          </tr>
+        </table>
+        
+        <!-- Footer -->
+        <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="margin-top: 20px;">
+          <tr>
+            <td style="text-align: center; padding: 20px; color: #999999; font-size: 12px;">
+              Delivered by MailerSend
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+    `.trim();
+
+    // Plain text version for email clients that don't support HTML
+    const textEmail = `
+Multumim pentru alegerea facuta!
+
+${emailVariables.name}, ne bucuram ca ai ales ${emailVariables.destination_name} si ${emailVariables.business_name} pentru a-ti petrece vacanta!
+
+Detalii Rezervare:
+- Total: ${emailVariables.total_due}
+- Check In: ${emailVariables.check_in_date}
+- Check Out: ${emailVariables.check_out_date}
+- Numar Oaspeti: ${emailVariables.number_of_guests}
+- Tip Camera: ${emailVariables.room_type}
+
+Cererea ta de rezervare a fost transmisa departamentului de rezervari al ${emailVariables.business_name} si urmeaza sa fii contactat in cel mult 48 de ore de catre acestia pentru a stabili toate detaliile suplimentare.
+
+Disponibilitatea camerelor pe aceasta platforma este garantata de catre parteneri!
+
+Ai intampinat probleme?
+Suntem aici sa mediem orice probleme aparute intre tine si partenerii prezenti pe platforma noastra. Acceseaza ${contactFormUrl} pentru a raporta o problema.
+
+Echipa OMD ${emailVariables.destination_name} iti ureaza sejur de poveste!
+
+© 2026 Platforma gestionata prin destexplore.eu
+    `.trim();
+
+    console.log('HTML email created with variables:', {
+      name: emailVariables.name,
+      destination: emailVariables.destination_name,
+      business: emailVariables.business_name,
+      contactFormUrl,
     });
 
     // Send email using MailerSend REST API with template
@@ -294,66 +427,33 @@ export async function POST(request: NextRequest) {
       ];
     }
 
-    // Prepare personalization for each recipient
-    // IMPORTANT: Email addresses in 'to' and 'personalization' must match EXACTLY (case-sensitive)
-    // Normalize emails to ensure exact matching
+    // Normalize recipients
     const normalizedRecipients = recipients.map(r => ({
       ...r,
       email: r.email.toLowerCase().trim(),
     }));
-    
-    // Create personalization array - ensure data object is a clean copy with only the variables
-    // MailerSend might be sensitive to extra properties or the way objects are cloned
-    const personalization = normalizedRecipients.map(recipient => {
-      // Create a fresh data object to avoid any reference issues
-      const dataObject: Record<string, string> = {};
-      for (const [key, value] of Object.entries(emailVariables)) {
-        dataObject[key] = value;
-      }
-      return {
-        email: recipient.email,
-        data: dataObject,
-      };
-    });
 
-    // Prepare MailerSend request payload
-    // MailerSend requires 'from' and 'subject' fields even when using template_id
-    // The template can still override styling/content, but these fields are required
+    // Prepare MailerSend request payload - using HTML email directly instead of template
     const mailerSendPayload = {
       from: {
         email: 'no-reply@destexplore.eu',
         name: 'DestExplore',
       },
       to: normalizedRecipients.map(r => ({ 
-        email: r.email, // Already normalized - must match personalization email exactly
+        email: r.email,
+        name: r.name,
       })),
-      subject: `Booking Confirmation - ${finalBusiness.name}`, // Required even with templates
-      template_id: 'pr9084zy03vgw63d',
-      personalization: personalization,
+      subject: `Confirmare Rezervare - ${finalBusiness.name}`,
+      html: htmlEmail,
+      text: textEmail,
     };
-    
-    console.log('DEBUG: Email matching verification:', {
-      to_emails: mailerSendPayload.to.map(t => t.email),
-      personalization_emails: personalization.map(p => p.email),
-      all_match: mailerSendPayload.to.map(t => t.email).every((email, idx) => 
-        email === personalization[idx]?.email
-      ),
-      variable_keys: Object.keys(emailVariables),
-    });
 
-    console.log('Sending email via MailerSend:', {
-      template_id: mailerSendPayload.template_id,
+    console.log('Sending HTML email via MailerSend:', {
       recipients: normalizedRecipients.map(r => r.email),
-      variables: emailVariables,
-      payload: JSON.stringify(mailerSendPayload, null, 2),
+      subject: mailerSendPayload.subject,
+      htmlLength: htmlEmail.length,
+      textLength: textEmail.length,
     });
-    
-    // Detailed logging to match MailerSend example format
-    console.log('=== PAYLOAD STRUCTURE COMPARISON ===');
-    console.log('To array:', JSON.stringify(mailerSendPayload.to, null, 2));
-    console.log('Personalization array:', JSON.stringify(mailerSendPayload.personalization, null, 2));
-    console.log('Variable keys being sent:', Object.keys(emailVariables));
-    console.log('Variable values:', emailVariables);
 
     // Send email via MailerSend REST API
     // Using v1 endpoint for email sending
@@ -403,7 +503,7 @@ export async function POST(request: NextRequest) {
     try {
       await supabase.from('email_logs').insert({
         recipient_email: normalizedRecipients.map(r => r.email).join(', '),
-        subject: `Booking Confirmation - ${finalBusiness.name}`,
+        subject: `Confirmare Rezervare - ${finalBusiness.name}`,
         status: 'sent',
         sent_at: new Date().toISOString(),
       });

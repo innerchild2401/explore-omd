@@ -149,11 +149,35 @@ export async function POST(request: NextRequest) {
     const checkOut = new Date(reservation.check_out_date);
     const nights = Math.ceil((checkOut.getTime() - checkIn.getTime()) / (1000 * 60 * 60 * 24));
     
-    // Get pricing from reservation (if available) or calculate from room base_price
-    const baseRate = reservation.base_rate || (room.base_price * nights) || 0;
+    // Calculate base rate correctly
+    // For tentative bookings, base_rate might be 0 or only one night's price
+    // Always calculate total based on nights and room price
+    let baseRate = reservation.base_rate;
+    
+    // If base_rate is 0 or less than room price (likely only one night), calculate properly
+    if (!baseRate || baseRate <= 0 || (baseRate > 0 && baseRate < room.base_price)) {
+      baseRate = room.base_price * nights;
+      console.log('Recalculating base_rate:', {
+        original: reservation.base_rate,
+        room_price_per_night: room.base_price,
+        nights: nights,
+        calculated: baseRate,
+      });
+    }
+    
     const taxes = reservation.taxes || 0;
     const fees = reservation.fees || 0;
     const totalDue = baseRate + taxes + fees;
+    
+    console.log('Pricing calculation:', {
+      base_rate: baseRate,
+      taxes: taxes,
+      fees: fees,
+      total_due: totalDue,
+      nights: nights,
+      room_price_per_night: room.base_price,
+      currency: reservation.currency || 'EUR',
+    });
 
     // Format dates
     const formatDate = (dateStr: string) => {
@@ -192,17 +216,29 @@ export async function POST(request: NextRequest) {
     // Calculate number of guests
     const numberOfGuests = reservation.adults + (reservation.children || 0) + (reservation.infants || 0);
 
-    // Prepare email variables
+    // Prepare email variables (matching MailerSend template exactly)
     const emailVariables = {
-      name: guest.first_name,
-      Destination_name: omd.slug,
-      Business_name: finalBusiness.name,
+      name: guest.first_name || '',
+      Destination_name: omd.slug || '',
+      Business_name: finalBusiness.name || '',
       Total_due: `${totalDue.toFixed(2)} ${reservation.currency || 'EUR'}`,
       Check_in_date: formatDate(reservation.check_in_date),
       Check_out_date: formatDate(reservation.check_out_date),
       Number_of_guests: numberOfGuests.toString(),
       Room_type: room.name || room.room_type || 'Room',
     };
+
+    console.log('Email variables prepared:', JSON.stringify(emailVariables, null, 2));
+    console.log('Variables breakdown:', {
+      'name (first_name)': guest.first_name,
+      'Destination_name (OMD slug)': omd.slug,
+      'Business_name': finalBusiness.name,
+      'Total_due (calculated)': totalDue,
+      'Check_in_date (formatted)': formatDate(reservation.check_in_date),
+      'Check_out_date (formatted)': formatDate(reservation.check_out_date),
+      'Number_of_guests': numberOfGuests,
+      'Room_type': room.name || room.room_type,
+    });
 
     // Send email using MailerSend REST API with template
     const mailerSendApiKey = process.env.MAILER_SEND_API_KEY;

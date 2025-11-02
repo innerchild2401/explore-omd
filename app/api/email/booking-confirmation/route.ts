@@ -308,12 +308,17 @@ export async function POST(request: NextRequest) {
     }));
 
     // Prepare MailerSend request payload
-    // Match MailerSend's exact format from their documentation example
-    // When using template_id, the template defines from/subject, so we don't override them
+    // MailerSend requires 'from' and 'subject' fields even when using template_id
+    // The template can still override styling/content, but these fields are required
     const mailerSendPayload = {
+      from: {
+        email: 'no-reply@destexplore.eu',
+        name: 'DestExplore',
+      },
       to: normalizedRecipients.map(r => ({ 
         email: r.email, // Already normalized - must match personalization email exactly
       })),
+      subject: `Booking Confirmation - ${finalBusiness.name}`, // Required even with templates
       template_id: 'pr9084zy03vgw63d',
       personalization: personalization,
     };

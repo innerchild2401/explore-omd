@@ -151,17 +151,23 @@ export async function POST(request: NextRequest) {
     
     // Calculate base rate correctly
     // For tentative bookings, base_rate might be 0 or only one night's price
-    // Always calculate total based on nights and room price
+    // If base_rate equals room_price, it's likely just one night's price, not the total
+    // Always calculate total based on nights and room price for tentative bookings
     let baseRate = reservation.base_rate;
     
-    // If base_rate is 0 or less than room price (likely only one night), calculate properly
-    if (!baseRate || baseRate <= 0 || (baseRate > 0 && baseRate < room.base_price)) {
+    // For tentative bookings or when base_rate is 0 or equals room price (one night), recalculate
+    if (reservation.reservation_status === 'tentative' || 
+        !baseRate || 
+        baseRate <= 0 || 
+        baseRate <= room.base_price) {
+      // Recalculate as it's likely just one night's price stored
       baseRate = room.base_price * nights;
       console.log('Recalculating base_rate:', {
-        original: reservation.base_rate,
+        reservation_status: reservation.reservation_status,
+        original_base_rate: reservation.base_rate,
         room_price_per_night: room.base_price,
         nights: nights,
-        calculated: baseRate,
+        calculated_total: baseRate,
       });
     }
     
@@ -216,16 +222,16 @@ export async function POST(request: NextRequest) {
     // Calculate number of guests
     const numberOfGuests = reservation.adults + (reservation.children || 0) + (reservation.infants || 0);
 
-    // Prepare email variables (matching MailerSend template exactly)
+    // Prepare email variables (matching MailerSend template exactly - lowercase with underscores)
     const emailVariables = {
       name: guest.first_name || '',
-      Destination_name: omd.slug || '',
-      Business_name: finalBusiness.name || '',
-      Total_due: `${totalDue.toFixed(2)} ${reservation.currency || 'EUR'}`,
-      Check_in_date: formatDate(reservation.check_in_date),
-      Check_out_date: formatDate(reservation.check_out_date),
-      Number_of_guests: numberOfGuests.toString(),
-      Room_type: room.name || room.room_type || 'Room',
+      destination_name: omd.slug || '',
+      business_name: finalBusiness.name || '',
+      total_due: `${totalDue.toFixed(2)} ${reservation.currency || 'EUR'}`,
+      check_in_date: formatDate(reservation.check_in_date),
+      check_out_date: formatDate(reservation.check_out_date),
+      number_of_guests: numberOfGuests.toString(),
+      room_type: room.name || room.room_type || 'Room',
     };
 
     console.log('Email variables prepared:', JSON.stringify(emailVariables, null, 2));

@@ -302,10 +302,19 @@ export async function POST(request: NextRequest) {
       email: r.email.toLowerCase().trim(),
     }));
     
-    const personalization = normalizedRecipients.map(recipient => ({
-      email: recipient.email,
-      data: emailVariables,
-    }));
+    // Create personalization array - ensure data object is a clean copy with only the variables
+    // MailerSend might be sensitive to extra properties or the way objects are cloned
+    const personalization = normalizedRecipients.map(recipient => {
+      // Create a fresh data object to avoid any reference issues
+      const dataObject: Record<string, string> = {};
+      for (const [key, value] of Object.entries(emailVariables)) {
+        dataObject[key] = value;
+      }
+      return {
+        email: recipient.email,
+        data: dataObject,
+      };
+    });
 
     // Prepare MailerSend request payload
     // MailerSend requires 'from' and 'subject' fields even when using template_id

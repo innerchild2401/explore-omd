@@ -308,19 +308,12 @@ export async function POST(request: NextRequest) {
     }));
 
     // Prepare MailerSend request payload
-    // MailerSend API requires subject even when using templates
-    // For template_id, we ONLY use personalization array (not root-level variables)
-    // The personalization.data contains the template variables
+    // Match MailerSend's exact format from their documentation example
+    // When using template_id, the template defines from/subject, so we don't override them
     const mailerSendPayload = {
-      from: {
-        email: 'no-reply@destexplore.eu',
-        name: 'DestExplore',
-      },
       to: normalizedRecipients.map(r => ({ 
-        email: r.email, // Already normalized
-        name: r.name 
+        email: r.email, // Already normalized - must match personalization email exactly
       })),
-      subject: `Booking Confirmation - ${finalBusiness.name}`, // Required even with templates
       template_id: 'pr9084zy03vgw63d',
       personalization: personalization,
     };
@@ -336,7 +329,7 @@ export async function POST(request: NextRequest) {
 
     console.log('Sending email via MailerSend:', {
       template_id: mailerSendPayload.template_id,
-      recipients: recipients.map(r => r.email),
+      recipients: normalizedRecipients.map(r => r.email),
       variables: emailVariables,
       payload: JSON.stringify(mailerSendPayload, null, 2),
     });
@@ -388,7 +381,7 @@ export async function POST(request: NextRequest) {
     // Log email in database
     try {
       await supabase.from('email_logs').insert({
-        recipient_email: recipients.map(r => r.email).join(', '),
+        recipient_email: normalizedRecipients.map(r => r.email).join(', '),
         subject: `Booking Confirmation - ${finalBusiness.name}`,
         status: 'sent',
         sent_at: new Date().toISOString(),
@@ -412,7 +405,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       messageId: mailerSendResult.body?.message_id,
-      sentTo: recipients.map(r => r.email),
+      sentTo: normalizedRecipients.map(r => r.email),
       variables: emailVariables,
     });
   } catch (error: any) {

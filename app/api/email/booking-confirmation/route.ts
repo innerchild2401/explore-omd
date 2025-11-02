@@ -11,6 +11,13 @@ import { createServiceClient } from '@/lib/supabase/service';
  * }
  */
 export async function POST(request: NextRequest) {
+  console.log('========================================');
+  console.log('📧 BOOKING CONFIRMATION EMAIL API CALLED');
+  console.log('========================================');
+  console.log('Timestamp:', new Date().toISOString());
+  console.log('Request URL:', request.url);
+  console.log('Request method:', request.method);
+  
   try {
     const body = await request.json();
     const { reservationId } = body;

@@ -126,6 +126,56 @@ export default function BookingModal({ isOpen, onClose, hotelId, roomId, roomNam
 
       if (reservationError) throw reservationError;
 
+      // Verify reservation was created
+      if (!reservation || !reservation.id) {
+        console.error('Reservation created but no ID returned:', reservation);
+        throw new Error('Failed to create reservation - no ID returned');
+      }
+
+      console.log('✅ Reservation created successfully:', reservation.id);
+
+      // Send booking confirmation emails (fire-and-forget to not block the UI)
+      // This will execute asynchronously and not block the success message
+      (async () => {
+        try {
+          console.log('📧 Starting email API call for reservation:', reservation.id);
+          const apiUrl = '/api/email/booking-confirmation';
+          console.log('📧 API endpoint URL:', apiUrl);
+          console.log('📧 Request payload:', { reservationId: reservation.id });
+          
+          const requestBody = {
+            reservationId: reservation.id,
+          };
+          
+          console.log('📧 About to call fetch...');
+          const emailResponse = await fetch(apiUrl, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(requestBody),
+          });
+          
+          console.log('📧 Email API response received');
+          console.log('📧 Email API response status:', emailResponse.status);
+          
+          if (!emailResponse.ok) {
+            const emailResult = await emailResponse.json().catch(() => ({ error: 'Failed to parse response' }));
+            console.error('❌ Failed to send booking confirmation email:', emailResult);
+            console.error('Response status:', emailResponse.status);
+          } else {
+            const emailResult = await emailResponse.json().catch(() => ({}));
+            console.log('✅ Booking confirmation email sent successfully:', emailResult);
+          }
+        } catch (emailError: any) {
+          console.error('❌ CRITICAL: Error sending booking confirmation email:', emailError);
+          console.error('Error name:', emailError?.name);
+          console.error('Error message:', emailError?.message);
+          console.error('Error stack:', emailError?.stack);
+          // Don't fail the booking if email fails
+        }
+      })();
+
       setSuccess(true);
 
       // Reset form after 3 seconds and close modal

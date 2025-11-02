@@ -292,11 +292,9 @@ export async function POST(request: NextRequest) {
 
     // Prepare MailerSend request payload
     // MailerSend API requires subject even when using templates
-    // For template_id with personalization, we need both:
-    // 1. Root-level variables (for template-level variables)
-    // 2. Personalization array (for per-recipient customization)
-    // But some templates might only accept root-level variables
-    const mailerSendPayload: any = {
+    // For template_id, we ONLY use personalization array (not root-level variables)
+    // The personalization.data contains the template variables
+    const mailerSendPayload = {
       from: {
         email: 'no-reply@destexplore.eu',
         name: 'DestExplore',
@@ -304,9 +302,6 @@ export async function POST(request: NextRequest) {
       to: recipients.map(r => ({ email: r.email })),
       subject: `Booking Confirmation - ${finalBusiness.name}`, // Required even with templates
       template_id: 'pr9084zy03vgw63d',
-      // Try root-level variables first (some templates require this)
-      variables: emailVariables,
-      // Also include personalization for per-recipient customization
       personalization: personalization,
     };
 

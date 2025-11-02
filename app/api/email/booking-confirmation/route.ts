@@ -333,6 +333,13 @@ export async function POST(request: NextRequest) {
       variables: emailVariables,
       payload: JSON.stringify(mailerSendPayload, null, 2),
     });
+    
+    // Detailed logging to match MailerSend example format
+    console.log('=== PAYLOAD STRUCTURE COMPARISON ===');
+    console.log('To array:', JSON.stringify(mailerSendPayload.to, null, 2));
+    console.log('Personalization array:', JSON.stringify(mailerSendPayload.personalization, null, 2));
+    console.log('Variable keys being sent:', Object.keys(emailVariables));
+    console.log('Variable values:', emailVariables);
 
     // Send email via MailerSend REST API
     // Using v1 endpoint for email sending

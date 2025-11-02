@@ -118,7 +118,16 @@ export default function BookingForm({ hotelId, roomId, roomName, onBookingSubmit
 
       if (reservationError) throw reservationError;
 
+      // Verify reservation was created
+      if (!reservation || !reservation.id) {
+        console.error('Reservation created but no ID returned:', reservation);
+        throw new Error('Failed to create reservation - no ID returned');
+      }
+
+      console.log('✅ Reservation created successfully:', reservation.id);
+
       // Send booking confirmation emails
+      console.log('📧 Attempting to send booking confirmation email for reservation:', reservation.id);
       try {
         const emailResponse = await fetch('/api/email/booking-confirmation', {
           method: 'POST',
@@ -130,17 +139,20 @@ export default function BookingForm({ hotelId, roomId, roomName, onBookingSubmit
           }),
         });
 
-        const emailResult = await emailResponse.json();
-        
+        console.log('📧 Email API response status:', emailResponse.status);
+
         if (!emailResponse.ok) {
-          console.error('Failed to send booking confirmation email:', emailResult);
+          const emailResult = await emailResponse.json().catch(() => ({ error: 'Failed to parse response' }));
+          console.error('❌ Failed to send booking confirmation email:', emailResult);
           console.error('Response status:', emailResponse.status);
           console.error('Error details:', emailResult.error, emailResult.details);
         } else {
-          console.log('Booking confirmation email sent successfully:', emailResult);
+          const emailResult = await emailResponse.json().catch(() => ({}));
+          console.log('✅ Booking confirmation email sent successfully:', emailResult);
         }
-      } catch (emailError) {
-        console.error('Error sending booking confirmation email:', emailError);
+      } catch (emailError: any) {
+        console.error('❌ Error sending booking confirmation email:', emailError);
+        console.error('Error details:', emailError?.message, emailError?.stack);
         // Don't fail the booking if email fails
       }
 

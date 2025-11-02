@@ -28,6 +28,7 @@ export async function POST(request: NextRequest) {
     const supabase = createServiceClient();
 
     // Fetch reservation with related data
+    // Note: hotel_id in reservations references businesses(id) directly (per migration 24)
     const { data: reservation, error: reservationError } = await supabase
       .from('reservations')
       .select(`
@@ -42,8 +43,11 @@ export async function POST(request: NextRequest) {
           room_type,
           base_price
         ),
-        hotels!hotel_id(
-          business_id
+        businesses!hotel_id(
+          id,
+          name,
+          omd_id,
+          contact
         )
       `)
       .eq('id', reservationId)
@@ -51,6 +55,7 @@ export async function POST(request: NextRequest) {
 
     if (reservationError || !reservation) {
       console.error('Error fetching reservation:', reservationError);
+      console.error('ReservationError details:', JSON.stringify(reservationError, null, 2));
       return NextResponse.json(
         { error: 'Reservation not found', details: reservationError?.message },
         { status: 404 }
@@ -60,48 +65,82 @@ export async function POST(request: NextRequest) {
     // Extract data
     const guest = (reservation as any).guest_profiles;
     const room = (reservation as any).rooms;
-    const hotel = (reservation as any).hotels;
+    const business = (reservation as any).businesses;
 
     console.log('Reservation data extracted:', {
       hasGuest: !!guest,
       hasRoom: !!room,
-      hasHotel: !!hotel,
+      hasBusiness: !!business,
       guestEmail: guest?.email,
-      hotelBusinessId: hotel?.business_id,
+      businessId: business?.id,
+      businessName: business?.name,
+      reservationId: reservation.id,
+      hotelId: reservation.hotel_id,
     });
 
-    if (!guest || !room || !hotel) {
+    // Handle case where business join failed - try fetching directly
+    let businessData = business;
+    if (!business && reservation.hotel_id) {
+      console.log('Business join failed, attempting direct fetch with hotel_id:', reservation.hotel_id);
+      // Try fetching as businesses.id first
+      const { data: businessDirect, error: businessError } = await supabase
+        .from('businesses')
+        .select('id, name, omd_id, contact')
+        .eq('id', reservation.hotel_id)
+        .single();
+      
+      if (!businessError && businessDirect) {
+        businessData = businessDirect;
+        console.log('Successfully fetched business directly as businesses.id');
+      } else {
+        // Try fetching through hotels table
+        const { data: hotelData, error: hotelError } = await supabase
+          .from('hotels')
+          .select('business_id')
+          .eq('id', reservation.hotel_id)
+          .single();
+        
+        if (!hotelError && hotelData) {
+          const { data: businessViaHotel, error: hotelBusinessError } = await supabase
+            .from('businesses')
+            .select('id, name, omd_id, contact')
+            .eq('id', hotelData.business_id)
+            .single();
+          
+          if (!hotelBusinessError && businessViaHotel) {
+            businessData = businessViaHotel;
+            console.log('Successfully fetched business through hotels table');
+          }
+        }
+      }
+    }
+
+    if (!guest || !room || !businessData) {
       console.error('Missing required reservation data:', {
         guest: !!guest,
         room: !!room,
-        hotel: !!hotel,
+        business: !!businessData,
+        reservation: reservation ? {
+          id: reservation.id,
+          hotel_id: (reservation as any).hotel_id,
+          guest_id: (reservation as any).guest_id,
+          room_id: (reservation as any).room_id,
+        } : null,
       });
       return NextResponse.json(
-        { error: 'Missing required reservation data', details: { guest: !!guest, room: !!room, hotel: !!hotel } },
+        { error: 'Missing required reservation data', details: { guest: !!guest, room: !!room, business: !!businessData } },
         { status: 400 }
       );
     }
 
-    // Fetch business data
-    const { data: business, error: businessError } = await supabase
-      .from('businesses')
-      .select('id, name, omd_id, contact')
-      .eq('id', hotel.business_id)
-      .single();
-
-    if (businessError || !business) {
-      console.error('Error fetching business:', businessError);
-      return NextResponse.json(
-        { error: 'Business not found', details: businessError?.message },
-        { status: 404 }
-      );
-    }
-
+    // Use businessData instead of business
+    const finalBusiness = businessData;
+    
     // Fetch OMD data
     const { data: omd, error: omdError } = await supabase
       .from('omds')
       .select('id, slug, name')
-      .eq('id', business.omd_id)
+      .eq('id', finalBusiness.omd_id)
       .single();
 
     if (omdError || !omd) {
@@ -134,20 +173,28 @@ export async function POST(request: NextRequest) {
     };
 
     // Get business email from contact JSONB
-    const businessEmail = (business.contact as any)?.email;
+    const businessEmail = (finalBusiness.contact as any)?.email;
+    
+    // For trial accounts, use verified email if business email not available
+    const trialMode = process.env.MAILER_SEND_TRIAL_MODE === 'true';
+    const trialEmail = process.env.MAILER_SEND_TRIAL_EMAIL || 'filip.alex24@gmail.com';
     
     console.log('Business contact info:', {
-      contact: business.contact,
+      contact: finalBusiness.contact,
       email: businessEmail,
+      trialMode,
+      trialEmail,
     });
     
-    if (!businessEmail) {
-      console.error('Business email not found in contact information:', business.contact);
+    if (!businessEmail && !trialMode) {
+      console.error('Business email not found in contact information:', finalBusiness.contact);
       return NextResponse.json(
-        { error: 'Business email not found in contact information', details: { contact: business.contact } },
+        { error: 'Business email not found in contact information', details: { contact: finalBusiness.contact } },
         { status: 400 }
       );
     }
+    
+    const actualBusinessEmail = businessEmail || trialEmail;
 
     // Calculate number of guests
     const numberOfGuests = reservation.adults + (reservation.children || 0) + (reservation.infants || 0);
@@ -156,7 +203,7 @@ export async function POST(request: NextRequest) {
     const emailVariables = {
       name: guest.first_name,
       Destination_name: omd.slug,
-      Business_name: business.name,
+      Business_name: finalBusiness.name,
       Total_due: `${totalDue.toFixed(2)} ${reservation.currency || 'EUR'}`,
       Check_in_date: formatDate(reservation.check_in_date),
       Check_out_date: formatDate(reservation.check_out_date),
@@ -175,16 +222,32 @@ export async function POST(request: NextRequest) {
     }
 
     // Prepare recipients
-    const recipients = [
+    // For trial accounts, redirect to verified email
+    const originalRecipients = [
       {
         email: guest.email,
         name: `${guest.first_name} ${guest.last_name}`,
       },
       {
-        email: businessEmail,
-        name: business.name,
+        email: actualBusinessEmail,
+        name: finalBusiness.name,
       },
     ];
+    
+    // Check if we need to enable trial mode (if sending to unverified domains)
+    // For trial accounts, MailerSend only allows sending to verified emails
+    let recipients = originalRecipients;
+    
+    if (trialMode || !businessEmail) {
+      console.log('Trial/Test mode: Redirecting emails to verified address:', trialEmail);
+      console.log('Original recipients:', originalRecipients.map(r => `${r.name} <${r.email}>`));
+      recipients = [
+        {
+          email: trialEmail,
+          name: `Test Recipient (${originalRecipients.length} emails redirected)`,
+        },
+      ];
+    }
 
     // Prepare personalization for each recipient
     const personalization = recipients.map(recipient => ({
@@ -193,13 +256,14 @@ export async function POST(request: NextRequest) {
     }));
 
     // Prepare MailerSend request payload
-    // Note: MailerSend v1 API uses different structure - let's try both formats
+    // MailerSend API requires subject even when using templates
     const mailerSendPayload = {
       from: {
         email: 'no-reply@destexplore.eu',
         name: 'DestExplore',
       },
       to: recipients,
+      subject: `Booking Confirmation - ${finalBusiness.name}`, // Required even with templates
       template_id: 'pr9084zy03vgw63d',
       personalization: personalization,
     };
@@ -259,7 +323,7 @@ export async function POST(request: NextRequest) {
     try {
       await supabase.from('email_logs').insert({
         recipient_email: recipients.map(r => r.email).join(', '),
-        subject: `Booking Confirmation - ${business.name}`,
+        subject: `Booking Confirmation - ${finalBusiness.name}`,
         status: 'sent',
         sent_at: new Date().toISOString(),
       });

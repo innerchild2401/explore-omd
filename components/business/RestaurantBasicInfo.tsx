@@ -13,6 +13,11 @@ interface Business {
   contact: any;
   location: any;
   omd_id: string;
+  area_id?: string | null;
+  areas?: {
+    id: string;
+    name: string;
+  } | null;
 }
 
 interface Restaurant {
@@ -52,6 +57,7 @@ export default function RestaurantBasicInfo({
     email: business.contact?.email || '',
     website: business.contact?.website || '',
     address: business.location?.address || '',
+    area_id: business.area_id || '',
     
     // Restaurant fields
     cuisine_type: restaurant.cuisine_type || '',
@@ -61,6 +67,30 @@ export default function RestaurantBasicInfo({
     delivery_available: restaurant.delivery_available || false,
     takeaway_available: restaurant.takeaway_available || false,
   });
+
+  // Areas
+  const [areas, setAreas] = useState<any[]>([]);
+
+  // Fetch areas for this OMD
+  useEffect(() => {
+    const fetchAreas = async () => {
+      if (business.omd_id) {
+        const supabase = createClient();
+        const { data } = await supabase
+          .from('areas')
+          .select('*')
+          .eq('omd_id', business.omd_id)
+          .order('order_index', { ascending: true })
+          .order('name', { ascending: true });
+        
+        if (data) {
+          setAreas(data);
+        }
+      }
+    };
+    
+    fetchAreas();
+  }, [business.omd_id]);
 
   // Sync images state when business prop changes (after refresh)
   useEffect(() => {
@@ -92,6 +122,7 @@ export default function RestaurantBasicInfo({
           location: {
             address: formData.address,
           },
+          area_id: formData.area_id || null,
         })
         .eq('id', business.id);
 
@@ -299,6 +330,27 @@ export default function RestaurantBasicInfo({
                   placeholder="e.g., 123 Main St, City, State 12345"
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900"
                 />
+              </div>
+
+              <div>
+                <label htmlFor="area_id" className="block text-sm font-medium text-gray-700 mb-1">
+                  Area
+                </label>
+                <select
+                  id="area_id"
+                  name="area_id"
+                  value={formData.area_id}
+                  onChange={handleInputChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900"
+                >
+                  <option value="">No area selected</option>
+                  {areas.map((area) => (
+                    <option key={area.id} value={area.id}>
+                      {area.name}
+                    </option>
+                  ))}
+                </select>
+                <p className="mt-1 text-xs text-gray-500">Select the area where your restaurant is located</p>
               </div>
             </div>
           </div>

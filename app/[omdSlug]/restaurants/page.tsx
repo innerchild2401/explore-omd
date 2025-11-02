@@ -2,10 +2,11 @@ import { createClient } from '@/lib/supabase/server';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import OptimizedImage from '@/components/ui/OptimizedImage';
+import AreaFilter from '@/components/hotels/AreaFilter';
 
 interface RestaurantsPageProps {
   params: { omdSlug: string };
-  searchParams: { date?: string; time?: string };
+  searchParams: { date?: string; time?: string; area?: string };
 }
 
 export default async function RestaurantsPage({ params, searchParams }: RestaurantsPageProps) {
@@ -25,8 +26,16 @@ export default async function RestaurantsPage({ params, searchParams }: Restaura
     notFound();
   }
 
-  // Get restaurants in this OMD
-  const { data: restaurants } = await supabase
+  // Get areas for this OMD
+  const { data: areas } = await supabase
+    .from('areas')
+    .select('*')
+    .eq('omd_id', omd.id)
+    .order('order_index', { ascending: true })
+    .order('name', { ascending: true });
+
+  // Get restaurants in this OMD with area information
+  let restaurantsQuery = supabase
     .from('restaurants')
     .select(`
       *,
@@ -37,11 +46,23 @@ export default async function RestaurantsPage({ params, searchParams }: Restaura
         slug,
         images,
         contact,
-        location
+        location,
+        area_id,
+        areas(
+          id,
+          name
+        )
       )
     `)
     .eq('businesses.omd_id', omd.id)
     .eq('businesses.status', 'active');
+
+  // Filter by area if provided
+  if (searchParams.area) {
+    restaurantsQuery = restaurantsQuery.eq('businesses.area_id', searchParams.area);
+  }
+
+  const { data: restaurants } = await restaurantsQuery;
 
   return (
     <div className="min-h-screen bg-gray-50 w-full overflow-x-hidden" style={{ maxWidth: '100vw', boxSizing: 'border-box' as const }}>
@@ -64,6 +85,13 @@ export default async function RestaurantsPage({ params, searchParams }: Restaura
 
       {/* Restaurants List */}
       <main className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8 w-full min-w-0" style={{ maxWidth: '100%', boxSizing: 'border-box' }}>
+        {/* Filters */}
+        {restaurants && restaurants.length > 0 && areas && areas.length > 0 && (
+          <div className="mb-6 flex items-center justify-end">
+            <AreaFilter areas={areas} />
+          </div>
+        )}
+
         {!restaurants || restaurants.length === 0 ? (
           <div className="text-center py-16">
             <div className="mx-auto w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mb-6">
@@ -123,7 +151,19 @@ export default async function RestaurantsPage({ params, searchParams }: Restaura
                   {/* Restaurant Info */}
                   <div className="p-4 sm:p-6 min-w-0">
                     <div className="flex items-start justify-between gap-2 mb-3 min-w-0">
-                      <h3 className="text-xl font-bold text-gray-900 line-clamp-1 min-w-0 flex-1">{business.name}</h3>
+                      <div className="flex-1 min-w-0">
+                        <h3 className="text-xl font-bold text-gray-900 line-clamp-1">{business.name}</h3>
+                        {/* Area Badge - Subtle */}
+                        {business.areas && (
+                          <div className="mt-1.5 inline-flex items-center text-xs text-gray-500">
+                            <svg className="h-3 w-3 mr-1 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                            </svg>
+                            <span className="font-medium">{business.areas.name}</span>
+                          </div>
+                        )}
+                      </div>
                       {restaurant.cuisine_type && (
                         <span className="inline-block rounded-full bg-blue-100 px-3 py-1 text-sm font-medium text-blue-800 flex-shrink-0">
                           {restaurant.cuisine_type}

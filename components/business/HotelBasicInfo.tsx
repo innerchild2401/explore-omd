@@ -49,6 +49,30 @@ export default function HotelBasicInfo({ business, hotel, amenities }: HotelBasi
   const [locationHighlights, setLocationHighlights] = useState(hotel.location_highlights || '');
   
   const [newLanguage, setNewLanguage] = useState('');
+  
+  // Areas
+  const [areas, setAreas] = useState<any[]>([]);
+  const [selectedAreaId, setSelectedAreaId] = useState<string>(business.area_id || '');
+
+  // Fetch areas for this OMD
+  useEffect(() => {
+    const fetchAreas = async () => {
+      if (business.omd_id) {
+        const { data } = await supabase
+          .from('areas')
+          .select('*')
+          .eq('omd_id', business.omd_id)
+          .order('order_index', { ascending: true })
+          .order('name', { ascending: true });
+        
+        if (data) {
+          setAreas(data);
+        }
+      }
+    };
+    
+    fetchAreas();
+  }, [business.omd_id, supabase]);
 
   const handleSave = async () => {
     setSaving(true);
@@ -71,6 +95,7 @@ export default function HotelBasicInfo({ business, hotel, amenities }: HotelBasi
             address,
           },
           images,
+          area_id: selectedAreaId || null,
         })
         .eq('id', business.id)
         .select();
@@ -192,6 +217,23 @@ export default function HotelBasicInfo({ business, hotel, amenities }: HotelBasi
               onChange={(e) => setAddress(e.target.value)}
               className="w-full rounded-lg border border-gray-300 px-4 py-2 text-gray-900 focus:border-blue-500 focus:outline-none"
             />
+          </div>
+
+          <div>
+            <label className="mb-2 block text-sm font-medium text-gray-700">Area</label>
+            <select
+              value={selectedAreaId}
+              onChange={(e) => setSelectedAreaId(e.target.value)}
+              className="w-full rounded-lg border border-gray-300 px-4 py-2 text-gray-900 focus:border-blue-500 focus:outline-none"
+            >
+              <option value="">No area selected</option>
+              {areas.map((area) => (
+                <option key={area.id} value={area.id}>
+                  {area.name}
+                </option>
+              ))}
+            </select>
+            <p className="mt-1 text-xs text-gray-500">Select the area where your hotel is located</p>
           </div>
 
           {/* Hotel Images */}

@@ -59,6 +59,11 @@ export interface Business {
   rating: number;
   status: 'active' | 'inactive' | 'pending';
   owner_id: string;
+  area_id?: string | null;
+  areas?: {
+    id: string;
+    name: string;
+  } | null;
   created_at: string;
   updated_at: string;
 }

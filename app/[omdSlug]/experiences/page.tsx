@@ -2,10 +2,11 @@ import { createClient } from '@/lib/supabase/server';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import OptimizedImage from '@/components/ui/OptimizedImage';
+import AreaFilter from '@/components/hotels/AreaFilter';
 
 interface ExperiencesPageProps {
   params: { omdSlug: string };
-  searchParams: { date?: string };
+  searchParams: { date?: string; area?: string };
 }
 
 export default async function ExperiencesPage({ params, searchParams }: ExperiencesPageProps) {
@@ -22,7 +23,15 @@ export default async function ExperiencesPage({ params, searchParams }: Experien
     notFound();
   }
 
-  // Get experiences in this OMD
+  // Get areas for this OMD
+  const { data: areas } = await supabase
+    .from('areas')
+    .select('*')
+    .eq('omd_id', omd.id)
+    .order('order_index', { ascending: true })
+    .order('name', { ascending: true });
+
+  // Get experiences in this OMD with area information
   let experiencesQuery = supabase
     .from('experiences')
     .select(`
@@ -34,11 +43,21 @@ export default async function ExperiencesPage({ params, searchParams }: Experien
         slug,
         images,
         location,
-        contact
+        contact,
+        area_id,
+        areas(
+          id,
+          name
+        )
       )
     `)
     .eq('businesses.omd_id', omd.id)
     .eq('businesses.status', 'active');
+
+  // Filter by area if provided (before date filtering)
+  if (searchParams.area) {
+    experiencesQuery = experiencesQuery.eq('businesses.area_id', searchParams.area);
+  }
 
   // Filter by date if provided (±3 days)
   let filteredExperiences = [];
@@ -78,8 +97,15 @@ export default async function ExperiencesPage({ params, searchParams }: Experien
           </Link>
           <h1 className="mt-2 text-3xl font-bold text-gray-900">Experiences & Activities</h1>
           
-          {/* Date Filter */}
-          <form method="get" className="mt-4 flex gap-3 items-end">
+          {/* Filters */}
+          <div className="mt-4 flex flex-wrap gap-3 items-end">
+            {/* Area Filter */}
+            {areas && areas.length > 0 && (
+              <AreaFilter areas={areas} />
+            )}
+            
+            {/* Date Filter */}
+            <form method="get" className="flex gap-3 items-end">
             <div>
               <label htmlFor="date" className="block text-sm font-medium text-gray-700 mb-1">
                 Filter by Date
@@ -105,8 +131,9 @@ export default async function ExperiencesPage({ params, searchParams }: Experien
               >
                 Clear
               </Link>
-            )}
-          </form>
+              )}
+            </form>
+          </div>
           
           {searchParams.date && (
             <p className="mt-2 text-sm text-gray-600">
@@ -175,7 +202,19 @@ export default async function ExperiencesPage({ params, searchParams }: Experien
                     )}
                   </div>
                   <div className="p-4">
-                    <h3 className="text-xl font-bold text-gray-900">{business.name}</h3>
+                    <div className="mb-2">
+                      <h3 className="text-xl font-bold text-gray-900">{business.name}</h3>
+                      {/* Area Badge - Subtle */}
+                      {business.areas && (
+                        <div className="mt-1.5 inline-flex items-center text-xs text-gray-500">
+                          <svg className="h-3 w-3 mr-1 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                          </svg>
+                          <span className="font-medium">{business.areas.name}</span>
+                        </div>
+                      )}
+                    </div>
                     {business.description && (
                       <p className="mt-2 line-clamp-2 text-gray-600">{business.description}</p>
                     )}

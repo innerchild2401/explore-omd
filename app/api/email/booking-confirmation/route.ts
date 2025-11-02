@@ -34,29 +34,10 @@ export async function POST(request: NextRequest) {
 
     const supabase = createServiceClient();
 
-    // Fetch reservation with related data
-    // Note: hotel_id in reservations references businesses(id) directly (per migration 24)
+    // Fetch reservation first (hotel_id references hotels.id, not businesses.id)
     const { data: reservation, error: reservationError } = await supabase
       .from('reservations')
-      .select(`
-        *,
-        guest_profiles!guest_id(
-          first_name,
-          last_name,
-          email
-        ),
-        rooms!room_id(
-          name,
-          room_type,
-          base_price
-        ),
-        businesses!hotel_id(
-          id,
-          name,
-          omd_id,
-          contact
-        )
-      `)
+      .select('*')
       .eq('id', reservationId)
       .single();
 
@@ -69,78 +50,83 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Extract data
-    const guest = (reservation as any).guest_profiles;
-    const room = (reservation as any).rooms;
-    const business = (reservation as any).businesses;
-
-    console.log('Reservation data extracted:', {
-      hasGuest: !!guest,
-      hasRoom: !!room,
-      hasBusiness: !!business,
-      guestEmail: guest?.email,
-      businessId: business?.id,
-      businessName: business?.name,
-      reservationId: reservation.id,
-      hotelId: reservation.hotel_id,
+    console.log('Reservation fetched:', {
+      id: reservation.id,
+      hotel_id: reservation.hotel_id,
+      guest_id: reservation.guest_id,
+      room_id: reservation.room_id,
     });
 
-    // Handle case where business join failed - try fetching directly
-    let businessData = business;
-    if (!business && reservation.hotel_id) {
-      console.log('Business join failed, attempting direct fetch with hotel_id:', reservation.hotel_id);
-      // Try fetching as businesses.id first
-      const { data: businessDirect, error: businessError } = await supabase
-        .from('businesses')
-        .select('id, name, omd_id, contact')
-        .eq('id', reservation.hotel_id)
-        .single();
-      
-      if (!businessError && businessDirect) {
-        businessData = businessDirect;
-        console.log('Successfully fetched business directly as businesses.id');
-      } else {
-        // Try fetching through hotels table
-        const { data: hotelData, error: hotelError } = await supabase
-          .from('hotels')
-          .select('business_id')
-          .eq('id', reservation.hotel_id)
-          .single();
-        
-        if (!hotelError && hotelData) {
-          const { data: businessViaHotel, error: hotelBusinessError } = await supabase
-            .from('businesses')
-            .select('id, name, omd_id, contact')
-            .eq('id', hotelData.business_id)
-            .single();
-          
-          if (!hotelBusinessError && businessViaHotel) {
-            businessData = businessViaHotel;
-            console.log('Successfully fetched business through hotels table');
-          }
-        }
-      }
-    }
+    // Fetch guest profile
+    const { data: guest, error: guestError } = await supabase
+      .from('guest_profiles')
+      .select('first_name, last_name, email')
+      .eq('id', reservation.guest_id)
+      .single();
 
-    if (!guest || !room || !businessData) {
-      console.error('Missing required reservation data:', {
-        guest: !!guest,
-        room: !!room,
-        business: !!businessData,
-        reservation: reservation ? {
-          id: reservation.id,
-          hotel_id: (reservation as any).hotel_id,
-          guest_id: (reservation as any).guest_id,
-          room_id: (reservation as any).room_id,
-        } : null,
-      });
+    if (guestError || !guest) {
+      console.error('Error fetching guest:', guestError);
       return NextResponse.json(
-        { error: 'Missing required reservation data', details: { guest: !!guest, room: !!room, business: !!businessData } },
-        { status: 400 }
+        { error: 'Guest profile not found', details: guestError?.message },
+        { status: 404 }
       );
     }
 
-    // Use businessData instead of business
+    // Fetch room
+    const { data: room, error: roomError } = await supabase
+      .from('rooms')
+      .select('name, room_type, base_price')
+      .eq('id', reservation.room_id)
+      .single();
+
+    if (roomError || !room) {
+      console.error('Error fetching room:', roomError);
+      return NextResponse.json(
+        { error: 'Room not found', details: roomError?.message },
+        { status: 404 }
+      );
+    }
+
+    // Fetch hotel (hotel_id references hotels.id)
+    const { data: hotel, error: hotelError } = await supabase
+      .from('hotels')
+      .select('business_id')
+      .eq('id', reservation.hotel_id)
+      .single();
+
+    if (hotelError || !hotel) {
+      console.error('Error fetching hotel:', hotelError);
+      return NextResponse.json(
+        { error: 'Hotel not found', details: hotelError?.message },
+        { status: 404 }
+      );
+    }
+
+    // Fetch business through hotel
+    const { data: businessData, error: businessError } = await supabase
+      .from('businesses')
+      .select('id, name, omd_id, contact')
+      .eq('id', hotel.business_id)
+      .single();
+
+    if (businessError || !businessData) {
+      console.error('Error fetching business:', businessError);
+      return NextResponse.json(
+        { error: 'Business not found', details: businessError?.message },
+        { status: 404 }
+      );
+    }
+
+    console.log('All reservation data fetched successfully:', {
+      hasGuest: !!guest,
+      hasRoom: !!room,
+      hasBusiness: !!businessData,
+      guestEmail: guest?.email,
+      businessId: businessData?.id,
+      businessName: businessData?.name,
+    });
+
+    // All data fetched successfully, continue with email
     const finalBusiness = businessData;
     
     // Fetch OMD data

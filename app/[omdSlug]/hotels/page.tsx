@@ -118,7 +118,13 @@ export default async function HotelsPage({ params, searchParams }: HotelsPagePro
   }
 
   const hasSearchParams = searchParams.checkIn || searchParams.checkOut;
-  const searchDates = hasSearchParams ? `${searchParams.checkIn || ''} to ${searchParams.checkOut || ''}` : '';
+  
+  // Format dates for display
+  const formatDisplayDate = (dateString: string) => {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  };
 
   // Handle error state
   if (hotelsError) {
@@ -155,39 +161,61 @@ export default async function HotelsPage({ params, searchParams }: HotelsPagePro
                 Back to {omd.name}
               </Link>
               <h1 className="text-4xl font-bold mb-2">Hotels & Accommodations</h1>
-              <p className="text-blue-100 text-lg">
+              <p className="text-blue-100 text-lg mb-4">
                 {hasSearchParams 
-                  ? `Available hotels for ${searchDates}` 
+                  ? 'Available hotels for your selected dates' 
                   : `Discover amazing places to stay in ${omd.name}`
                 }
               </p>
+              
+              {/* Compact Search Summary Pill */}
+              {hasSearchParams && searchParams.checkIn && searchParams.checkOut && (
+                <div className="inline-flex flex-wrap items-center gap-3 bg-white/15 backdrop-blur-sm rounded-full px-4 py-2.5 border border-white/20">
+                  {/* Check-in Date */}
+                  <div className="flex items-center gap-2">
+                    <svg className="h-4 w-4 text-blue-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                    <div className="flex flex-col">
+                      <span className="text-xs text-blue-200 leading-tight">Check-in</span>
+                      <span className="text-sm font-semibold text-white leading-tight">{formatDisplayDate(searchParams.checkIn)}</span>
+                    </div>
+                  </div>
+                  
+                  {/* Arrow separator */}
+                  <div className="hidden sm:flex items-center">
+                    <svg className="h-4 w-4 text-blue-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
+                  </div>
+                  
+                  {/* Check-out Date */}
+                  <div className="flex items-center gap-2">
+                    <svg className="h-4 w-4 text-blue-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                    <div className="flex flex-col">
+                      <span className="text-xs text-blue-200 leading-tight">Check-out</span>
+                      <span className="text-sm font-semibold text-white leading-tight">{formatDisplayDate(searchParams.checkOut)}</span>
+                    </div>
+                  </div>
+                  
+                  {/* Guests */}
+                  <div className="flex items-center gap-2 ml-2 sm:ml-0 pl-3 sm:pl-0 border-l border-white/20 sm:border-l-0">
+                    <svg className="h-4 w-4 text-blue-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                    </svg>
+                    <div className="flex flex-col">
+                      <span className="text-xs text-blue-200 leading-tight">Guests</span>
+                      <span className="text-sm font-semibold text-white leading-tight">
+                        {parseInt(searchParams.adults || '1')}
+                        {parseInt(searchParams.children || '0') > 0 && ` + ${parseInt(searchParams.children || '0')}`}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
-            
-            {/* Search Summary */}
-            {hasSearchParams && (
-              <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4">
-                <div className="text-sm text-blue-100 mb-2">Your Search</div>
-                <div className="text-white font-semibold">
-                  {searchParams.checkIn && searchParams.checkOut && (
-                    <>
-                      {new Date(searchParams.checkIn).toLocaleDateString('en-US', { 
-                        month: 'short', 
-                        day: 'numeric' 
-                      })} - {new Date(searchParams.checkOut).toLocaleDateString('en-US', { 
-                        month: 'short', 
-                        day: 'numeric' 
-                      })}
-                    </>
-                  )}
-                </div>
-                <div className="text-blue-200 text-sm">
-                  {parseInt(searchParams.adults || '1')} {parseInt(searchParams.adults || '1') === 1 ? 'Guest' : 'Guests'}
-                  {parseInt(searchParams.children || '0') > 0 && (
-                    <>, {parseInt(searchParams.children || '0')} {parseInt(searchParams.children || '0') === 1 ? 'Child' : 'Children'}</>
-                  )}
-                </div>
-              </div>
-            )}
           </div>
         </div>
       </div>

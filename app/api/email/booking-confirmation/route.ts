@@ -182,7 +182,7 @@ export async function POST(request: NextRequest) {
       total_due: totalDue,
       nights: nights,
       room_price_per_night: room.base_price,
-      currency: reservation.currency || 'EUR',
+      currency: reservation.currency || 'RON',
     });
 
     // Format dates
@@ -227,7 +227,7 @@ export async function POST(request: NextRequest) {
       name: guest.first_name || '',
       destination_name: omd.slug || '',
       business_name: finalBusiness.name || '',
-      total_due: `${totalDue.toFixed(2)} ${reservation.currency || 'EUR'}`,
+      total_due: `${totalDue.toFixed(2)} ${reservation.currency || 'RON'}`,
       check_in_date: formatDate(reservation.check_in_date),
       check_out_date: formatDate(reservation.check_out_date),
       number_of_guests: String(numberOfGuests),

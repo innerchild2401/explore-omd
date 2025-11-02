@@ -111,6 +111,7 @@ export default function BookingForm({ hotelId, roomId, roomName, onBookingSubmit
           payment_status: 'pending',
           base_rate: 0, // Will be calculated when approved
           total_amount: 0,
+          currency: 'RON',
           confirmation_sent: false
         })
         .select('id')

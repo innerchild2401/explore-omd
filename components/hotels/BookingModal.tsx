@@ -119,6 +119,7 @@ export default function BookingModal({ isOpen, onClose, hotelId, roomId, roomNam
           payment_status: 'pending',
           base_rate: roomPrice,
           total_amount: roomPrice, // Will be calculated properly when approved
+          currency: 'RON',
           confirmation_sent: false
         })
         .select('id')

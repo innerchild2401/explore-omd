@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import { formatPrice } from '@/lib/utils';
@@ -972,8 +973,8 @@ export default function AvailabilityDashboard({ hotelId, onClose }: Availability
         </div>
       </div>
 
-      {/* Reservation Detail Modal */}
-      {selectedReservationId && (
+      {/* Reservation Detail Modal - Rendered via Portal */}
+      {selectedReservationId && typeof window !== 'undefined' && createPortal(
         <ReservationDetailModal
           reservationId={selectedReservationId}
           hotelId={hotelId}
@@ -984,11 +985,12 @@ export default function AvailabilityDashboard({ hotelId, onClose }: Availability
           onUpdate={() => {
             fetchData();
           }}
-        />
+        />,
+        document.body
       )}
 
-      {/* Block Dates Modal */}
-      {showBlockModal && blockingRoomId && (
+      {/* Block Dates Modal - Rendered via Portal */}
+      {showBlockModal && blockingRoomId && typeof window !== 'undefined' && createPortal(
         <BlockDatesModal
           roomId={blockingRoomId}
           roomName={rooms.find(r => r.id === blockingRoomId)?.name || ''}
@@ -998,11 +1000,12 @@ export default function AvailabilityDashboard({ hotelId, onClose }: Availability
             setBlockingRoomId(null);
           }}
           onBlock={handleBlockRoom}
-        />
+        />,
+        document.body
       )}
 
-      {/* New Reservation Modal */}
-      {showNewReservationModal && selectedCheckIn && selectedCheckOut && selectedRoomForBooking && (
+      {/* New Reservation Modal - Rendered via Portal */}
+      {showNewReservationModal && selectedCheckIn && selectedCheckOut && selectedRoomForBooking && typeof window !== 'undefined' && createPortal(
         <NewReservationModal
           hotelId={hotelId}
           rooms={rooms}
@@ -1021,7 +1024,8 @@ export default function AvailabilityDashboard({ hotelId, onClose }: Availability
             checkOut: selectedCheckOut,
             roomId: selectedRoomForBooking
           }}
-        />
+        />,
+        document.body
       )}
     </div>
   );

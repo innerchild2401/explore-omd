@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import ReservationDetailModal from './ReservationDetailModal';
@@ -928,8 +929,8 @@ export default function IndividualRoomAvailabilityDashboard({ hotelId, onClose }
         </div>
       </div>
 
-      {/* Reservation Detail Modal */}
-      {selectedReservationId && (
+      {/* Reservation Detail Modal - Rendered via Portal */}
+      {selectedReservationId && typeof window !== 'undefined' && createPortal(
         <ReservationDetailModal
           reservationId={selectedReservationId}
           hotelId={hotelId}
@@ -941,11 +942,12 @@ export default function IndividualRoomAvailabilityDashboard({ hotelId, onClose }
             fetchData();
             fetchArrivalAlerts();
           }}
-        />
+        />,
+        document.body
       )}
 
-      {/* New Reservation Modal */}
-      {showNewReservationModal && selectedCheckIn && selectedCheckOut && selectedRoomTypeId && (
+      {/* New Reservation Modal - Rendered via Portal */}
+      {showNewReservationModal && selectedCheckIn && selectedCheckOut && selectedRoomTypeId && typeof window !== 'undefined' && createPortal(
         <NewReservationModal
           hotelId={hotelId}
           rooms={roomsArray}
@@ -965,11 +967,12 @@ export default function IndividualRoomAvailabilityDashboard({ hotelId, onClose }
             checkOut: selectedCheckOut,
             roomId: selectedRoomTypeId
           }}
-        />
+        />,
+        document.body
       )}
 
-      {/* Block Dates Modal */}
-      {showBlockModal && (() => {
+      {/* Block Dates Modal - Rendered via Portal */}
+      {showBlockModal && typeof window !== 'undefined' && (() => {
         const foundRoom = blockingRoomId ? Object.values(individualRooms).flat().find(r => r.id === blockingRoomId) : null;
         const roomTypeIdValue = blockingRoomTypeId || (foundRoom?.room_id ?? null);
         const roomTypeNameValue = blockingRoomTypeId 
@@ -978,7 +981,7 @@ export default function IndividualRoomAvailabilityDashboard({ hotelId, onClose }
             ? (roomTypes.find(rt => rt.id === foundRoom.room_id)?.name || 'Room')
             : 'All Rooms';
         
-        return (
+        return createPortal(
           <BlockDatesModal
             roomId={blockingRoomId}
             roomTypeId={roomTypeIdValue}
@@ -990,7 +993,8 @@ export default function IndividualRoomAvailabilityDashboard({ hotelId, onClose }
               setBlockingRoomTypeId(null);
             }}
             onBlock={handleBlockRoom}
-          />
+          />,
+          document.body
         );
       })()}
     </>

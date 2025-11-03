@@ -30,7 +30,8 @@ interface IndividualRoomsManagerProps {
 export default function IndividualRoomsManager({ roomTypeId, roomTypeName, roomTypeQuantity, hotelId, onClose }: IndividualRoomsManagerProps) {
   const supabase = createClient();
   const [individualRooms, setIndividualRooms] = useState<IndividualRoom[]>([]);
-  const [allRoomsOnFloor, setAllRoomsOnFloor] = useState<IndividualRoom[]>([]);
+  const [existingRoomNumbers, setExistingRoomNumbers] = useState<Array<{room_number: string; room_type_name: string; floor_number: number | null}>>([]);
+  const [nextAvailableNumber, setNextAvailableNumber] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -56,11 +57,7 @@ export default function IndividualRoomsManager({ roomTypeId, roomTypeName, roomT
     return acc;
   }, {} as Record<number, IndividualRoom[]>);
 
-  // Get existing room numbers to suggest next number and prevent overlaps
-  // Check against ALL rooms on the floor, not just this room type
-  const existingRoomNumbers = allRoomsOnFloor.map(r => r.room_number).sort();
-
-  // Fetch individual rooms for this room type
+  // Fetch individual rooms for this room type and existing room numbers
   const fetchIndividualRooms = async () => {
     setLoading(true);
     try {
@@ -73,24 +70,49 @@ export default function IndividualRoomsManager({ roomTypeId, roomTypeName, roomT
       if (error) throw error;
       setIndividualRooms(data || []);
 
-      // Also fetch ALL rooms on the floor to check for overlaps
-      // We need to get all individual_rooms for all room types in this hotel
-      if (floorNumber !== null) {
-        const { data: allRooms, error: allRoomsError } = await supabase
-          .from('individual_rooms')
-          .select('*, rooms!inner(hotel_id)')
-          .eq('rooms.hotel_id', hotelId)
-          .eq('floor_number', floorNumber)
-          .order('room_number');
+      // Fetch existing room numbers for the entire hotel using the new function
+      const { data: existingRooms, error: existingError } = await supabase
+        .rpc('get_existing_room_numbers', {
+          p_hotel_id: hotelId,
+          p_floor_number: floorNumber,
+          p_prefix: prefix
+        });
 
-        if (!allRoomsError && allRooms) {
-          setAllRoomsOnFloor(allRooms);
-        }
+      if (!existingError && existingRooms) {
+        setExistingRoomNumbers(existingRooms || []);
       }
     } catch (error) {
       console.error('Failed to fetch individual rooms:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Fetch next available room number when prefix/floor changes
+  const fetchNextAvailableNumber = async () => {
+    if (!prefix && floorNumber === null) {
+      setNextAvailableNumber(null);
+      return;
+    }
+
+    try {
+      const { data, error } = await supabase
+        .rpc('get_next_available_room_number', {
+          p_hotel_id: hotelId,
+          p_prefix: prefix || '',
+          p_floor_number: floorNumber,
+          p_start_from: startNumber || 1
+        });
+
+      if (!error && data !== null) {
+        setNextAvailableNumber(data);
+        // Auto-update start number if user hasn't manually set it
+        if (startNumber === 1 && data > 1) {
+          setStartNumber(data);
+        }
+      }
+    } catch (error) {
+      console.error('Failed to fetch next available number:', error);
     }
   };
 
@@ -107,73 +129,27 @@ export default function IndividualRoomsManager({ roomTypeId, roomTypeName, roomT
       return;
     }
 
-    // Fetch all rooms on this floor to check for overlaps
-    if (floorNumber !== null) {
-      try {
-        const { data: allRoomsOnThisFloor, error: fetchError } = await supabase
-          .from('individual_rooms')
-          .select('room_number, rooms!inner(hotel_id)')
-          .eq('rooms.hotel_id', hotelId)
-          .eq('floor_number', floorNumber);
-        
-        if (!fetchError && allRoomsOnThisFloor) {
-          const existingNumbers = allRoomsOnThisFloor.map(r => r.room_number);
-          
-          // Find overlaps and gaps
-          const overlappingRooms: string[] = [];
-          const potentialNumbers: number[] = [];
-          
-          for (let i = 0; i < count; i++) {
-            const roomNumber = prefix + (startNumber + i < 10 ? '0' + (startNumber + i).toString() : (startNumber + i).toString());
-            if (existingNumbers.includes(roomNumber)) {
-              overlappingRooms.push(roomNumber);
-            }
-          }
-          
-          if (overlappingRooms.length > 0) {
-            // Find gaps in the sequence (unassigned rooms)
-            const allNumbers = existingNumbers.map(n => parseInt(n.replace(prefix, ''))).sort((a, b) => a - b);
-            const gaps: string[] = [];
-            let nextSuggested = prefix + '01';
-            
-            if (allNumbers.length > 0) {
-              // Find the highest existing number with this prefix
-              const highestWithPrefix = Math.max(...allNumbers.filter(n => allRoomsOnThisFloor.some(r => r.room_number.startsWith(prefix) && parseInt(r.room_number.replace(prefix, '')) === n)));
-              
-              // Find gaps
-              for (let i = 0; i < allNumbers.length - 1; i++) {
-                if (allNumbers[i + 1] - allNumbers[i] > 1) {
-                  const start = allNumbers[i] + 1;
-                  const end = allNumbers[i + 1] - 1;
-                  if (start === end) {
-                    gaps.push(prefix + (start < 10 ? '0' : '') + start.toString());
-                  } else {
-                    gaps.push(`${prefix}${(start < 10 ? '0' : '') + start.toString()}-${prefix}${(end < 10 ? '0' : '') + end.toString()}`);
-                  }
-                }
-              }
-              
-              // Suggest next number
-              const nextNum = highestWithPrefix + 1;
-              nextSuggested = prefix + (nextNum < 10 ? '0' : '') + nextNum.toString();
-            }
-            
-            // Build helpful error message
-            let errorMsg = `❌ Room number overlap detected on Floor ${floorNumber}!\n\n`;
-            errorMsg += `Overlapping rooms: ${overlappingRooms.join(', ')}\n\n`;
-            errorMsg += `💡 Suggested starting number: ${nextSuggested}\n`;
-            
-            if (gaps.length > 0) {
-              errorMsg += `\nAlso available: ${gaps.join(', ')}`;
-            }
-            
-            alert(errorMsg);
-            return;
-          }
-        }
-      } catch (error) {
-        console.error('Error checking for overlaps:', error);
+    // Check for potential overlaps before generating
+    const existingNumbers = existingRoomNumbers.map(r => r.room_number);
+    const overlappingRooms: string[] = [];
+    
+    for (let i = 0; i < count; i++) {
+      const roomNumber = prefix + (startNumber + i < 10 ? '0' + (startNumber + i).toString() : (startNumber + i).toString());
+      if (existingNumbers.includes(roomNumber)) {
+        overlappingRooms.push(roomNumber);
       }
+    }
+    
+    if (overlappingRooms.length > 0) {
+      let errorMsg = `❌ Room number overlap detected!\n\n`;
+      errorMsg += `The following room numbers already exist in this hotel:\n${overlappingRooms.join(', ')}\n\n`;
+      
+      if (nextAvailableNumber !== null) {
+        errorMsg += `💡 Suggested starting number: ${nextAvailableNumber}\n`;
+      }
+      
+      alert(errorMsg);
+      return;
     }
 
     setGenerating(true);
@@ -181,7 +157,7 @@ export default function IndividualRoomsManager({ roomTypeId, roomTypeName, roomT
       // Build parameters object, only including floor_number if it's not null
       const params: any = {
         p_room_type_id: roomTypeId,
-        p_prefix: prefix,
+        p_prefix: prefix || '',
         p_start_number: startNumber,
         p_count: count
       };
@@ -196,15 +172,18 @@ export default function IndividualRoomsManager({ roomTypeId, roomTypeName, roomT
       
       // Refresh the list
       await fetchIndividualRooms();
+      await fetchNextAvailableNumber();
       setShowGenerator(false);
       // Reset form
       setPrefix('');
       setStartNumber(1);
       setCount(1);
       setFloorNumber(null);
-    } catch (error) {
+      setNextAvailableNumber(null);
+    } catch (error: any) {
       console.error('Failed to generate rooms:', error);
-      alert(`Failed to generate rooms: ${error}. Make sure migration 31_individual_room_management.sql has been applied to your database.`);
+      const errorMsg = error?.message || 'Unknown error';
+      alert(`Failed to generate rooms: ${errorMsg}`);
     } finally {
       setGenerating(false);
     }
@@ -249,6 +228,14 @@ export default function IndividualRoomsManager({ roomTypeId, roomTypeName, roomT
   useEffect(() => {
     fetchIndividualRooms();
   }, [roomTypeId]);
+
+  // Fetch next available number when prefix or floor changes
+  useEffect(() => {
+    if (showGenerator) {
+      fetchNextAvailableNumber();
+      fetchIndividualRooms();
+    }
+  }, [prefix, floorNumber, showGenerator]);
 
   const getStatusColor = (status: string) => {
     const colors = {
@@ -350,6 +337,37 @@ export default function IndividualRoomsManager({ roomTypeId, roomTypeName, roomT
               <h3 className="mb-4 text-lg font-semibold text-gray-900">
                 Generate Rooms Automatically
               </h3>
+              
+              {/* Existing Room Numbers Info */}
+              {existingRoomNumbers.length > 0 && (
+                <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 p-4">
+                  <p className="mb-2 text-sm font-semibold text-amber-900">
+                    📋 Existing Room Numbers in This Hotel:
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {existingRoomNumbers.slice(0, 20).map((room, idx) => (
+                      <span 
+                        key={idx}
+                        className="inline-flex items-center gap-1 rounded bg-white px-2 py-1 text-xs font-medium text-gray-700"
+                        title={`${room.room_type_name}${room.floor_number ? ` (Floor ${room.floor_number})` : ''}`}
+                      >
+                        {room.room_number}
+                      </span>
+                    ))}
+                    {existingRoomNumbers.length > 20 && (
+                      <span className="inline-flex items-center rounded bg-white px-2 py-1 text-xs font-medium text-gray-500">
+                        +{existingRoomNumbers.length - 20} more...
+                      </span>
+                    )}
+                  </div>
+                  {nextAvailableNumber !== null && (
+                    <p className="mt-2 text-sm text-amber-800">
+                      💡 <strong>Suggested starting number:</strong> {nextAvailableNumber} (rooms will be {prefix}{nextAvailableNumber < 10 ? '0' : ''}{nextAvailableNumber}, {prefix}{(nextAvailableNumber + 1) < 10 ? '0' : ''}{nextAvailableNumber + 1}, ...)
+                    </p>
+                  )}
+                </div>
+              )}
+
               <div className="grid gap-4 md:grid-cols-2">
                 <div>
                   <label className="mb-2 block text-sm font-medium text-gray-700">
@@ -362,6 +380,9 @@ export default function IndividualRoomsManager({ roomTypeId, roomTypeName, roomT
                     placeholder="e.g., '2' for 201, 202..."
                     className="w-full rounded-lg border border-gray-300 px-4 py-2 text-gray-900 placeholder:text-gray-400"
                   />
+                  <p className="mt-1 text-xs text-gray-500">
+                    Leave empty for numbers like 01, 02, 03...
+                  </p>
                 </div>
                 <div>
                   <label className="mb-2 block text-sm font-medium text-gray-700">
@@ -373,6 +394,11 @@ export default function IndividualRoomsManager({ roomTypeId, roomTypeName, roomT
                     onChange={(e) => setStartNumber(parseInt(e.target.value) || 1)}
                     className="w-full rounded-lg border border-gray-300 px-4 py-2 text-gray-900"
                   />
+                  {nextAvailableNumber !== null && nextAvailableNumber !== startNumber && (
+                    <p className="mt-1 text-xs text-amber-600">
+                      ⚠️ Suggested: {nextAvailableNumber} to avoid conflicts
+                    </p>
+                  )}
                 </div>
                 <div>
                   <label className="mb-2 block text-sm font-medium text-gray-700">

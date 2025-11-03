@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import ReservationDetailModal from './ReservationDetailModal';
+import NewReservationModal from './NewReservationModal';
 
 interface IndividualRoom {
   id: string;
@@ -64,13 +65,128 @@ export default function IndividualRoomAvailabilityDashboard({ hotelId, onClose }
   const [showBlockModal, setShowBlockModal] = useState(false);
   const [blockingRoomId, setBlockingRoomId] = useState<string | null>(null);
   const [blockingRoomTypeId, setBlockingRoomTypeId] = useState<string | null>(null);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [showNewReservationModal, setShowNewReservationModal] = useState(false);
+  
+  // Date filtering and selection
+  const [filterCheckIn, setFilterCheckIn] = useState<string>('');
+  const [filterCheckOut, setFilterCheckOut] = useState<string>('');
+  const [selectedCheckIn, setSelectedCheckIn] = useState<string | null>(null);
+  const [selectedCheckOut, setSelectedCheckOut] = useState<string | null>(null);
+  const [selectedIndividualRoomId, setSelectedIndividualRoomId] = useState<string | null>(null);
+  const [selectedRoomTypeId, setSelectedRoomTypeId] = useState<string | null>(null);
   
   const alertsDropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     fetchData();
     fetchArrivalAlerts();
-  }, [currentDate, viewMode]);
+  }, [currentDate, viewMode, filterCheckIn, filterCheckOut]);
+
+  // Handle filter date changes - update currentDate to show filtered period
+  useEffect(() => {
+    if (filterCheckIn && filterCheckOut) {
+      const checkInDate = new Date(filterCheckIn);
+      setCurrentDate(checkInDate);
+      // Auto-switch to month view if dates span more than a week
+      const daysDiff = Math.ceil((new Date(filterCheckOut).getTime() - checkInDate.getTime()) / (1000 * 60 * 60 * 24));
+      if (daysDiff > 7 && viewMode !== 'month') {
+        setViewMode('month');
+      }
+    }
+  }, [filterCheckIn, filterCheckOut]);
+
+  // Handle fullscreen toggle
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
+  }, []);
+
+  const toggleFullscreen = async () => {
+    const dashboardElement = document.getElementById('individual-room-availability-dashboard');
+    if (!dashboardElement) return;
+
+    if (!document.fullscreenElement) {
+      await dashboardElement.requestFullscreen();
+      setIsFullscreen(true);
+    } else {
+      await document.exitFullscreen();
+      setIsFullscreen(false);
+    }
+  };
+
+  const handleDateCellClick = (date: Date, individualRoomId: string, roomTypeId: string) => {
+    const dateStr = date.toISOString().split('T')[0];
+    
+    // If clicking on a reservation span, don't select dates
+    const allSpans = getReservationSpans(individualRoomId, dates);
+    const dateStrings = dates.map(d => d.toISOString().split('T')[0]);
+    const dateIdx = dateStrings.indexOf(dateStr);
+    const isInSpan = allSpans.some(span => dateIdx >= span.startIdx && dateIdx <= span.endIdx);
+    if (isInSpan) return;
+
+    // Reset if clicking the same date
+    if (selectedCheckIn === dateStr && !selectedCheckOut && selectedIndividualRoomId === individualRoomId) {
+      setSelectedCheckIn(null);
+      setSelectedIndividualRoomId(null);
+      setSelectedRoomTypeId(null);
+      return;
+    }
+
+    // First click - set check-in
+    if (!selectedCheckIn) {
+      setSelectedCheckIn(dateStr);
+      setSelectedIndividualRoomId(individualRoomId);
+      setSelectedRoomTypeId(roomTypeId);
+      setSelectedCheckOut(null);
+      return;
+    }
+
+    // If clicking different room, reset selection
+    if (selectedIndividualRoomId !== individualRoomId) {
+      setSelectedCheckIn(dateStr);
+      setSelectedIndividualRoomId(individualRoomId);
+      setSelectedRoomTypeId(roomTypeId);
+      setSelectedCheckOut(null);
+      return;
+    }
+
+    // Second click - set check-out
+    if (selectedCheckIn && !selectedCheckOut) {
+      // Check-out must be after check-in
+      if (new Date(dateStr) <= new Date(selectedCheckIn)) {
+        // If clicked before check-in, reset
+        setSelectedCheckIn(dateStr);
+        setSelectedCheckOut(null);
+        return;
+      }
+      setSelectedCheckOut(dateStr);
+      return;
+    }
+
+    // Third click - reset and start new selection
+    if (selectedCheckIn && selectedCheckOut) {
+      setSelectedCheckIn(dateStr);
+      setSelectedCheckOut(null);
+    }
+  };
+
+  const clearDateSelection = () => {
+    setSelectedCheckIn(null);
+    setSelectedCheckOut(null);
+    setSelectedIndividualRoomId(null);
+    setSelectedRoomTypeId(null);
+  };
+
+  const openBookingModal = () => {
+    if (selectedCheckIn && selectedCheckOut && selectedRoomTypeId) {
+      setShowNewReservationModal(true);
+    }
+  };
 
   // Close alerts dropdown when clicking outside
   useEffect(() => {
@@ -113,6 +229,18 @@ export default function IndividualRoomAvailabilityDashboard({ hotelId, onClose }
     try {
       setLoading(true);
       
+      // Calculate date range based on view mode or filter dates
+      const { start, days } = getDateRange();
+      let startDate = start;
+      let endDate = new Date(start);
+      endDate.setDate(start.getDate() + days - 1);
+      
+      // If filter dates are set, use them for fetching
+      if (filterCheckIn && filterCheckOut) {
+        startDate = new Date(filterCheckIn);
+        endDate = new Date(filterCheckOut);
+      }
+      
       // Fetch room types
       const { data: roomsData, error: roomsError } = await supabase
         .from('rooms')
@@ -140,7 +268,7 @@ export default function IndividualRoomAvailabilityDashboard({ hotelId, onClose }
       }
       setIndividualRooms(roomsByType);
 
-      // Fetch all reservations with more details
+      // Fetch all reservations with more details (overlapping with date range)
       const { data: resData, error: resError } = await supabase
         .from('reservations')
         .select(`
@@ -156,7 +284,9 @@ export default function IndividualRoomAvailabilityDashboard({ hotelId, onClose }
           reservation_status
         `)
         .eq('hotel_id', hotelId)
-        .in('reservation_status', ['confirmed', 'checked_in', 'tentative']);
+        .in('reservation_status', ['confirmed', 'checked_in', 'tentative'])
+        .lte('check_in_date', endDate.toISOString().split('T')[0])
+        .gte('check_out_date', startDate.toISOString().split('T')[0]);
 
       if (!resError && resData) {
         setAllReservations(resData as any);
@@ -355,10 +485,52 @@ export default function IndividualRoomAvailabilityDashboard({ hotelId, onClose }
 
   const dates = getDates();
 
+  // Filter dates if filter dates are set
+  const displayDates = filterCheckIn && filterCheckOut
+    ? dates.filter(date => {
+        const dateStr = date.toISOString().split('T')[0];
+        return dateStr >= filterCheckIn && dateStr <= filterCheckOut;
+      })
+    : dates;
+
+  // Check if a date is in the selected range
+  const isDateSelected = (date: Date) => {
+    if (!selectedCheckIn) return false;
+    const dateStr = date.toISOString().split('T')[0];
+    if (!selectedCheckOut) {
+      return dateStr === selectedCheckIn;
+    }
+    return dateStr >= selectedCheckIn && dateStr <= selectedCheckOut;
+  };
+
+  const isDateCheckIn = (date: Date) => {
+    if (!selectedCheckIn) return false;
+    return date.toISOString().split('T')[0] === selectedCheckIn;
+  };
+
+  const isDateCheckOut = (date: Date) => {
+    if (!selectedCheckOut) return false;
+    return date.toISOString().split('T')[0] === selectedCheckOut;
+  };
+
+  // Get rooms array for NewReservationModal
+  const roomsArray = roomTypes.map(rt => ({
+    id: rt.id,
+    name: rt.name,
+    room_type: rt.room_type,
+    base_price: 0, // Will be fetched by modal
+    quantity: individualRooms[rt.id]?.length || 0,
+    max_occupancy: 2, // Default
+    is_active: true
+  }));
+
   return (
     <>
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-        <div className="mx-auto w-full max-w-[95vw] rounded-lg bg-white shadow-xl">
+      <div className={`fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 ${isFullscreen ? 'p-0' : 'p-4'}`}>
+        <div 
+          id="individual-room-availability-dashboard"
+          className={`${isFullscreen ? 'h-screen w-screen max-h-screen max-w-screen rounded-none' : 'mx-auto w-full max-w-[95vw] rounded-lg'} bg-white shadow-xl`}
+        >
           {/* Header */}
           <div className="border-b border-gray-200 bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-4">
             <div className="flex items-center justify-between">
@@ -473,6 +645,23 @@ export default function IndividualRoomAvailabilityDashboard({ hotelId, onClose }
                     </div>
                   )}
                 </div>
+
+                {/* Fullscreen Toggle */}
+                <button
+                  onClick={toggleFullscreen}
+                  className="rounded-lg bg-white bg-opacity-20 px-4 py-2 text-white hover:bg-opacity-30"
+                  title={isFullscreen ? 'Exit Fullscreen' : 'Enter Fullscreen'}
+                >
+                  {isFullscreen ? (
+                    <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  ) : (
+                    <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+                    </svg>
+                  )}
+                </button>
                 
                 <button
                   onClick={onClose}
@@ -480,6 +669,72 @@ export default function IndividualRoomAvailabilityDashboard({ hotelId, onClose }
                 >
                   ✕ Close
                 </button>
+              </div>
+            </div>
+
+            {/* Date Filters and Selection */}
+            <div className="mt-4 flex flex-wrap items-center justify-between gap-4">
+              <div className="flex flex-wrap items-center gap-4">
+                {/* Date Filter Pickers */}
+                <div className="flex items-center gap-2">
+                  <label className="text-sm font-medium text-white">Filter:</label>
+                  <input
+                    type="date"
+                    value={filterCheckIn}
+                    onChange={(e) => {
+                      setFilterCheckIn(e.target.value);
+                      if (e.target.value && filterCheckOut && e.target.value > filterCheckOut) {
+                        setFilterCheckOut('');
+                      }
+                    }}
+                    className="rounded-lg border border-white/30 bg-white/20 px-3 py-1.5 text-sm text-white placeholder:text-white/70 backdrop-blur-sm"
+                    placeholder="Check-in"
+                  />
+                  <span className="text-white/70">→</span>
+                  <input
+                    type="date"
+                    value={filterCheckOut}
+                    onChange={(e) => setFilterCheckOut(e.target.value)}
+                    min={filterCheckIn || undefined}
+                    className="rounded-lg border border-white/30 bg-white/20 px-3 py-1.5 text-sm text-white placeholder:text-white/70 backdrop-blur-sm"
+                    placeholder="Check-out"
+                  />
+                  {(filterCheckIn || filterCheckOut) && (
+                    <button
+                      onClick={() => {
+                        setFilterCheckIn('');
+                        setFilterCheckOut('');
+                      }}
+                      className="text-sm text-white hover:text-white/80"
+                    >
+                      Clear
+                    </button>
+                  )}
+                </div>
+
+                {/* Selected Dates for Booking */}
+                {selectedCheckIn && (
+                  <div className="flex items-center gap-2 rounded-lg bg-white/20 backdrop-blur-sm px-3 py-1.5">
+                    <span className="text-sm font-medium text-white">
+                      Booking: {new Date(selectedCheckIn).toLocaleDateString()}
+                      {selectedCheckOut && ` → ${new Date(selectedCheckOut).toLocaleDateString()}`}
+                    </span>
+                    {selectedCheckIn && selectedCheckOut && (
+                      <button
+                        onClick={openBookingModal}
+                        className="rounded bg-white px-3 py-1 text-xs font-semibold text-blue-700 hover:bg-white/90"
+                      >
+                        Book Now
+                      </button>
+                    )}
+                    <button
+                      onClick={clearDateSelection}
+                      className="text-white hover:text-white/80"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -521,7 +776,7 @@ export default function IndividualRoomAvailabilityDashboard({ hotelId, onClose }
                             <th className="sticky left-0 z-10 min-w-[180px] border-r-2 border-gray-300 bg-gray-100 px-4 py-3 text-left text-sm font-bold text-gray-900">
                               Room
                             </th>
-                            {dates.map(date => (
+                            {displayDates.map(date => (
                               <th
                                 key={date.toISOString()}
                                 className="min-w-[100px] border-b border-gray-300 bg-gray-100 px-2 py-3 text-center text-xs font-bold text-gray-900"
@@ -533,15 +788,32 @@ export default function IndividualRoomAvailabilityDashboard({ hotelId, onClose }
                         </thead>
                         <tbody>
                           {rooms.map(room => {
-                            const spans = getReservationSpans(room.id, dates);
+                            // Filter spans to only show those in displayDates
+                            const allSpans = getReservationSpans(room.id, dates);
                             const dateStrings = dates.map(d => d.toISOString().split('T')[0]);
-                            const occupiedDates = new Set<number>();
+                            const displayDateStrings = displayDates.map(d => d.toISOString().split('T')[0]);
+                            const displayStartIdx = displayDateStrings.length > 0 ? dateStrings.indexOf(displayDateStrings[0]) : 0;
                             
+                            const spans = allSpans.filter(span => {
+                              // Check if span overlaps with display dates
+                              return span.startIdx < displayStartIdx + displayDateStrings.length && 
+                                     span.endIdx >= displayStartIdx;
+                            }).map(span => ({
+                              ...span,
+                              startIdx: Math.max(0, span.startIdx - displayStartIdx),
+                              endIdx: Math.min(displayDateStrings.length - 1, span.endIdx - displayStartIdx),
+                              colspan: Math.min(span.colspan, displayDateStrings.length - Math.max(0, span.startIdx - displayStartIdx))
+                            }));
+                            
+                            const occupiedDates = new Set<number>();
                             spans.forEach(span => {
                               for (let i = span.startIdx; i <= span.endIdx; i++) {
                                 occupiedDates.add(i);
                               }
                             });
+
+                            const isRoomSelected = selectedIndividualRoomId === room.id;
+                            const hasValidSelection = selectedCheckIn && selectedCheckOut && isRoomSelected;
 
                             return (
                               <tr key={room.id} className="relative">
@@ -551,6 +823,14 @@ export default function IndividualRoomAvailabilityDashboard({ hotelId, onClose }
                                       <div className="font-semibold text-gray-900">Room {room.room_number}</div>
                                       {room.floor_number && (
                                         <div className="text-xs text-gray-600 mt-0.5">Floor {room.floor_number}</div>
+                                      )}
+                                      {hasValidSelection && (
+                                        <button
+                                          onClick={openBookingModal}
+                                          className="mt-2 rounded bg-blue-600 px-2 py-1 text-xs font-semibold text-white hover:bg-blue-700"
+                                        >
+                                          Book Selected Dates
+                                        </button>
                                       )}
                                     </div>
                                     <button
@@ -565,12 +845,17 @@ export default function IndividualRoomAvailabilityDashboard({ hotelId, onClose }
                                     </button>
                                   </div>
                                 </td>
-                                {dates.map((date, idx) => {
+                                {displayDates.map((date, displayIdx) => {
                                   const dateStr = date.toISOString().split('T')[0];
                                   const isToday = dateStr === new Date().toISOString().split('T')[0];
                                   
                                   // Check if this cell is part of a reservation span
-                                  const span = spans.find(s => s.startIdx === idx);
+                                  const span = spans.find(s => s.startIdx === displayIdx);
+                                  
+                                  // Check if date is selected for booking
+                                  const isSelected = isDateSelected(date);
+                                  const isCheckIn = isDateCheckIn(date);
+                                  const isCheckOut = isDateCheckOut(date);
                                   
                                   if (span) {
                                     // This is the start of a reservation span
@@ -599,17 +884,32 @@ export default function IndividualRoomAvailabilityDashboard({ hotelId, onClose }
                                         </button>
                                       </td>
                                     );
-                                  } else if (occupiedDates.has(idx)) {
+                                  } else if (occupiedDates.has(displayIdx)) {
                                     // This cell is part of a span but not the start - skip it (handled by colspan)
                                     return null;
                                   } else {
-                                    // Empty cell
+                                    // Empty cell - can be selected
                                     return (
                                       <td
                                         key={dateStr}
-                                        className={`border-b border-l border-gray-200 px-1 py-3 text-center text-xs ${isToday ? 'border-blue-400 bg-blue-50' : ''}`}
+                                        onClick={() => handleDateCellClick(date, room.id, room.room_id)}
+                                        className={`border-b border-l border-gray-200 px-1 py-3 text-center text-xs transition-colors cursor-pointer hover:bg-gray-100 ${
+                                          isToday ? 'border-blue-400 bg-blue-50' : '' 
+                                        } ${
+                                          isSelected && isRoomSelected ? 'bg-blue-100' : ''
+                                        } ${
+                                          isCheckIn && isRoomSelected ? 'bg-blue-200 border-2 border-blue-500' : ''
+                                        } ${
+                                          isCheckOut && isRoomSelected ? 'bg-blue-200 border-2 border-blue-500' : ''
+                                        }`}
                                       >
-                                        <div className="text-gray-300">—</div>
+                                        {isCheckIn && isRoomSelected && (
+                                          <div className="text-[8px] font-bold text-blue-700">CHECK-IN</div>
+                                        )}
+                                        {isCheckOut && isRoomSelected && (
+                                          <div className="text-[8px] font-bold text-blue-700">CHECK-OUT</div>
+                                        )}
+                                        {!isSelected && <div className="text-gray-300">—</div>}
                                       </td>
                                     );
                                   }
@@ -640,6 +940,30 @@ export default function IndividualRoomAvailabilityDashboard({ hotelId, onClose }
           onUpdate={() => {
             fetchData();
             fetchArrivalAlerts();
+          }}
+        />
+      )}
+
+      {/* New Reservation Modal */}
+      {showNewReservationModal && selectedCheckIn && selectedCheckOut && selectedRoomTypeId && (
+        <NewReservationModal
+          hotelId={hotelId}
+          rooms={roomsArray}
+          onClose={() => {
+            setShowNewReservationModal(false);
+            clearDateSelection();
+          }}
+          onSuccess={() => {
+            setShowNewReservationModal(false);
+            clearDateSelection();
+            fetchData();
+            fetchArrivalAlerts();
+            router.refresh();
+          }}
+          prefillDates={{
+            checkIn: selectedCheckIn,
+            checkOut: selectedCheckOut,
+            roomId: selectedRoomTypeId
           }}
         />
       )}

@@ -9,6 +9,11 @@ interface NewReservationModalProps {
   rooms: any[];
   onClose: () => void;
   onSuccess: () => void;
+  prefillDates?: {
+    checkIn: string;
+    checkOut: string;
+    roomId?: string;
+  };
 }
 
 interface Room {
@@ -32,11 +37,11 @@ interface GuestProfile {
   special_requests?: string;
 }
 
-export default function NewReservationModal({ hotelId, rooms, onClose, onSuccess }: NewReservationModalProps) {
+export default function NewReservationModal({ hotelId, rooms, onClose, onSuccess, prefillDates }: NewReservationModalProps) {
   const router = useRouter();
   const supabase = createClient();
   
-  const [currentStep, setCurrentStep] = useState(1);
+  const [currentStep, setCurrentStep] = useState(prefillDates ? 1 : 1); // Start at step 1, but if prefill, could skip to step 2
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -52,12 +57,12 @@ export default function NewReservationModal({ hotelId, rooms, onClose, onSuccess
   });
 
   const [bookingData, setBookingData] = useState({
-    check_in_date: '',
-    check_out_date: '',
+    check_in_date: prefillDates?.checkIn || '',
+    check_out_date: prefillDates?.checkOut || '',
     adults: 1,
     children: 0,
     infants: 0,
-    room_id: '',
+    room_id: prefillDates?.roomId || '',
     arrival_time: 'afternoon',
     group_name: '',
     corporate_code: ''
@@ -93,6 +98,17 @@ export default function NewReservationModal({ hotelId, rooms, onClose, onSuccess
       checkRoomAvailability();
     }
   }, [bookingData.check_in_date, bookingData.check_out_date]);
+
+  // Pre-select room if provided in prefillDates
+  useEffect(() => {
+    if (prefillDates?.roomId && !selectedRoom) {
+      const room = rooms.find(r => r.id === prefillDates.roomId);
+      if (room) {
+        setSelectedRoom(room);
+        setBookingData(prev => ({ ...prev, room_id: prefillDates.roomId! }));
+      }
+    }
+  }, [prefillDates?.roomId, rooms]);
 
   // Calculate pricing when room is selected
   useEffect(() => {

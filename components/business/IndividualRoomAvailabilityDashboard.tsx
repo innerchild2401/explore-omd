@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
+import ReservationDetailModal from './ReservationDetailModal';
 
 interface IndividualRoom {
   id: string;
@@ -20,6 +21,7 @@ interface RoomType {
 
 interface Reservation {
   id: string;
+  confirmation_number: string;
   check_in_date: string;
   check_out_date: string;
   adults: number;
@@ -39,6 +41,13 @@ interface ArrivalAlert {
   assigned_room?: string;
 }
 
+interface ReservationSpan {
+  reservation: Reservation;
+  startIdx: number;
+  endIdx: number;
+  colspan: number;
+}
+
 export default function IndividualRoomAvailabilityDashboard({ hotelId, onClose }: { hotelId: string; onClose: () => void }) {
   const router = useRouter();
   const supabase = createClient();
@@ -50,11 +59,32 @@ export default function IndividualRoomAvailabilityDashboard({ hotelId, onClose }
   const [allReservations, setAllReservations] = useState<Reservation[]>([]);
   const [arrivalAlerts, setArrivalAlerts] = useState<ArrivalAlert[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showAlertsDropdown, setShowAlertsDropdown] = useState(false);
+  const [selectedReservationId, setSelectedReservationId] = useState<string | null>(null);
+  const [showBlockModal, setShowBlockModal] = useState(false);
+  const [blockingRoomId, setBlockingRoomId] = useState<string | null>(null);
+  const [blockingRoomTypeId, setBlockingRoomTypeId] = useState<string | null>(null);
+  
+  const alertsDropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     fetchData();
     fetchArrivalAlerts();
   }, [currentDate, viewMode]);
+
+  // Close alerts dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (alertsDropdownRef.current && !alertsDropdownRef.current.contains(event.target as Node)) {
+        setShowAlertsDropdown(false);
+      }
+    };
+
+    if (showAlertsDropdown) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [showAlertsDropdown]);
 
   const getDateRange = () => {
     const start = new Date(currentDate);
@@ -83,9 +113,6 @@ export default function IndividualRoomAvailabilityDashboard({ hotelId, onClose }
     try {
       setLoading(true);
       
-      // hotelId is now the actual hotel.id, not business.id
-      console.log('Hotel ID:', hotelId);
-      
       // Fetch room types
       const { data: roomsData, error: roomsError } = await supabase
         .from('rooms')
@@ -113,11 +140,12 @@ export default function IndividualRoomAvailabilityDashboard({ hotelId, onClose }
       }
       setIndividualRooms(roomsByType);
 
-      // Fetch all reservations from reservations table
+      // Fetch all reservations with more details
       const { data: resData, error: resError } = await supabase
         .from('reservations')
         .select(`
           id,
+          confirmation_number,
           check_in_date,
           check_out_date,
           adults,
@@ -128,7 +156,7 @@ export default function IndividualRoomAvailabilityDashboard({ hotelId, onClose }
           reservation_status
         `)
         .eq('hotel_id', hotelId)
-        .in('reservation_status', ['confirmed', 'checked_in']);
+        .in('reservation_status', ['confirmed', 'checked_in', 'tentative']);
 
       if (!resError && resData) {
         setAllReservations(resData as any);
@@ -145,7 +173,6 @@ export default function IndividualRoomAvailabilityDashboard({ hotelId, onClose }
     try {
       const today = new Date().toISOString().split('T')[0];
       
-      // hotelId is now the actual hotel.id, not business.id
       const { data: arrivals } = await supabase
         .from('reservations')
         .select(`
@@ -161,7 +188,6 @@ export default function IndividualRoomAvailabilityDashboard({ hotelId, onClose }
         .eq('check_in_date', today)
         .in('reservation_status', ['confirmed', 'tentative']);
       
-      // If arrivals exist, get individual room info
       if (arrivals && arrivals.length > 0) {
         const roomIds = arrivals.filter(r => r.individual_room_id).map(r => r.individual_room_id);
         let roomData: any[] = [];
@@ -192,6 +218,8 @@ export default function IndividualRoomAvailabilityDashboard({ hotelId, onClose }
         });
         
         setArrivalAlerts(alerts);
+      } else {
+        setArrivalAlerts([]);
       }
 
     } catch (err) {
@@ -199,23 +227,121 @@ export default function IndividualRoomAvailabilityDashboard({ hotelId, onClose }
     }
   };
 
-  const getReservationForRoomAndDate = (roomId: string, date: Date): Reservation | null => {
-    const dateStr = date.toISOString().split('T')[0];
-    // Only show reservations that are assigned to this specific individual room
-    return allReservations.find(res => {
-      if (res.individual_room_id !== roomId) return false;
-      return res.check_in_date <= dateStr && res.check_out_date > dateStr;
-    }) || null;
+  // Calculate reservation spans for a room
+  const getReservationSpans = (roomId: string, dates: Date[]): ReservationSpan[] => {
+    const spans: ReservationSpan[] = [];
+    const dateStrings = dates.map(d => d.toISOString().split('T')[0]);
+    
+    const reservations = allReservations.filter(res => 
+      res.individual_room_id === roomId &&
+      res.reservation_status !== 'cancelled'
+    );
+
+    reservations.forEach(reservation => {
+      const checkInIdx = dateStrings.findIndex(d => d >= reservation.check_in_date);
+      const checkOutIdx = dateStrings.findIndex(d => d >= reservation.check_out_date);
+      
+      if (checkInIdx !== -1 && checkOutIdx !== -1 && checkInIdx < checkOutIdx) {
+        spans.push({
+          reservation,
+          startIdx: checkInIdx,
+          endIdx: checkOutIdx - 1,
+          colspan: checkOutIdx - checkInIdx
+        });
+      } else if (checkInIdx !== -1 && checkOutIdx === -1) {
+        // Reservation extends beyond view
+        spans.push({
+          reservation,
+          startIdx: checkInIdx,
+          endIdx: dates.length - 1,
+          colspan: dates.length - checkInIdx
+        });
+      }
+    });
+
+    // Sort by start index
+    return spans.sort((a, b) => a.startIdx - b.startIdx);
   };
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'clean': return 'bg-green-100 text-green-800 border-green-300';
-      case 'occupied': return 'bg-red-100 text-red-800 border-red-300';
-      case 'dirty': return 'bg-yellow-100 text-yellow-800 border-yellow-300';
-      case 'maintenance': return 'bg-orange-100 text-orange-800 border-orange-300';
-      case 'out_of_order': return 'bg-gray-100 text-gray-800 border-gray-300';
-      default: return 'bg-gray-100 text-gray-800 border-gray-300';
+      case 'clean': return 'bg-green-50';
+      case 'occupied': return 'bg-red-50';
+      case 'dirty': return 'bg-yellow-50';
+      case 'maintenance': return 'bg-orange-50';
+      case 'out_of_order': return 'bg-gray-50';
+      default: return 'bg-gray-50';
+    }
+  };
+
+  const getReservationStatusColor = (status: string) => {
+    switch (status) {
+      case 'confirmed': return 'bg-blue-500 hover:bg-blue-600';
+      case 'checked_in': return 'bg-green-500 hover:bg-green-600';
+      case 'tentative': return 'bg-yellow-500 hover:bg-yellow-600';
+      default: return 'bg-gray-500 hover:bg-gray-600';
+    }
+  };
+
+  const handleBlockRoom = async (roomId: string | null, startDate: string, endDate: string, reason: string) => {
+    try {
+      const currentRoomTypeId = blockingRoomTypeId || (roomId ? Object.values(individualRooms).flat().find(r => r.id === roomId)?.room_id : null);
+      
+      if (!roomId && !currentRoomTypeId) {
+        alert('Please select a room to block');
+        return;
+      }
+
+      const start = new Date(startDate);
+      const end = new Date(endDate);
+      const dates: string[] = [];
+      
+      for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+        dates.push(d.toISOString().split('T')[0]);
+      }
+
+      if (roomId) {
+        // Block individual room
+        const blocks = dates.map(date => ({
+          individual_room_id: roomId,
+          date,
+          status: 'blocked' as const,
+          reservation_id: null
+        }));
+
+        const { error } = await supabase
+          .from('individual_room_availability')
+          .upsert(blocks, { onConflict: 'individual_room_id,date' });
+
+        if (error) throw error;
+      } else if (currentRoomTypeId) {
+        // Block all rooms of this type
+        const roomsToBlock = individualRooms[currentRoomTypeId] || [];
+        
+        for (const room of roomsToBlock) {
+          const blocks = dates.map(date => ({
+            individual_room_id: room.id,
+            date,
+            status: 'blocked' as const,
+            reservation_id: null
+          }));
+
+          const { error } = await supabase
+            .from('individual_room_availability')
+            .upsert(blocks, { onConflict: 'individual_room_id,date' });
+
+          if (error) throw error;
+        }
+      }
+
+      await fetchData();
+      router.refresh();
+      setShowBlockModal(false);
+      setBlockingRoomId(null);
+      setBlockingRoomTypeId(null);
+    } catch (err: any) {
+      console.error('Error blocking room:', err);
+      alert(`Failed to block room: ${err.message}`);
     }
   };
 
@@ -230,192 +356,456 @@ export default function IndividualRoomAvailabilityDashboard({ hotelId, onClose }
   const dates = getDates();
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-      <div className="mx-auto w-full max-w-[95vw] rounded-lg bg-white shadow-xl">
-        {/* Header */}
-        <div className="border-b border-gray-200 bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <button
-                onClick={() => {
-                  const newDate = new Date(currentDate);
-                  if (viewMode === 'week') {
-                    newDate.setDate(newDate.getDate() - 7);
-                  } else {
-                    newDate.setMonth(newDate.getMonth() - 1);
-                  }
-                  setCurrentDate(newDate);
-                }}
-                className="rounded-lg bg-white bg-opacity-20 px-3 py-1 text-white hover:bg-opacity-30"
-              >
-                ‹
-              </button>
-              <div>
-                <h2 className="text-2xl font-bold text-white">Individual Rooms Availability</h2>
-                <p className="text-blue-100">{currentDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}</p>
-              </div>
-              <button
-                onClick={() => {
-                  const newDate = new Date(currentDate);
-                  if (viewMode === 'week') {
-                    newDate.setDate(newDate.getDate() + 7);
-                  } else {
-                    newDate.setMonth(newDate.getMonth() + 1);
-                  }
-                  setCurrentDate(newDate);
-                }}
-                className="rounded-lg bg-white bg-opacity-20 px-3 py-1 text-white hover:bg-opacity-30"
-              >
-                ›
-              </button>
-            </div>
-            <div className="flex gap-3">
-              <div className="flex rounded-lg bg-white bg-opacity-20 p-1">
+    <>
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+        <div className="mx-auto w-full max-w-[95vw] rounded-lg bg-white shadow-xl">
+          {/* Header */}
+          <div className="border-b border-gray-200 bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
                 <button
-                  onClick={() => setViewMode('week')}
-                  className={`rounded px-4 py-2 text-sm font-semibold ${
-                    viewMode === 'week' ? 'bg-white text-blue-700' : 'text-white'
-                  }`}
+                  onClick={() => {
+                    const newDate = new Date(currentDate);
+                    if (viewMode === 'week') {
+                      newDate.setDate(newDate.getDate() - 7);
+                    } else {
+                      newDate.setMonth(newDate.getMonth() - 1);
+                    }
+                    setCurrentDate(newDate);
+                  }}
+                  className="rounded-lg bg-white bg-opacity-20 px-3 py-1 text-white hover:bg-opacity-30"
                 >
-                  Week
+                  ‹
                 </button>
-                <button
-                  onClick={() => setViewMode('month')}
-                  className={`rounded px-4 py-2 text-sm font-semibold ${
-                    viewMode === 'month' ? 'bg-white text-blue-700' : 'text-white'
-                  }`}
-                >
-                  Month
-                </button>
-              </div>
-              <button
-                onClick={fetchArrivalAlerts}
-                className="relative rounded-lg bg-white bg-opacity-20 px-4 py-2 text-white hover:bg-opacity-30"
-              >
-                🔔
-                {arrivalAlerts.length > 0 && (
-                  <span className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-xs text-white">
-                    {arrivalAlerts.length}
-                  </span>
-                )}
-              </button>
-              <button
-                onClick={onClose}
-                className="rounded-lg bg-white bg-opacity-20 px-4 py-2 text-white hover:bg-opacity-30"
-              >
-                ✕ Close
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {/* Calendar Grid */}
-        <div className="overflow-auto p-6" style={{ maxHeight: 'calc(100vh - 200px)' }}>
-          <div className="inline-block min-w-full">
-            {roomTypes.map(roomType => {
-              const rooms = individualRooms[roomType.id] || [];
-              if (rooms.length === 0) return null;
-
-              return (
-                <div key={roomType.id} className="mb-8">
-                  {/* Room Type Header */}
-                  <div className="sticky top-0 z-10 border-b-2 border-gray-300 bg-gray-50 pb-2 mb-4">
-                    <h3 className="font-bold text-gray-900">{roomType.name}</h3>
-                    <p className="text-sm text-gray-600 capitalize">{roomType.room_type}</p>
-                  </div>
-
-                  {/* Calendar Table */}
-                  <div className="overflow-x-auto">
-                    <table className="min-w-full border-collapse">
-                      <thead>
-                        <tr>
-                          <th className="sticky left-0 z-10 min-w-[180px] border-r-2 border-gray-300 bg-gray-100 px-4 py-3 text-left text-sm font-bold text-gray-900">
-                            Room
-                          </th>
-                          {dates.map(date => (
-                            <th
-                              key={date.toISOString()}
-                              className="min-w-[100px] border-b border-gray-300 bg-gray-100 px-2 py-3 text-center text-xs font-bold text-gray-900"
-                            >
-                              {date.toLocaleDateString('en-US', { weekday: 'short', day: 'numeric' })}
-                            </th>
-                          ))}
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {rooms.map(room => (
-                          <tr key={room.id}>
-                            <td className="sticky left-0 z-10 border-r-2 border-gray-300 bg-gray-50 px-4 py-3 font-medium shadow-sm">
-                              <div className="font-semibold text-gray-900">Room {room.room_number}</div>
-                              {room.floor_number && (
-                                <div className="text-xs text-gray-600 mt-0.5">Floor {room.floor_number}</div>
-                              )}
-                            </td>
-                            {dates.map(date => {
-                              const reservation = getReservationForRoomAndDate(room.id, date);
-                              const dateStr = date.toISOString().split('T')[0];
-                              const isToday = dateStr === new Date().toISOString().split('T')[0];
-
-                              return (
-                                <td
-                                  key={dateStr}
-                                  className={`border-b border-l border-gray-200 px-1 py-3 text-center text-xs hover:bg-gray-50 transition-colors ${
-                                    isToday ? 'border-blue-400' : ''
-                                  } ${getStatusColor(room.current_status)}`}
-                                >
-                                  {reservation ? (
-                                    <div className="rounded-md bg-gradient-to-br from-blue-500 to-blue-600 p-1.5 text-white shadow-sm hover:shadow-md transition-all">
-                                      <div className="font-bold text-[10px]">#{reservation.id.slice(-6)}</div>
-                                      <div className="text-[9px] mt-0.5 opacity-90">
-                                        {reservation.adults + reservation.children + reservation.infants} {reservation.adults + reservation.children + reservation.infants === 1 ? 'guest' : 'guests'}
-                                      </div>
-                                    </div>
-                                  ) : (
-                                    <div className="text-gray-300">—</div>
-                                  )}
-                                </td>
-                              );
-                            })}
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
+                <div>
+                  <h2 className="text-2xl font-bold text-white">Individual Rooms Availability</h2>
+                  <p className="text-blue-100">{currentDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}</p>
                 </div>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* Arrival Alerts - Fixed Panel */}
-        {arrivalAlerts.length > 0 && (
-          <div className="absolute bottom-4 right-4 w-80 rounded-lg border-2 border-red-500 bg-white shadow-xl">
-            <div className="flex items-center justify-between border-b border-gray-200 bg-red-50 px-4 py-3">
-              <h3 className="font-bold text-red-900">⚠️ Today&apos;s Arrivals</h3>
-              <span className="rounded-full bg-red-500 px-2 py-1 text-xs text-white">
-                {arrivalAlerts.length}
-              </span>
-            </div>
-            <div className="max-h-64 space-y-2 overflow-auto p-4">
-              {arrivalAlerts.map(alert => (
-                <div key={alert.reservation_id} className="rounded-lg border border-red-200 bg-red-50 p-3">
-                  <div className="flex items-center justify-between">
-                    <div className="font-semibold text-red-900">#{alert.confirmation_number}</div>
-                    {!alert.assigned_room && (
-                      <span className="rounded-full bg-red-500 px-2 py-1 text-xs text-white">⚠️</span>
+                <button
+                  onClick={() => {
+                    const newDate = new Date(currentDate);
+                    if (viewMode === 'week') {
+                      newDate.setDate(newDate.getDate() + 7);
+                    } else {
+                      newDate.setMonth(newDate.getMonth() + 1);
+                    }
+                    setCurrentDate(newDate);
+                  }}
+                  className="rounded-lg bg-white bg-opacity-20 px-3 py-1 text-white hover:bg-opacity-30"
+                >
+                  ›
+                </button>
+              </div>
+              <div className="flex gap-3">
+                <div className="flex rounded-lg bg-white bg-opacity-20 p-1">
+                  <button
+                    onClick={() => setViewMode('week')}
+                    className={`rounded px-4 py-2 text-sm font-semibold ${
+                      viewMode === 'week' ? 'bg-white text-blue-700' : 'text-white'
+                    }`}
+                  >
+                    Week
+                  </button>
+                  <button
+                    onClick={() => setViewMode('month')}
+                    className={`rounded px-4 py-2 text-sm font-semibold ${
+                      viewMode === 'month' ? 'bg-white text-blue-700' : 'text-white'
+                    }`}
+                  >
+                    Month
+                  </button>
+                </div>
+                
+                {/* Notification Bell with Dropdown */}
+                <div className="relative" ref={alertsDropdownRef}>
+                  <button
+                    onClick={() => {
+                      setShowAlertsDropdown(!showAlertsDropdown);
+                      fetchArrivalAlerts();
+                    }}
+                    className="relative rounded-lg bg-white bg-opacity-20 px-4 py-2 text-white hover:bg-opacity-30"
+                  >
+                    🔔
+                    {arrivalAlerts.length > 0 && (
+                      <span className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-xs font-bold text-white">
+                        {arrivalAlerts.length}
+                      </span>
                     )}
-                  </div>
-                  <div className="text-sm text-red-800">{alert.guest_name}</div>
-                  {alert.assigned_room && (
-                    <div className="mt-2 text-xs text-red-700">
-                      Room: {alert.assigned_room} ✓
+                  </button>
+                  
+                  {showAlertsDropdown && (
+                    <div className="absolute right-0 top-full mt-2 w-80 rounded-lg border-2 border-red-500 bg-white shadow-xl z-50">
+                      <div className="flex items-center justify-between border-b border-gray-200 bg-red-50 px-4 py-3">
+                        <h3 className="font-bold text-red-900">⚠️ Today&apos;s Arrivals</h3>
+                        <span className="rounded-full bg-red-500 px-2 py-1 text-xs font-bold text-white">
+                          {arrivalAlerts.length}
+                        </span>
+                      </div>
+                      <div className="max-h-64 space-y-2 overflow-auto p-4">
+                        {arrivalAlerts.length === 0 ? (
+                          <p className="text-center text-gray-500 py-4">No arrivals today</p>
+                        ) : (
+                          arrivalAlerts.map(alert => (
+                            <button
+                              key={alert.reservation_id}
+                              onClick={() => {
+                                setSelectedReservationId(alert.reservation_id);
+                                setShowAlertsDropdown(false);
+                              }}
+                              className="w-full rounded-lg border border-red-200 bg-red-50 p-3 text-left hover:bg-red-100 transition-colors"
+                            >
+                              <div className="flex items-center justify-between">
+                                <div className="font-semibold text-red-900">#{alert.confirmation_number}</div>
+                                {!alert.assigned_room && (
+                                  <span className="rounded-full bg-red-500 px-2 py-1 text-xs text-white">⚠️</span>
+                                )}
+                              </div>
+                              <div className="text-sm text-red-800">{alert.guest_name}</div>
+                              {alert.assigned_room && (
+                                <div className="mt-1 text-xs text-red-700">
+                                  Room: {alert.assigned_room} ✓
+                                </div>
+                              )}
+                            </button>
+                          ))
+                        )}
+                      </div>
                     </div>
                   )}
                 </div>
-              ))}
+                
+                <button
+                  onClick={onClose}
+                  className="rounded-lg bg-white bg-opacity-20 px-4 py-2 text-white hover:bg-opacity-30"
+                >
+                  ✕ Close
+                </button>
+              </div>
             </div>
           </div>
-        )}
+
+          {/* Calendar Grid */}
+          <div className="overflow-auto p-6" style={{ maxHeight: 'calc(100vh - 200px)' }}>
+            <div className="inline-block min-w-full">
+              {roomTypes.map(roomType => {
+                const rooms = individualRooms[roomType.id] || [];
+                if (rooms.length === 0) return null;
+
+                return (
+                  <div key={roomType.id} className="mb-8">
+                    {/* Room Type Header */}
+                    <div className="sticky top-0 z-10 border-b-2 border-gray-300 bg-gray-50 pb-2 mb-4">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <h3 className="font-bold text-gray-900">{roomType.name}</h3>
+                          <p className="text-sm text-gray-600 capitalize">{roomType.room_type}</p>
+                        </div>
+                        <button
+                          onClick={() => {
+                            setBlockingRoomId(null);
+                            setBlockingRoomTypeId(roomType.id);
+                            setShowBlockModal(true);
+                          }}
+                          className="rounded-lg bg-orange-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-orange-700"
+                        >
+                          🚫 Block Dates (All)
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Calendar Table */}
+                    <div className="overflow-x-auto">
+                      <table className="min-w-full border-collapse">
+                        <thead>
+                          <tr>
+                            <th className="sticky left-0 z-10 min-w-[180px] border-r-2 border-gray-300 bg-gray-100 px-4 py-3 text-left text-sm font-bold text-gray-900">
+                              Room
+                            </th>
+                            {dates.map(date => (
+                              <th
+                                key={date.toISOString()}
+                                className="min-w-[100px] border-b border-gray-300 bg-gray-100 px-2 py-3 text-center text-xs font-bold text-gray-900"
+                              >
+                                {date.toLocaleDateString('en-US', { weekday: 'short', day: 'numeric' })}
+                              </th>
+                            ))}
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {rooms.map(room => {
+                            const spans = getReservationSpans(room.id, dates);
+                            const dateStrings = dates.map(d => d.toISOString().split('T')[0]);
+                            const occupiedDates = new Set<number>();
+                            
+                            spans.forEach(span => {
+                              for (let i = span.startIdx; i <= span.endIdx; i++) {
+                                occupiedDates.add(i);
+                              }
+                            });
+
+                            return (
+                              <tr key={room.id} className="relative">
+                                <td className={`sticky left-0 z-10 border-r-2 border-gray-300 px-4 py-3 font-medium shadow-sm ${getStatusColor(room.current_status)}`}>
+                                  <div className="flex items-center justify-between">
+                                    <div>
+                                      <div className="font-semibold text-gray-900">Room {room.room_number}</div>
+                                      {room.floor_number && (
+                                        <div className="text-xs text-gray-600 mt-0.5">Floor {room.floor_number}</div>
+                                      )}
+                                    </div>
+                                    <button
+                                      onClick={() => {
+                                        setBlockingRoomId(room.id);
+                                        setShowBlockModal(true);
+                                      }}
+                                      className="text-xs text-orange-600 hover:text-orange-700"
+                                      title="Block this room"
+                                    >
+                                      🚫
+                                    </button>
+                                  </div>
+                                </td>
+                                {dates.map((date, idx) => {
+                                  const dateStr = date.toISOString().split('T')[0];
+                                  const isToday = dateStr === new Date().toISOString().split('T')[0];
+                                  
+                                  // Check if this cell is part of a reservation span
+                                  const span = spans.find(s => s.startIdx === idx);
+                                  
+                                  if (span) {
+                                    // This is the start of a reservation span
+                                    const reservation = span.reservation;
+                                    const nights = Math.ceil(
+                                      (new Date(reservation.check_out_date).getTime() - new Date(reservation.check_in_date).getTime()) / (1000 * 60 * 60 * 24)
+                                    );
+                                    
+                                    return (
+                                      <td
+                                        key={dateStr}
+                                        colSpan={span.colspan}
+                                        className={`border-b border-l border-gray-200 px-2 py-2 text-center relative ${isToday ? 'border-blue-400' : ''}`}
+                                      >
+                                        <button
+                                          onClick={() => setSelectedReservationId(reservation.id)}
+                                          className={`w-full rounded-lg ${getReservationStatusColor(reservation.reservation_status)} px-2 py-2 text-white shadow-sm transition-all hover:shadow-md`}
+                                        >
+                                          <div className="text-xs font-bold">#{reservation.confirmation_number}</div>
+                                          <div className="text-[10px] mt-0.5 opacity-90">
+                                            {reservation.adults + reservation.children + reservation.infants} guest{reservation.adults + reservation.children + reservation.infants !== 1 ? 's' : ''}
+                                          </div>
+                                          <div className="text-[9px] mt-0.5 opacity-75">
+                                            {nights} night{nights !== 1 ? 's' : ''}
+                                          </div>
+                                        </button>
+                                      </td>
+                                    );
+                                  } else if (occupiedDates.has(idx)) {
+                                    // This cell is part of a span but not the start - skip it (handled by colspan)
+                                    return null;
+                                  } else {
+                                    // Empty cell
+                                    return (
+                                      <td
+                                        key={dateStr}
+                                        className={`border-b border-l border-gray-200 px-1 py-3 text-center text-xs ${isToday ? 'border-blue-400 bg-blue-50' : ''}`}
+                                      >
+                                        <div className="text-gray-300">—</div>
+                                      </td>
+                                    );
+                                  }
+                                })}
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Reservation Detail Modal */}
+      {selectedReservationId && (
+        <ReservationDetailModal
+          reservationId={selectedReservationId}
+          hotelId={hotelId}
+          onClose={() => {
+            setSelectedReservationId(null);
+            fetchData();
+          }}
+          onUpdate={() => {
+            fetchData();
+            fetchArrivalAlerts();
+          }}
+        />
+      )}
+
+      {/* Block Dates Modal */}
+      {showBlockModal && (() => {
+        const foundRoom = blockingRoomId ? Object.values(individualRooms).flat().find(r => r.id === blockingRoomId) : null;
+        const roomTypeIdValue = blockingRoomTypeId || (foundRoom?.room_id ?? null);
+        const roomTypeNameValue = blockingRoomTypeId 
+          ? (roomTypes.find(rt => rt.id === blockingRoomTypeId)?.name || 'All Rooms')
+          : foundRoom?.room_id
+            ? (roomTypes.find(rt => rt.id === foundRoom.room_id)?.name || 'Room')
+            : 'All Rooms';
+        
+        return (
+          <BlockDatesModal
+            roomId={blockingRoomId}
+            roomTypeId={roomTypeIdValue}
+            roomTypeName={roomTypeNameValue}
+            hotelId={hotelId}
+            onClose={() => {
+              setShowBlockModal(false);
+              setBlockingRoomId(null);
+              setBlockingRoomTypeId(null);
+            }}
+            onBlock={handleBlockRoom}
+          />
+        );
+      })()}
+    </>
+  );
+}
+
+// Block Dates Modal Component
+function BlockDatesModal({
+  roomId,
+  roomTypeId,
+  roomTypeName,
+  hotelId,
+  onClose,
+  onBlock
+}: {
+  roomId: string | null;
+  roomTypeId: string | null;
+  roomTypeName: string;
+  hotelId: string;
+  onClose: () => void;
+  onBlock: (roomId: string | null, startDate: string, endDate: string, reason: string) => Promise<void>;
+}) {
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
+  const [reason, setReason] = useState('');
+  const [blocking, setBlocking] = useState(false);
+  const [blockScope, setBlockScope] = useState<'room' | 'floor' | 'property'>('room');
+
+  useEffect(() => {
+    // Set default dates to today
+    const today = new Date().toISOString().split('T')[0];
+    setStartDate(today);
+    setEndDate(today);
+  }, []);
+
+  const handleBlock = async () => {
+    if (!startDate || !endDate) {
+      alert('Please select start and end dates');
+      return;
+    }
+
+    if (new Date(endDate) < new Date(startDate)) {
+      alert('End date must be after start date');
+      return;
+    }
+
+    if (blockScope === 'property' || blockScope === 'floor') {
+      alert('Blocking entire property or floors is not yet implemented. Please block individual rooms or room types for now.');
+      return;
+    }
+
+    setBlocking(true);
+    try {
+      await onBlock(roomId, startDate, endDate, reason || 'Blocked by admin');
+    } finally {
+      setBlocking(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50">
+      <div className="w-full max-w-md rounded-lg bg-white p-6 shadow-xl">
+        <h3 className="mb-4 text-xl font-bold text-gray-900">Block Dates</h3>
+        
+        <div className="space-y-4">
+          <div>
+            <label className="mb-2 block text-sm font-medium text-gray-700">
+              Scope
+            </label>
+            <select
+              value={blockScope}
+              onChange={(e) => setBlockScope(e.target.value as 'room' | 'floor' | 'property')}
+              className="w-full rounded-lg border border-gray-300 px-4 py-2 text-gray-900"
+            >
+              <option value="room">Individual Room{roomId ? ' (Current)' : ''}</option>
+              <option value="floor">Entire Floor (Coming Soon)</option>
+              <option value="property">Entire Property (Coming Soon)</option>
+            </select>
+            {!roomId && (
+              <p className="mt-1 text-xs text-gray-500">
+                Blocking all rooms of type: {roomTypeName}
+              </p>
+            )}
+          </div>
+
+          <div>
+            <label className="mb-2 block text-sm font-medium text-gray-700">
+              Start Date
+            </label>
+            <input
+              type="date"
+              value={startDate}
+              onChange={(e) => setStartDate(e.target.value)}
+              className="w-full rounded-lg border border-gray-300 px-4 py-2 text-gray-900"
+            />
+          </div>
+
+          <div>
+            <label className="mb-2 block text-sm font-medium text-gray-700">
+              End Date
+            </label>
+            <input
+              type="date"
+              value={endDate}
+              onChange={(e) => setEndDate(e.target.value)}
+              min={startDate}
+              className="w-full rounded-lg border border-gray-300 px-4 py-2 text-gray-900"
+            />
+          </div>
+
+          <div>
+            <label className="mb-2 block text-sm font-medium text-gray-700">
+              Reason (optional)
+            </label>
+            <input
+              type="text"
+              value={reason}
+              onChange={(e) => setReason(e.target.value)}
+              placeholder="e.g., Maintenance, Renovation, Private Event"
+              className="w-full rounded-lg border border-gray-300 px-4 py-2 text-gray-900"
+            />
+          </div>
+        </div>
+
+        <div className="mt-6 flex justify-end gap-3">
+          <button
+            onClick={onClose}
+            className="rounded-lg border border-gray-300 px-4 py-2 font-medium text-gray-700 hover:bg-gray-50"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleBlock}
+            disabled={blocking || blockScope !== 'room'}
+            className="rounded-lg bg-orange-600 px-4 py-2 font-medium text-white hover:bg-orange-700 disabled:bg-gray-400"
+          >
+            {blocking ? 'Blocking...' : 'Block Dates'}
+          </button>
+        </div>
       </div>
     </div>
   );

@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import { formatPrice } from '@/lib/utils';
+import ReservationDetailModal from './ReservationDetailModal';
 
 interface AvailabilityDashboardProps {
   hotelId: string;
@@ -41,7 +42,15 @@ interface Reservation {
   adults: number;
   children: number;
   reservation_status: 'tentative' | 'confirmed' | 'checked_in' | 'checked_out' | 'cancelled' | 'no_show';
+  room_id?: string | null;
   guest_name?: string;
+}
+
+interface ReservationSpan {
+  reservation: Reservation;
+  startIdx: number;
+  endIdx: number;
+  colspan: number;
 }
 
 export default function AvailabilityDashboard({ hotelId, onClose }: AvailabilityDashboardProps) {
@@ -55,6 +64,9 @@ export default function AvailabilityDashboard({ hotelId, onClose }: Availability
   const [reservations, setReservations] = useState<Reservation[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [selectedReservationId, setSelectedReservationId] = useState<string | null>(null);
+  const [showBlockModal, setShowBlockModal] = useState(false);
+  const [blockingRoomId, setBlockingRoomId] = useState<string | null>(null);
 
   // Drag and drop states
   const [draggedReservation, setDraggedReservation] = useState<Reservation | null>(null);
@@ -97,6 +109,7 @@ export default function AvailabilityDashboard({ hotelId, onClose }: Availability
             id,
             confirmation_number,
             guest_id,
+            room_id,
             check_in_date,
             check_out_date,
             adults,
@@ -125,6 +138,7 @@ export default function AvailabilityDashboard({ hotelId, onClose }: Availability
             adults: res.adults,
             children: res.children,
             reservation_status: res.reservation_status,
+            room_id: res.room_id || null,
             guest_name: `${res.guest_profiles?.first_name || ''} ${res.guest_profiles?.last_name || ''}`.trim()
           });
         }
@@ -201,6 +215,42 @@ export default function AvailabilityDashboard({ hotelId, onClose }: Availability
       return reservations.find(res => res.id === avail.reservation_id);
     }
     return null;
+  };
+
+  // Calculate reservation spans for a room type
+  const getReservationSpans = (roomId: string, dates: Date[]): ReservationSpan[] => {
+    const spans: ReservationSpan[] = [];
+    const dateStrings = dates.map(d => d.toISOString().split('T')[0]);
+    
+    const reservationsForRoom = reservations.filter(res => 
+      res.room_id === roomId &&
+      res.reservation_status !== 'cancelled'
+    );
+
+    reservationsForRoom.forEach(reservation => {
+      const checkInIdx = dateStrings.findIndex(d => d >= reservation.check_in_date);
+      const checkOutIdx = dateStrings.findIndex(d => d >= reservation.check_out_date);
+      
+      if (checkInIdx !== -1 && checkOutIdx !== -1 && checkInIdx < checkOutIdx) {
+        spans.push({
+          reservation,
+          startIdx: checkInIdx,
+          endIdx: checkOutIdx - 1,
+          colspan: checkOutIdx - checkInIdx
+        });
+      } else if (checkInIdx !== -1 && checkOutIdx === -1) {
+        // Reservation extends beyond view
+        spans.push({
+          reservation,
+          startIdx: checkInIdx,
+          endIdx: dates.length - 1,
+          colspan: dates.length - checkInIdx
+        });
+      }
+    });
+
+    // Sort by start index
+    return spans.sort((a, b) => a.startIdx - b.startIdx);
   };
 
   const getStatusColor = (status: string) => {
@@ -292,22 +342,39 @@ export default function AvailabilityDashboard({ hotelId, onClose }: Availability
     }
   };
 
-  const handleBlockRoom = async (roomId: string, date: string, reason: string) => {
+  const handleBlockRoom = async (roomId: string, startDate: string, endDate: string, reason: string) => {
     try {
+      const start = new Date(startDate);
+      const end = new Date(endDate);
+      const dates: string[] = [];
+      
+      for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+        dates.push(d.toISOString().split('T')[0]);
+      }
+
+      // Get room quantity
+      const room = rooms.find(r => r.id === roomId);
+      const roomQuantity = room?.quantity || 1;
+
+      // Block all dates in the range
+      const blocks = dates.map(date => ({
+        room_id: roomId,
+        date,
+        available_quantity: 0,
+        availability_status: 'blocked' as const,
+        blocked_reason: reason
+      }));
+
       const { error } = await supabase
         .from('room_availability')
-        .upsert({
-          room_id: roomId,
-          date: date,
-          available_quantity: 0, // Required field - 0 means blocked
-          availability_status: 'blocked',
-          blocked_reason: reason
-        });
+        .upsert(blocks, { onConflict: 'room_id,date' });
 
       if (error) throw error;
 
       await fetchData();
       router.refresh();
+      setShowBlockModal(false);
+      setBlockingRoomId(null);
     } catch (err: any) {
       console.error('Error blocking room:', err);
       setError(err.message);
@@ -452,109 +519,144 @@ export default function AvailabilityDashboard({ hotelId, onClose }: Availability
             <div className="rounded-lg bg-red-50 p-4 text-red-600">{error}</div>
           ) : (
             <div className="overflow-x-auto">
-              {/* Calendar Grid */}
-              <div className="min-w-full">
-                {/* Header Row */}
-                <div className="grid gap-1 mb-2" style={{ gridTemplateColumns: `200px repeat(${dates.length}, 1fr)` }}>
-                  <div className="p-3 font-medium text-gray-900 bg-gray-50 rounded-lg">
-                    Room
-                  </div>
-                  {dates.map(date => (
-                    <div key={date.toISOString()} className="p-3 text-center font-medium text-gray-900 bg-gray-50 rounded-lg">
-                      <div className="text-sm">{formatDate(date)}</div>
-                    </div>
-                  ))}
-                </div>
+              {/* Calendar Table */}
+              <table className="min-w-full border-collapse">
+                <thead>
+                  <tr>
+                    <th className="sticky left-0 z-10 min-w-[200px] border-r-2 border-gray-300 bg-gray-100 px-4 py-3 text-left text-sm font-bold text-gray-900">
+                      Room
+                    </th>
+                    {dates.map(date => (
+                      <th
+                        key={date.toISOString()}
+                        className="min-w-[120px] border-b border-gray-300 bg-gray-100 px-2 py-3 text-center text-xs font-bold text-gray-900"
+                      >
+                        {formatDate(date)}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {rooms.map(room => {
+                    const spans = getReservationSpans(room.id, dates);
+                    const dateStrings = dates.map(d => d.toISOString().split('T')[0]);
+                    const occupiedDates = new Set<number>();
+                    
+                    spans.forEach(span => {
+                      for (let i = span.startIdx; i <= span.endIdx; i++) {
+                        occupiedDates.add(i);
+                      }
+                    });
 
-                {/* Room Rows */}
-                {rooms.map(room => (
-                  <div key={room.id} className="grid gap-1 mb-1" style={{ gridTemplateColumns: `200px repeat(${dates.length}, 1fr)` }}>
-                    {/* Room Info */}
-                    <div className="p-3 bg-white border border-gray-200 rounded-lg">
-                      <div className="font-medium text-gray-900">{room.name}</div>
-                      <div className="text-sm text-gray-600 capitalize">{room.room_type.replace('_', ' ')}</div>
-                      <div className="text-sm text-gray-600">{formatPrice(room.base_price, 'RON')}/night</div>
-                    </div>
-
-                    {/* Availability Cells */}
-                    {dates.map(date => {
-                      const dateStr = date.toISOString().split('T')[0];
-                      const avail = getAvailabilityForRoomAndDate(room.id, dateStr);
-                      const reservation = getReservationForRoomAndDate(room.id, dateStr);
-                      // Determine status: if reservation exists, it's booked; otherwise use availability status
-                      const status = reservation 
-                        ? 'booked' 
-                        : (avail?.availability_status || 'available');
-                      const isDragOver = dragOverRoom === room.id && dragOverDate === dateStr;
-
-                      return (
-                        <div
-                          key={`${room.id}-${dateStr}`}
-                          className={`p-2 rounded-lg min-h-[60px] transition-colors ${
-                            isDragOver 
-                              ? 'bg-blue-100 border-2 border-blue-400' 
-                              : getStatusColor(status)
-                          }`}
-                          onDragOver={(e) => handleDragOver(e, room.id, dateStr)}
-                          onDragLeave={handleDragLeave}
-                          onDrop={(e) => handleDrop(e, room.id, dateStr)}
-                        >
-                          <div className="flex flex-col h-full">
-                            <div className="flex items-center justify-between mb-1">
-                              <span className="text-xs">{getStatusIcon(status)}</span>
-                              {status === 'blocked' && (
-                                <button
-                                  onClick={() => handleUnblockRoom(room.id, dateStr)}
-                                  className="text-xs text-gray-700 hover:text-gray-900"
-                                >
-                                  ✕
-                                </button>
-                              )}
+                    return (
+                      <tr key={room.id}>
+                        <td className="sticky left-0 z-10 border-r-2 border-gray-300 bg-gray-50 px-4 py-3 font-medium shadow-sm">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <div className="font-semibold text-gray-900">{room.name}</div>
+                              <div className="text-xs text-gray-600 capitalize">{room.room_type.replace('_', ' ')}</div>
+                              <div className="text-xs text-gray-600">{formatPrice(room.base_price, 'RON')}/night</div>
+                              <div className="text-xs text-gray-500 mt-1">{room.quantity} room{room.quantity !== 1 ? 's' : ''}</div>
                             </div>
-                            
-                            {/* Show actual availability quantity */}
-                            <div className={`text-xs font-medium ${
-                              status === 'available' ? 'text-green-800' :
-                              status === 'booked' ? 'text-red-800' :
-                              status === 'blocked' ? 'text-yellow-800' :
-                              'text-gray-800'
-                            }`}>
-                              {avail?.available_quantity !== undefined ? 
-                                `${avail.available_quantity}/${room.quantity}` : 
-                                `${room.quantity}/${room.quantity}`
-                              }
-                            </div>
-                            
-                            {reservation && (
-                              <div 
-                                className="text-xs bg-white/90 rounded px-1 py-0.5 cursor-move mt-1 border border-gray-300"
-                                draggable
-                                onDragStart={(e) => handleDragStart(e, reservation)}
-                              >
-                                <div className="font-semibold text-gray-900">{reservation.confirmation_number}</div>
-                                <div className="text-gray-700">{reservation.guest_name}</div>
-                                <div className="text-gray-600">{reservation.adults}p</div>
-                              </div>
-                            )}
-                            
-                            {status === 'available' && !reservation && (
-                              <button
-                                onClick={() => {
-                                  const reason = prompt('Reason for blocking:');
-                                  if (reason) handleBlockRoom(room.id, dateStr, reason);
-                                }}
-                                className="text-xs text-gray-700 hover:text-gray-900 mt-auto"
-                              >
-                                Block
-                              </button>
-                            )}
+                            <button
+                              onClick={() => {
+                                setBlockingRoomId(room.id);
+                                setShowBlockModal(true);
+                              }}
+                              className="text-xs text-orange-600 hover:text-orange-700"
+                              title="Block dates for this room type"
+                            >
+                              🚫
+                            </button>
                           </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                ))}
-              </div>
+                        </td>
+                        {dates.map((date, idx) => {
+                          const dateStr = date.toISOString().split('T')[0];
+                          const isToday = dateStr === new Date().toISOString().split('T')[0];
+                          const avail = getAvailabilityForRoomAndDate(room.id, dateStr);
+                          
+                          // Check if this cell is part of a reservation span
+                          const span = spans.find(s => s.startIdx === idx);
+                          
+                          if (span) {
+                            // This is the start of a reservation span
+                            const reservation = span.reservation;
+                            const nights = Math.ceil(
+                              (new Date(reservation.check_out_date).getTime() - new Date(reservation.check_in_date).getTime()) / (1000 * 60 * 60 * 24)
+                            );
+                            
+                            return (
+                              <td
+                                key={dateStr}
+                                colSpan={span.colspan}
+                                className={`border-b border-l border-gray-200 px-2 py-2 text-center relative ${isToday ? 'border-blue-400' : ''}`}
+                              >
+                                <button
+                                  onClick={() => setSelectedReservationId(reservation.id)}
+                                  className="w-full rounded-lg bg-blue-500 hover:bg-blue-600 px-2 py-2 text-white shadow-sm transition-all hover:shadow-md"
+                                >
+                                  <div className="text-xs font-bold">#{reservation.confirmation_number}</div>
+                                  <div className="text-[10px] mt-0.5 opacity-90">
+                                    {reservation.guest_name || 'Guest'}
+                                  </div>
+                                  <div className="text-[10px] mt-0.5 opacity-75">
+                                    {reservation.adults + reservation.children} guest{reservation.adults + reservation.children !== 1 ? 's' : ''} • {nights} night{nights !== 1 ? 's' : ''}
+                                  </div>
+                                </button>
+                              </td>
+                            );
+                          } else if (occupiedDates.has(idx)) {
+                            // This cell is part of a span but not the start - skip it (handled by colspan)
+                            return null;
+                          } else {
+                            // Empty cell - check for blocked status
+                            const status = avail?.availability_status || 'available';
+                            const isBlocked = status === 'blocked' || status === 'maintenance' || status === 'out_of_order';
+                            
+                            return (
+                              <td
+                                key={dateStr}
+                                className={`border-b border-l border-gray-200 px-1 py-3 text-center text-xs ${isToday ? 'border-blue-400 bg-blue-50' : ''} ${getStatusColor(status)}`}
+                              >
+                                <div className="flex flex-col items-center gap-1">
+                                  <span>{getStatusIcon(status)}</span>
+                                  <div className="text-[10px] font-medium">
+                                    {avail?.available_quantity !== undefined ? 
+                                      `${avail.available_quantity}/${room.quantity}` : 
+                                      `${room.quantity}/${room.quantity}`
+                                    }
+                                  </div>
+                                  {status === 'available' && (
+                                    <button
+                                      onClick={() => {
+                                        setBlockingRoomId(room.id);
+                                        setShowBlockModal(true);
+                                      }}
+                                      className="text-[9px] text-gray-600 hover:text-gray-900 mt-1"
+                                      title="Block this date"
+                                    >
+                                      Block
+                                    </button>
+                                  )}
+                                  {isBlocked && (
+                                    <button
+                                      onClick={() => handleUnblockRoom(room.id, dateStr)}
+                                      className="text-[9px] text-red-600 hover:text-red-700 mt-1"
+                                      title="Unblock"
+                                    >
+                                      ✕
+                                    </button>
+                                  )}
+                                </div>
+                              </td>
+                            );
+                          }
+                        })}
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
             </div>
           )}
 
@@ -578,6 +680,146 @@ export default function AvailabilityDashboard({ hotelId, onClose }: Availability
               Done
             </button>
           </div>
+        </div>
+      </div>
+
+      {/* Reservation Detail Modal */}
+      {selectedReservationId && (
+        <ReservationDetailModal
+          reservationId={selectedReservationId}
+          hotelId={hotelId}
+          onClose={() => {
+            setSelectedReservationId(null);
+            fetchData();
+          }}
+          onUpdate={() => {
+            fetchData();
+          }}
+        />
+      )}
+
+      {/* Block Dates Modal */}
+      {showBlockModal && blockingRoomId && (
+        <BlockDatesModal
+          roomId={blockingRoomId}
+          roomName={rooms.find(r => r.id === blockingRoomId)?.name || ''}
+          hotelId={hotelId}
+          onClose={() => {
+            setShowBlockModal(false);
+            setBlockingRoomId(null);
+          }}
+          onBlock={handleBlockRoom}
+        />
+      )}
+    </div>
+  );
+}
+
+// Block Dates Modal Component
+function BlockDatesModal({
+  roomId,
+  roomName,
+  hotelId,
+  onClose,
+  onBlock
+}: {
+  roomId: string;
+  roomName: string;
+  hotelId: string;
+  onClose: () => void;
+  onBlock: (roomId: string, startDate: string, endDate: string, reason: string) => Promise<void>;
+}) {
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
+  const [reason, setReason] = useState('');
+  const [blocking, setBlocking] = useState(false);
+
+  useEffect(() => {
+    // Set default dates to today
+    const today = new Date().toISOString().split('T')[0];
+    setStartDate(today);
+    setEndDate(today);
+  }, []);
+
+  const handleBlock = async () => {
+    if (!startDate || !endDate) {
+      alert('Please select start and end dates');
+      return;
+    }
+
+    if (new Date(endDate) < new Date(startDate)) {
+      alert('End date must be after start date');
+      return;
+    }
+
+    setBlocking(true);
+    try {
+      await onBlock(roomId, startDate, endDate, reason || 'Blocked by admin');
+    } finally {
+      setBlocking(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50">
+      <div className="w-full max-w-md rounded-lg bg-white p-6 shadow-xl">
+        <h3 className="mb-4 text-xl font-bold text-gray-900">Block Dates</h3>
+        <p className="mb-4 text-sm text-gray-600">Blocking: {roomName}</p>
+        
+        <div className="space-y-4">
+          <div>
+            <label className="mb-2 block text-sm font-medium text-gray-700">
+              Start Date
+            </label>
+            <input
+              type="date"
+              value={startDate}
+              onChange={(e) => setStartDate(e.target.value)}
+              className="w-full rounded-lg border border-gray-300 px-4 py-2 text-gray-900"
+            />
+          </div>
+
+          <div>
+            <label className="mb-2 block text-sm font-medium text-gray-700">
+              End Date
+            </label>
+            <input
+              type="date"
+              value={endDate}
+              onChange={(e) => setEndDate(e.target.value)}
+              min={startDate}
+              className="w-full rounded-lg border border-gray-300 px-4 py-2 text-gray-900"
+            />
+          </div>
+
+          <div>
+            <label className="mb-2 block text-sm font-medium text-gray-700">
+              Reason (optional)
+            </label>
+            <input
+              type="text"
+              value={reason}
+              onChange={(e) => setReason(e.target.value)}
+              placeholder="e.g., Maintenance, Renovation, Private Event"
+              className="w-full rounded-lg border border-gray-300 px-4 py-2 text-gray-900"
+            />
+          </div>
+        </div>
+
+        <div className="mt-6 flex justify-end gap-3">
+          <button
+            onClick={onClose}
+            className="rounded-lg border border-gray-300 px-4 py-2 font-medium text-gray-700 hover:bg-gray-50"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleBlock}
+            disabled={blocking}
+            className="rounded-lg bg-orange-600 px-4 py-2 font-medium text-white hover:bg-orange-700 disabled:bg-gray-400"
+          >
+            {blocking ? 'Blocking...' : 'Block Dates'}
+          </button>
         </div>
       </div>
     </div>

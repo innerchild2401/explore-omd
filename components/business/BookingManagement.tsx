@@ -70,12 +70,15 @@ export default function BookingManagement({ hotelId, rooms, onClose }: BookingMa
   const [error, setError] = useState('');
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [filterChannel, setFilterChannel] = useState<string>('all');
+  const [filterRoomAssignment, setFilterRoomAssignment] = useState<string>('all');
+  const [sortBy, setSortBy] = useState<string>('check_in_date');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
   const [searchTerm, setSearchTerm] = useState('');
   const [showNewReservationModal, setShowNewReservationModal] = useState(false);
 
   useEffect(() => {
     fetchReservations();
-  }, [filterStatus, filterChannel]);
+  }, []);
 
   const fetchReservations = async () => {
     try {
@@ -295,19 +298,67 @@ export default function BookingManagement({ hotelId, rooms, onClose }: BookingMa
     }).format(amount);
   };
 
-  const filteredReservations = reservations.filter(reservation => {
-    if (!reservation) return false;
-    
-    // Only show confirmed bookings and beyond (not tentative)
-    if (reservation.reservation_status === 'tentative') return false;
-    
-    const matchesSearch = searchTerm === '' || 
-      reservation.confirmation_number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (reservation.guest_profiles && `${reservation.guest_profiles.first_name || ''} ${reservation.guest_profiles.last_name || ''}`.toLowerCase().includes(searchTerm.toLowerCase())) ||
-      (reservation.guest_profiles?.email && reservation.guest_profiles.email.toLowerCase().includes(searchTerm.toLowerCase()));
-    
-    return matchesSearch;
-  });
+  const filteredReservations = reservations
+    .filter(reservation => {
+      if (!reservation) return false;
+      
+      // Filter by status
+      if (filterStatus !== 'all' && reservation.reservation_status !== filterStatus) {
+        return false;
+      }
+      
+      // Filter by channel
+      if (filterChannel !== 'all') {
+        const channelName = reservation.booking_channels?.name || '';
+        const channelType = reservation.booking_channels?.channel_type || '';
+        if (channelName !== filterChannel && channelType !== filterChannel) {
+          return false;
+        }
+      }
+      
+      // Filter by room assignment
+      if (filterRoomAssignment === 'assigned' && !reservation.individual_room_id && !reservation.individual_room) {
+        return false;
+      }
+      if (filterRoomAssignment === 'unassigned' && (reservation.individual_room_id || reservation.individual_room)) {
+        return false;
+      }
+      
+      // Filter by search term
+      const matchesSearch = searchTerm === '' || 
+        reservation.confirmation_number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (reservation.guest_profiles && `${reservation.guest_profiles.first_name || ''} ${reservation.guest_profiles.last_name || ''}`.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (reservation.guest_profiles?.email && reservation.guest_profiles.email.toLowerCase().includes(searchTerm.toLowerCase()));
+      
+      return matchesSearch;
+    })
+    .sort((a, b) => {
+      let compareValue = 0;
+      
+      switch (sortBy) {
+        case 'check_in_date':
+          compareValue = new Date(a.check_in_date).getTime() - new Date(b.check_in_date).getTime();
+          break;
+        case 'check_out_date':
+          compareValue = new Date(a.check_out_date).getTime() - new Date(b.check_out_date).getTime();
+          break;
+        case 'created_at':
+          compareValue = new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+          break;
+        case 'guest_name':
+          const nameA = `${a.guest_profiles?.first_name || ''} ${a.guest_profiles?.last_name || ''}`.trim();
+          const nameB = `${b.guest_profiles?.first_name || ''} ${b.guest_profiles?.last_name || ''}`.trim();
+          compareValue = nameA.localeCompare(nameB);
+          break;
+        case 'total_amount':
+          compareValue = (a.total_amount || 0) - (b.total_amount || 0);
+          break;
+        default:
+          compareValue = 0;
+      }
+      
+      return sortOrder === 'asc' ? compareValue : -compareValue;
+    });
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
@@ -364,50 +415,102 @@ export default function BookingManagement({ hotelId, rooms, onClose }: BookingMa
             </div>
           )}
 
-          {/* Filters */}
-          <div className="mt-4 flex flex-wrap items-center gap-4">
-            <div className="flex items-center gap-2">
-              <label className="text-sm font-medium text-gray-700">Status:</label>
-              <select
-                value={filterStatus}
-                onChange={(e) => setFilterStatus(e.target.value)}
-                className="rounded-lg border border-gray-300 px-3 py-1 text-sm"
-              >
-                <option value="all">All</option>
-                <option value="tentative">Tentative</option>
-                <option value="confirmed">Confirmed</option>
-                <option value="checked_in">Checked In</option>
-                <option value="checked_out">Checked Out</option>
-                <option value="cancelled">Cancelled</option>
-                <option value="no_show">No Show</option>
-              </select>
+          {/* Filters and Sort */}
+          <div className="mt-4 space-y-4">
+            {/* First Row: Main Filters */}
+            <div className="flex flex-wrap items-center gap-4">
+              <div className="flex items-center gap-2">
+                <label className="text-sm font-medium text-gray-700">Status:</label>
+                <select
+                  value={filterStatus}
+                  onChange={(e) => setFilterStatus(e.target.value)}
+                  className="rounded-lg border border-gray-300 px-3 py-1.5 text-sm text-gray-900 focus:border-blue-500 focus:outline-none"
+                >
+                  <option value="all">All Statuses</option>
+                  <option value="tentative">Tentative</option>
+                  <option value="confirmed">Confirmed</option>
+                  <option value="checked_in">Checked In</option>
+                  <option value="checked_out">Checked Out</option>
+                  <option value="cancelled">Cancelled</option>
+                  <option value="no_show">No Show</option>
+                </select>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <label className="text-sm font-medium text-gray-700">Room Assignment:</label>
+                <select
+                  value={filterRoomAssignment}
+                  onChange={(e) => setFilterRoomAssignment(e.target.value)}
+                  className="rounded-lg border border-gray-300 px-3 py-1.5 text-sm text-gray-900 focus:border-blue-500 focus:outline-none"
+                >
+                  <option value="all">All</option>
+                  <option value="assigned">Assigned</option>
+                  <option value="unassigned">Unassigned</option>
+                </select>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <label className="text-sm font-medium text-gray-700">Channel:</label>
+                <select
+                  value={filterChannel}
+                  onChange={(e) => setFilterChannel(e.target.value)}
+                  className="rounded-lg border border-gray-300 px-3 py-1.5 text-sm text-gray-900 focus:border-blue-500 focus:outline-none"
+                >
+                  <option value="all">All Channels</option>
+                  <option value="direct">Direct</option>
+                  <option value="website">Website</option>
+                  <option value="booking_com">Booking.com</option>
+                  <option value="expedia">Expedia</option>
+                  <option value="airbnb">Airbnb</option>
+                  <option value="walk_in">Walk-in</option>
+                </select>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <label className="text-sm font-medium text-gray-700">Search:</label>
+                <input
+                  type="text"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  placeholder="Confirmation, guest name, email..."
+                  className="rounded-lg border border-gray-300 px-3 py-1.5 text-sm text-gray-900 focus:border-blue-500 focus:outline-none"
+                />
+              </div>
             </div>
 
-            <div className="flex items-center gap-2">
-              <label className="text-sm font-medium text-gray-700">Channel:</label>
-              <select
-                value={filterChannel}
-                onChange={(e) => setFilterChannel(e.target.value)}
-                className="rounded-lg border border-gray-300 px-3 py-1 text-sm"
-              >
-                <option value="all">All</option>
-                <option value="direct">Direct</option>
-                <option value="booking_com">Booking.com</option>
-                <option value="expedia">Expedia</option>
-                <option value="airbnb">Airbnb</option>
-                <option value="walk_in">Walk-in</option>
-              </select>
-            </div>
+            {/* Second Row: Sort Options */}
+            <div className="flex flex-wrap items-center gap-4">
+              <div className="flex items-center gap-2">
+                <label className="text-sm font-medium text-gray-700">Sort by:</label>
+                <select
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value)}
+                  className="rounded-lg border border-gray-300 px-3 py-1.5 text-sm text-gray-900 focus:border-blue-500 focus:outline-none"
+                >
+                  <option value="check_in_date">Check-in Date</option>
+                  <option value="check_out_date">Check-out Date</option>
+                  <option value="created_at">Created Date</option>
+                  <option value="guest_name">Guest Name</option>
+                  <option value="total_amount">Total Amount</option>
+                </select>
+              </div>
 
-            <div className="flex items-center gap-2">
-              <label className="text-sm font-medium text-gray-700">Search:</label>
-              <input
-                type="text"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder="Confirmation, guest name, email..."
-                className="rounded-lg border border-gray-300 px-3 py-1 text-sm"
-              />
+              <div className="flex items-center gap-2">
+                <label className="text-sm font-medium text-gray-700">Order:</label>
+                <select
+                  value={sortOrder}
+                  onChange={(e) => setSortOrder(e.target.value as 'asc' | 'desc')}
+                  className="rounded-lg border border-gray-300 px-3 py-1.5 text-sm text-gray-900 focus:border-blue-500 focus:outline-none"
+                >
+                  <option value="asc">Ascending</option>
+                  <option value="desc">Descending</option>
+                </select>
+              </div>
+
+              {/* Results count */}
+              <div className="ml-auto text-sm text-gray-600">
+                Showing {filteredReservations.length} of {reservations.length} reservations
+              </div>
             </div>
           </div>
         </div>

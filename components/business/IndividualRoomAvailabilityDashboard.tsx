@@ -97,34 +97,6 @@ export default function IndividualRoomAvailabilityDashboard({ hotelId, onClose }
     }
   }, [filterCheckIn, filterCheckOut]);
 
-  const maximizeButtonRef = useRef<HTMLDivElement>(null);
-
-  // Add direct event listener to prevent browser fullscreen
-  useEffect(() => {
-    const button = maximizeButtonRef.current;
-    if (!button) return;
-    
-    const handleClick = (e: MouseEvent) => {
-      e.preventDefault();
-      e.stopPropagation();
-      e.stopImmediatePropagation();
-      console.log('IndividualRoom - Direct click handler called, current state:', isMaximized);
-      setIsMaximized(prev => !prev);
-    };
-    
-    // Capture phase to intercept before browser
-    button.addEventListener('click', handleClick, { capture: true });
-    
-    return () => {
-      button.removeEventListener('click', handleClick, { capture: true });
-    };
-  }, [isMaximized]);
-
-  const toggleMaximize = (e?: React.MouseEvent) => {
-    e?.preventDefault();
-    e?.stopPropagation();
-    setIsMaximized(prev => !prev);
-  };
 
   const handleDateCellClick = (date: Date, individualRoomId: string, roomTypeId: string) => {
     const dateStr = date.toISOString().split('T')[0];
@@ -659,12 +631,17 @@ export default function IndividualRoomAvailabilityDashboard({ hotelId, onClose }
 
                 {/* Maximize Toggle - Using div to avoid browser fullscreen detection */}
                 <div
-                  ref={maximizeButtonRef}
                   role="button"
                   tabIndex={0}
-                  onDoubleClick={(e) => {
+                  onClick={(e) => {
                     e.preventDefault();
                     e.stopPropagation();
+                    console.log('Maximize button clicked, current state:', isMaximized);
+                    setIsMaximized(prev => {
+                      const newState = !prev;
+                      console.log('Setting isMaximized to:', newState);
+                      return newState;
+                    });
                   }}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter' || e.key === ' ') {
@@ -674,7 +651,6 @@ export default function IndividualRoomAvailabilityDashboard({ hotelId, onClose }
                   }}
                   className="cursor-pointer rounded-lg bg-white bg-opacity-20 px-4 py-2 text-white hover:bg-opacity-30 focus:outline-none focus:ring-2 focus:ring-white"
                   aria-label={isMaximized ? 'Restore' : 'Maximize'}
-                  data-no-fullscreen="true"
                 >
                   {isMaximized ? (
                     <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

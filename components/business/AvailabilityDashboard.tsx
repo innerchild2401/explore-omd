@@ -569,10 +569,14 @@ export default function AvailabilityDashboard({ hotelId, onClose }: Availability
 
   // Get portal target - use fullscreen element if in fullscreen, otherwise document.body
   const getPortalTarget = () => {
-    if (isFullscreen && dashboardRef.current) {
-      return dashboardRef.current;
+    if (typeof window === 'undefined') return null;
+    
+    // Check document.fullscreenElement directly for real-time state
+    const fullscreenElement = document.fullscreenElement;
+    if (fullscreenElement) {
+      return fullscreenElement as HTMLElement;
     }
-    return typeof window !== 'undefined' ? document.body : null;
+    return document.body;
   };
 
   return (

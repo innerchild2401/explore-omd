@@ -103,9 +103,11 @@ export default function AvailabilityDashboard({ hotelId, onClose }: Availability
     }
   }, [filterCheckIn, filterCheckOut]);
 
-  const toggleMaximize = (e?: React.MouseEvent) => {
-    e?.preventDefault();
-    e?.stopPropagation();
+  const toggleMaximize = (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    e.nativeEvent.stopImmediatePropagation();
+    console.log('toggleMaximize called, current state:', isMaximized);
     setIsMaximized(!isMaximized);
   };
 
@@ -550,10 +552,22 @@ export default function AvailabilityDashboard({ hotelId, onClose }: Availability
   };
 
   return (
-    <div className={`fixed inset-0 z-50 ${isMaximized ? 'p-0' : 'flex items-center justify-center bg-black/50 p-4'}`}>
+    <div 
+      className={`fixed inset-0 z-50 ${isMaximized ? 'p-0' : 'flex items-center justify-center bg-black/50 p-4'}`}
+      onDoubleClick={(e) => {
+        // Prevent double-click from triggering browser fullscreen
+        e.preventDefault();
+        e.stopPropagation();
+      }}
+    >
       <div 
         id="availability-dashboard"
         className={`${isMaximized ? 'fixed inset-0 h-screen w-screen rounded-none overflow-y-auto' : 'max-h-[95vh] w-full max-w-7xl rounded-lg overflow-y-auto'} bg-white shadow-xl`}
+        onDoubleClick={(e) => {
+          // Prevent double-click from triggering browser fullscreen
+          e.preventDefault();
+          e.stopPropagation();
+        }}
       >
         {/* Header */}
         <div className="sticky top-0 z-10 bg-white border-b border-gray-200 p-6">
@@ -638,7 +652,12 @@ export default function AvailabilityDashboard({ hotelId, onClose }: Availability
 
               {/* Maximize Toggle */}
               <button
+                type="button"
                 onClick={toggleMaximize}
+                onDoubleClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                }}
                 className="rounded-lg bg-gray-100 px-3 py-2 text-gray-700 hover:bg-gray-200"
                 title={isMaximized ? 'Restore' : 'Maximize'}
               >

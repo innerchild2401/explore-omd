@@ -103,7 +103,9 @@ export default function AvailabilityDashboard({ hotelId, onClose }: Availability
     }
   }, [filterCheckIn, filterCheckOut]);
 
-  const toggleMaximize = () => {
+  const toggleMaximize = (e?: React.MouseEvent) => {
+    e?.preventDefault();
+    e?.stopPropagation();
     setIsMaximized(!isMaximized);
   };
 

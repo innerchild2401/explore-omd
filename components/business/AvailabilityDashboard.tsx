@@ -58,6 +58,7 @@ interface ReservationSpan {
 export default function AvailabilityDashboard({ hotelId, onClose }: AvailabilityDashboardProps) {
   const router = useRouter();
   const supabase = createClient();
+  const maximizeButtonRef = useRef<HTMLDivElement>(null);
   
   const [currentDate, setCurrentDate] = useState(new Date());
   const [viewMode, setViewMode] = useState<'day' | 'week' | 'month'>('week');
@@ -70,6 +71,27 @@ export default function AvailabilityDashboard({ hotelId, onClose }: Availability
   const [showBlockModal, setShowBlockModal] = useState(false);
   const [blockingRoomId, setBlockingRoomId] = useState<string | null>(null);
   const [isMaximized, setIsMaximized] = useState(false);
+  
+  // Add direct event listener to prevent browser fullscreen
+  useEffect(() => {
+    const button = maximizeButtonRef.current;
+    if (!button) return;
+    
+    const handleClick = (e: MouseEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      e.stopImmediatePropagation();
+      console.log('Direct click handler called, current state:', isMaximized);
+      setIsMaximized(prev => !prev);
+    };
+    
+    // Capture phase to intercept before browser
+    button.addEventListener('click', handleClick, { capture: true });
+    
+    return () => {
+      button.removeEventListener('click', handleClick, { capture: true });
+    };
+  }, [isMaximized]);
   const [showNewReservationModal, setShowNewReservationModal] = useState(false);
   
   // Date filtering and selection
@@ -108,7 +130,10 @@ export default function AvailabilityDashboard({ hotelId, onClose }: Availability
     e.stopPropagation();
     e.nativeEvent.stopImmediatePropagation();
     console.log('toggleMaximize called, current state:', isMaximized);
-    setIsMaximized(!isMaximized);
+    // Update state immediately, synchronously
+    setIsMaximized(prev => !prev);
+    // Return false to ensure no default behavior
+    return false;
   };
 
   const handleDateCellClick = (date: Date, roomId: string) => {
@@ -562,12 +587,13 @@ export default function AvailabilityDashboard({ hotelId, onClose }: Availability
     >
       <div 
         id="availability-dashboard"
-        className={`${isMaximized ? 'fixed inset-0 h-screen w-screen rounded-none overflow-y-auto' : 'max-h-[95vh] w-full max-w-7xl rounded-lg overflow-y-auto'} bg-white shadow-xl`}
+        className={`${isMaximized ? 'absolute inset-0 rounded-none overflow-y-auto' : 'max-h-[95vh] w-full max-w-7xl rounded-lg overflow-y-auto'} bg-white shadow-xl`}
         onDoubleClick={(e) => {
           // Prevent double-click from triggering browser fullscreen
           e.preventDefault();
           e.stopPropagation();
         }}
+        style={isMaximized ? { position: 'absolute' } : undefined}
       >
         {/* Header */}
         <div className="sticky top-0 z-10 bg-white border-b border-gray-200 p-6">
@@ -650,16 +676,24 @@ export default function AvailabilityDashboard({ hotelId, onClose }: Availability
                 )}
               </div>
 
-              {/* Maximize Toggle */}
-              <button
-                type="button"
-                onClick={toggleMaximize}
+              {/* Maximize Toggle - Using div to avoid browser fullscreen detection */}
+              <div
+                ref={maximizeButtonRef}
+                role="button"
+                tabIndex={0}
                 onDoubleClick={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
                 }}
-                className="rounded-lg bg-gray-100 px-3 py-2 text-gray-700 hover:bg-gray-200"
-                title={isMaximized ? 'Restore' : 'Maximize'}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    setIsMaximized(prev => !prev);
+                  }
+                }}
+                className="cursor-pointer rounded-lg bg-gray-100 px-3 py-2 text-gray-700 hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                aria-label={isMaximized ? 'Restore' : 'Maximize'}
+                data-no-fullscreen="true"
               >
                 {isMaximized ? (
                   <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -670,7 +704,7 @@ export default function AvailabilityDashboard({ hotelId, onClose }: Availability
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
                   </svg>
                 )}
-              </button>
+              </div>
             </div>
 
             {/* Bottom Row: View Mode and Navigation */}

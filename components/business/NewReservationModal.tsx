@@ -373,6 +373,30 @@ export default function NewReservationModal({ hotelId, rooms, onClose, onSuccess
 
       console.log('✅ Reservation created successfully:', reservation.id);
 
+      // Push booking to Octorate if hotel uses Octorate
+      try {
+        const { data: hotelData } = await supabase
+          .from('hotels')
+          .select('pms_type, octorate_connection_id')
+          .eq('id', hotelId)
+          .single();
+
+        if (hotelData?.pms_type === 'octorate' && hotelData.octorate_connection_id) {
+          // Push to Octorate in the background
+          fetch('/api/octorate/bookings/push', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ reservationId: reservation.id }),
+          }).catch(err => {
+            console.error('Failed to push booking to Octorate:', err);
+            // Don't block the success flow - booking is created locally
+          });
+        }
+      } catch (err) {
+        console.error('Error checking Octorate connection:', err);
+        // Continue anyway - booking is created
+      }
+
       // Send booking confirmation emails
       console.log('📧 Attempting to send booking confirmation email for reservation:', reservation.id);
       try {

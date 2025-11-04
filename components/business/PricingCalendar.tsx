@@ -46,6 +46,8 @@ export default function PricingCalendar({ room, onClose }: PricingCalendarProps)
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [conflicts, setConflicts] = useState<any[]>([]);
+  const [isSyncedFromOctorate, setIsSyncedFromOctorate] = useState(false);
+  const [hotelPmsType, setHotelPmsType] = useState<string>('internal');
 
   // Calendar interaction states
   const [selectedDates, setSelectedDates] = useState<{start: Date | null, end: Date | null}>({start: null, end: null});
@@ -73,6 +75,27 @@ export default function PricingCalendar({ room, onClose }: PricingCalendarProps)
   const fetchData = async () => {
     try {
       setLoading(true);
+      
+      // Check if hotel uses Octorate
+      const { data: hotelData } = await supabase
+        .from('hotels')
+        .select('pms_type, octorate_connection_id')
+        .eq('id', room.hotel_id)
+        .single();
+
+      if (hotelData) {
+        setHotelPmsType(hotelData.pms_type || 'internal');
+        if (hotelData.pms_type === 'octorate') {
+          // Check if room is synced from Octorate
+          const { data: roomData } = await supabase
+            .from('rooms')
+            .select('is_synced_from_octorate')
+            .eq('id', room.id)
+            .single();
+          
+          setIsSyncedFromOctorate(roomData?.is_synced_from_octorate || false);
+        }
+      }
       
       // Fetch pricing rules
       const { data: rulesData, error: rulesError } = await supabase
@@ -194,7 +217,9 @@ export default function PricingCalendar({ room, onClose }: PricingCalendarProps)
   };
 
   const handleMouseLeave = () => {
-    setHoveredDate(null);
+    if (!isSyncedFromOctorate) {
+      setHoveredDate(null);
+    }
   };
 
   const isDateInRange = (date: Date, start: Date | null, end: Date | null) => {
@@ -209,6 +234,11 @@ export default function PricingCalendar({ room, onClose }: PricingCalendarProps)
   };
 
   const handleSavePricingRule = async () => {
+    if (isSyncedFromOctorate) {
+      setError('Pricing is synced from Octorate and cannot be edited here. Please manage pricing in Octorate.');
+      return;
+    }
+
     if (!selectedDates.start || !selectedDates.end || !formData.price_per_night) {
       setError('Please fill in all required fields');
       return;
@@ -360,6 +390,16 @@ export default function PricingCalendar({ room, onClose }: PricingCalendarProps)
               <p className="text-sm text-gray-600">
                 {room.name} • Base Price: {formatPrice(room.base_price)}/night
               </p>
+              {isSyncedFromOctorate && (
+                <div className="mt-2 flex items-center gap-2 rounded-lg bg-blue-50 border border-blue-200 px-3 py-1.5 w-fit">
+                  <svg className="h-4 w-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <span className="text-xs font-medium text-blue-900">
+                    🔒 Read-only: Pricing synced from Octorate
+                  </span>
+                </div>
+              )}
             </div>
             <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
               <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -420,15 +460,15 @@ export default function PricingCalendar({ room, onClose }: PricingCalendarProps)
                       return (
                         <div
                           key={day.getTime()}
-                          className={`h-12 cursor-pointer rounded-lg border-2 transition-all hover:shadow-md ${
+                          className={`h-12 ${isSyncedFromOctorate ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'} rounded-lg border-2 transition-all hover:shadow-md ${
                             isSelected 
                               ? 'border-blue-500 bg-blue-100' 
                               : 'border-transparent hover:border-gray-300'
                           } ${isToday ? 'ring-2 ring-blue-300' : ''}`}
                           style={{ backgroundColor: isSelected ? '#DBEAFE' : pricing.color + '20' }}
-                          onClick={() => handleDateClick(day)}
-                          onMouseEnter={() => handleDateHover(day)}
-                          onMouseLeave={handleMouseLeave}
+                          onClick={() => !isSyncedFromOctorate && handleDateClick(day)}
+                          onMouseEnter={() => !isSyncedFromOctorate && handleDateHover(day)}
+                          onMouseLeave={() => !isSyncedFromOctorate && handleMouseLeave()}
                         >
                           <div className="flex h-full flex-col items-center justify-center">
                             <div className={`text-sm font-medium ${isSelected ? 'text-blue-700' : 'text-gray-900'}`}>

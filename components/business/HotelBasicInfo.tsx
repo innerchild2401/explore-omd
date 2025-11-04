@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import ImageUpload from '@/components/admin/ImageUpload';
+import OctorateConnection from './OctorateConnection';
+import OctorateSyncStatus from './OctorateSyncStatus';
 
 interface HotelBasicInfoProps {
   business: any;
@@ -428,6 +430,23 @@ export default function HotelBasicInfo({ business, hotel, amenities }: HotelBasi
               ))}
             </div>
           </div>
+        </div>
+      </div>
+
+      {/* Channel Manager / PMS Connection */}
+      <div className="rounded-lg bg-white p-6 shadow">
+        <h2 className="mb-4 text-xl font-bold text-gray-900">Channel Manager Integration</h2>
+        <p className="mb-4 text-sm text-gray-600">
+          Connect your external PMS (like Octorate) to sync inventory, availability, and rates automatically.
+          When connected, your data will be synced from Octorate and displayed read-only on this platform.
+        </p>
+        <OctorateConnection 
+          hotelId={hotel.id} 
+          businessId={business.id}
+          onConnected={() => router.refresh()}
+        />
+        <div className="mt-4">
+          <OctorateSyncStatus hotelId={hotel.id} />
         </div>
       </div>
 

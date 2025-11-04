@@ -47,6 +47,10 @@ interface Reservation {
     floor_number?: number;
     current_status?: string;
   };
+  octorate_booking_id?: string;
+  pushed_to_octorate_at?: string;
+  octorate_push_status?: 'pending' | 'pushed' | 'confirmed' | 'failed' | 'skipped';
+  octorate_confirmation_received_at?: string;
 }
 
 interface BookingStats {
@@ -96,7 +100,8 @@ export default function BookingManagement({ hotelId, rooms, onClose }: BookingMa
           booking_channels!channel_id(name, display_name, channel_type),
           individual_rooms!individual_room_id(room_number, floor_number, current_status)
         `)
-        .eq('hotel_id', hotelId);
+        .eq('hotel_id', hotelId)
+        .order('created_at', { ascending: false });
       
       console.log('Reservations with relations:', { data, error, hotelId });
 

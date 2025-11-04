@@ -96,3 +96,4 @@ You can test the API directly:
 - Trial mode will be needed until MailerSend account allows unverified domains
 
 
+

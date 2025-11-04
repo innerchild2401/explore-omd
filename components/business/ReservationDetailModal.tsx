@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import { formatPrice } from '@/lib/utils';
@@ -10,7 +10,6 @@ interface ReservationDetailModalProps {
   hotelId: string;
   onClose: () => void;
   onUpdate?: () => void;
-  isFullscreen?: boolean;
 }
 
 interface ReservationDetails {
@@ -54,21 +53,10 @@ export default function ReservationDetailModal({
   reservationId, 
   hotelId, 
   onClose, 
-  onUpdate,
-  isFullscreen: propIsFullscreen = false
+  onUpdate
 }: ReservationDetailModalProps) {
   const supabase = createClient();
   const router = useRouter();
-  
-  // Check fullscreen state directly from DOM instead of relying on prop
-  const isFullscreen = typeof window !== 'undefined' ? !!document.fullscreenElement : propIsFullscreen;
-  
-  console.log('[DEBUG] ReservationDetailModal component:', {
-    reservationId,
-    propIsFullscreen,
-    isFullscreen,
-    documentFullscreen: typeof window !== 'undefined' ? !!document.fullscreenElement : false
-  });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [reservation, setReservation] = useState<ReservationDetails | null>(null);
@@ -158,43 +146,9 @@ export default function ReservationDetailModal({
     return Math.ceil((checkOut.getTime() - checkIn.getTime()) / (1000 * 60 * 60 * 24));
   };
 
-  const positionClass = isFullscreen ? 'absolute' : 'fixed';
-  
-  // Add ref to check if element is actually rendered - must be before early returns
-  const modalRef = useRef<HTMLDivElement>(null);
-  
-  useEffect(() => {
-    if (modalRef.current) {
-      const styles = window.getComputedStyle(modalRef.current);
-      const rect = modalRef.current.getBoundingClientRect();
-      console.log('[DEBUG] ReservationDetailModal DOM check:', {
-        position: styles.position,
-        zIndex: styles.zIndex,
-        display: styles.display,
-        visibility: styles.visibility,
-        opacity: styles.opacity,
-        boundingRect: {
-          top: rect.top,
-          left: rect.left,
-          width: rect.width,
-          height: rect.height
-        },
-        parentElement: modalRef.current.parentElement?.id || modalRef.current.parentElement?.tagName,
-        isInFullscreenElement: document.fullscreenElement?.contains(modalRef.current)
-      });
-    }
-  }, [isFullscreen, loading, reservation]);
-  
-  console.log('[DEBUG] ReservationDetailModal render:', {
-    positionClass,
-    isFullscreen,
-    loading,
-    hasReservation: !!reservation
-  });
-
   if (loading) {
     return (
-      <div ref={modalRef} className={`${positionClass} inset-0 z-[100] flex items-center justify-center bg-black/50`}>
+      <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50">
         <div className="rounded-lg bg-white p-8">
           <p className="text-gray-600">Loading reservation details...</p>
         </div>
@@ -204,7 +158,7 @@ export default function ReservationDetailModal({
 
   if (!reservation) {
     return (
-      <div ref={modalRef} className={`${positionClass} inset-0 z-[100] flex items-center justify-center bg-black/50`}>
+      <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50">
         <div className="rounded-lg bg-white p-8">
           <p className="text-red-600">Reservation not found</p>
           <button
@@ -222,7 +176,7 @@ export default function ReservationDetailModal({
   const guest = reservation.guest_profiles;
   
   return (
-    <div ref={modalRef} className={`${positionClass} inset-0 z-[100] flex items-center justify-center bg-black/50 p-4`}>
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-4">
       <div className="max-h-[90vh] w-full max-w-4xl overflow-y-auto rounded-lg bg-white shadow-xl">
         {/* Header */}
         <div className="sticky top-0 z-10 border-b border-gray-200 bg-white px-6 py-4">

@@ -14,7 +14,6 @@ interface NewReservationModalProps {
     checkOut: string;
     roomId?: string;
   };
-  isFullscreen?: boolean;
 }
 
 interface Room {
@@ -38,19 +37,9 @@ interface GuestProfile {
   special_requests?: string;
 }
 
-export default function NewReservationModal({ hotelId, rooms, onClose, onSuccess, prefillDates, isFullscreen: propIsFullscreen = false }: NewReservationModalProps) {
+export default function NewReservationModal({ hotelId, rooms, onClose, onSuccess, prefillDates }: NewReservationModalProps) {
   const router = useRouter();
   const supabase = createClient();
-  
-  // Check fullscreen state directly from DOM instead of relying on prop
-  const isFullscreen = typeof window !== 'undefined' ? !!document.fullscreenElement : propIsFullscreen;
-  
-  console.log('[DEBUG] NewReservationModal component:', {
-    propIsFullscreen,
-    isFullscreen,
-    documentFullscreen: typeof window !== 'undefined' ? !!document.fullscreenElement : false,
-    positionClass: isFullscreen ? 'absolute' : 'fixed'
-  });
   
   const [currentStep, setCurrentStep] = useState(prefillDates ? 1 : 1); // Start at step 1, but if prefill, could skip to step 2
   const [loading, setLoading] = useState(false);
@@ -467,15 +456,8 @@ export default function NewReservationModal({ hotelId, rooms, onClose, onSuccess
     });
   };
 
-  const positionClass = isFullscreen ? 'absolute' : 'fixed';
-  console.log('[DEBUG] NewReservationModal render div:', {
-    positionClass,
-    isFullscreen,
-    className: `${positionClass} inset-0 z-[100] flex items-center justify-center bg-black/50 p-4`
-  });
-  
   return (
-    <div className={`${positionClass} inset-0 z-[100] flex items-center justify-center bg-black/50 p-4`}>
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-4">
       <div className="w-full max-w-4xl max-h-[95vh] overflow-y-auto rounded-lg bg-white shadow-xl">
         {/* Header */}
         <div className="sticky top-0 z-10 bg-white border-b border-gray-200 p-6">

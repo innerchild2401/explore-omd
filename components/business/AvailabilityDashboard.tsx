@@ -69,7 +69,7 @@ export default function AvailabilityDashboard({ hotelId, onClose }: Availability
   const [selectedReservationId, setSelectedReservationId] = useState<string | null>(null);
   const [showBlockModal, setShowBlockModal] = useState(false);
   const [blockingRoomId, setBlockingRoomId] = useState<string | null>(null);
-  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [isMaximized, setIsMaximized] = useState(false);
   const [showNewReservationModal, setShowNewReservationModal] = useState(false);
   
   // Date filtering and selection
@@ -85,7 +85,6 @@ export default function AvailabilityDashboard({ hotelId, onClose }: Availability
   const [dragOverDate, setDragOverDate] = useState<string | null>(null);
 
   const calendarRef = useRef<HTMLDivElement>(null);
-  const dashboardRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     fetchData();
@@ -104,34 +103,8 @@ export default function AvailabilityDashboard({ hotelId, onClose }: Availability
     }
   }, [filterCheckIn, filterCheckOut]);
 
-  // Handle fullscreen toggle
-  useEffect(() => {
-    const handleFullscreenChange = () => {
-      const isFs = !!document.fullscreenElement;
-      console.log('[DEBUG] Fullscreen change event:', {
-        isFullscreen: isFs,
-        fullscreenElement: document.fullscreenElement?.id || document.fullscreenElement?.tagName,
-        currentState: isFullscreen,
-        willUpdateTo: isFs
-      });
-      setIsFullscreen(isFs);
-    };
-
-    document.addEventListener('fullscreenchange', handleFullscreenChange);
-    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
-  }, [isFullscreen]);
-
-  const toggleFullscreen = async () => {
-    const dashboardElement = document.getElementById('availability-dashboard');
-    if (!dashboardElement) return;
-
-    if (!document.fullscreenElement) {
-      await dashboardElement.requestFullscreen();
-      setIsFullscreen(true);
-    } else {
-      await document.exitFullscreen();
-      setIsFullscreen(false);
-    }
+  const toggleMaximize = () => {
+    setIsMaximized(!isMaximized);
   };
 
   const handleDateCellClick = (date: Date, roomId: string) => {
@@ -574,41 +547,11 @@ export default function AvailabilityDashboard({ hotelId, onClose }: Availability
     return date.toISOString().split('T')[0] === selectedCheckOut;
   };
 
-  // Get portal target - use fullscreen element if in fullscreen, otherwise document.body
-  const getPortalTarget = () => {
-    if (typeof window === 'undefined') {
-      console.log('[DEBUG] getPortalTarget: window is undefined');
-      return null;
-    }
-    
-    // Check document.fullscreenElement directly for real-time state
-    const fullscreenElement = document.fullscreenElement;
-    console.log('[DEBUG] getPortalTarget:', {
-      fullscreenElement: fullscreenElement,
-      fullscreenElementId: fullscreenElement?.id,
-      isFullscreenState: isFullscreen,
-      dashboardRef: dashboardRef.current?.id,
-      willReturn: fullscreenElement ? fullscreenElement : document.body
-    });
-    
-    if (fullscreenElement) {
-      return fullscreenElement as HTMLElement;
-    }
-    return document.body;
-  };
-
-  console.log('[DEBUG] AvailabilityDashboard render:', {
-    isFullscreen,
-    documentFullscreen: typeof window !== 'undefined' ? !!document.fullscreenElement : false,
-    dashboardRefId: dashboardRef.current?.id
-  });
-
   return (
-    <div className={`fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 ${isFullscreen ? 'p-0' : ''}`}>
+    <div className={`fixed inset-0 z-50 flex items-center justify-center bg-black/50 ${isMaximized ? 'p-0' : 'p-4'}`}>
       <div 
-        ref={dashboardRef}
         id="availability-dashboard"
-        className={`${isFullscreen ? 'h-screen w-screen max-h-screen max-w-screen rounded-none relative overflow-hidden' : 'max-h-[95vh] w-full max-w-7xl rounded-lg overflow-y-auto'} bg-white shadow-xl`}
+        className={`${isMaximized ? 'fixed inset-0 h-screen w-screen rounded-none overflow-y-auto z-50' : 'max-h-[95vh] w-full max-w-7xl rounded-lg overflow-y-auto'} bg-white shadow-xl`}
       >
         {/* Header */}
         <div className="sticky top-0 z-10 bg-white border-b border-gray-200 p-6">
@@ -691,13 +634,13 @@ export default function AvailabilityDashboard({ hotelId, onClose }: Availability
                 )}
               </div>
 
-              {/* Fullscreen Toggle */}
+              {/* Maximize Toggle */}
               <button
-                onClick={toggleFullscreen}
+                onClick={toggleMaximize}
                 className="rounded-lg bg-gray-100 px-3 py-2 text-gray-700 hover:bg-gray-200"
-                title={isFullscreen ? 'Exit Fullscreen' : 'Enter Fullscreen'}
+                title={isMaximized ? 'Restore' : 'Maximize'}
               >
-                {isFullscreen ? (
+                {isMaximized ? (
                   <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                   </svg>
@@ -1012,93 +955,59 @@ export default function AvailabilityDashboard({ hotelId, onClose }: Availability
       </div>
 
       {/* Reservation Detail Modal - Rendered via Portal */}
-      {selectedReservationId && (() => {
-        const portalTarget = getPortalTarget();
-        console.log('[DEBUG] ReservationDetailModal render:', {
-          selectedReservationId,
-          portalTarget: portalTarget?.id || portalTarget?.tagName,
-          isFullscreen: typeof window !== 'undefined' ? !!document.fullscreenElement : false,
-          willRender: !!portalTarget
-        });
-        return portalTarget && createPortal(
-          <ReservationDetailModal
-            reservationId={selectedReservationId}
-            hotelId={hotelId}
-            isFullscreen={typeof window !== 'undefined' ? !!document.fullscreenElement : false}
-            onClose={() => {
-              setSelectedReservationId(null);
-              fetchData();
-            }}
-            onUpdate={() => {
-              fetchData();
-            }}
-          />,
-          portalTarget
-        );
-      })()}
+      {selectedReservationId && typeof window !== 'undefined' && createPortal(
+        <ReservationDetailModal
+          reservationId={selectedReservationId}
+          hotelId={hotelId}
+          onClose={() => {
+            setSelectedReservationId(null);
+            fetchData();
+          }}
+          onUpdate={() => {
+            fetchData();
+          }}
+        />,
+        document.body
+      )}
 
       {/* Block Dates Modal - Rendered via Portal */}
-      {showBlockModal && blockingRoomId && (() => {
-        const portalTarget = getPortalTarget();
-        console.log('[DEBUG] BlockDatesModal render:', {
-          showBlockModal,
-          blockingRoomId,
-          portalTarget: portalTarget?.id || portalTarget?.tagName,
-          isFullscreen: typeof window !== 'undefined' ? !!document.fullscreenElement : false,
-          willRender: !!portalTarget
-        });
-        return portalTarget && createPortal(
-          <BlockDatesModal
-            roomId={blockingRoomId}
-            roomName={rooms.find(r => r.id === blockingRoomId)?.name || ''}
-            hotelId={hotelId}
-            isFullscreen={typeof window !== 'undefined' ? !!document.fullscreenElement : false}
-            onClose={() => {
-              setShowBlockModal(false);
-              setBlockingRoomId(null);
-            }}
-            onBlock={handleBlockRoom}
-          />,
-          portalTarget
-        );
-      })()}
+      {showBlockModal && blockingRoomId && typeof window !== 'undefined' && createPortal(
+        <BlockDatesModal
+          roomId={blockingRoomId}
+          roomName={rooms.find(r => r.id === blockingRoomId)?.name || ''}
+          hotelId={hotelId}
+          onClose={() => {
+            setShowBlockModal(false);
+            setBlockingRoomId(null);
+          }}
+          onBlock={handleBlockRoom}
+        />,
+        document.body
+      )}
 
       {/* New Reservation Modal - Rendered via Portal */}
-      {showNewReservationModal && selectedCheckIn && selectedCheckOut && selectedRoomForBooking && (() => {
-        const portalTarget = getPortalTarget();
-        console.log('[DEBUG] NewReservationModal render:', {
-          showNewReservationModal,
-          selectedCheckIn,
-          selectedCheckOut,
-          selectedRoomForBooking,
-          portalTarget: portalTarget?.id || portalTarget?.tagName,
-          isFullscreen: typeof window !== 'undefined' ? !!document.fullscreenElement : false,
-          willRender: !!portalTarget
-        });
-        return portalTarget && createPortal(
-          <NewReservationModal
-            hotelId={hotelId}
-            rooms={rooms}
-            isFullscreen={typeof window !== 'undefined' ? !!document.fullscreenElement : false}
-            onClose={() => {
-              setShowNewReservationModal(false);
-              clearDateSelection();
-            }}
-            onSuccess={() => {
-              setShowNewReservationModal(false);
-              clearDateSelection();
-              fetchData();
-              router.refresh();
-            }}
-            prefillDates={{
-              checkIn: selectedCheckIn,
-              checkOut: selectedCheckOut,
-              roomId: selectedRoomForBooking
-            }}
-          />,
-          portalTarget
-        );
-      })()}
+      {showNewReservationModal && selectedCheckIn && selectedCheckOut && selectedRoomForBooking && typeof window !== 'undefined' && createPortal(
+        <NewReservationModal
+          hotelId={hotelId}
+          rooms={rooms}
+          onClose={() => {
+            setShowNewReservationModal(false);
+            clearDateSelection();
+          }}
+          onSuccess={() => {
+            setShowNewReservationModal(false);
+            clearDateSelection();
+            fetchData();
+            router.refresh();
+          }}
+          prefillDates={{
+            checkIn: selectedCheckIn,
+            checkOut: selectedCheckOut,
+            roomId: selectedRoomForBooking
+          }}
+        />,
+        document.body
+      )}
     </div>
   );
 }
@@ -1109,29 +1018,18 @@ function BlockDatesModal({
   roomName,
   hotelId,
   onClose,
-  onBlock,
-  isFullscreen: propIsFullscreen = false
+  onBlock
 }: {
   roomId: string;
   roomName: string;
   hotelId: string;
   onClose: () => void;
   onBlock: (roomId: string, startDate: string, endDate: string, reason: string) => Promise<void>;
-  isFullscreen?: boolean;
 }) {
-  // Check fullscreen state directly from DOM instead of relying on prop
-  const isFullscreen = typeof window !== 'undefined' ? !!document.fullscreenElement : propIsFullscreen;
-  
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [reason, setReason] = useState('');
   const [blocking, setBlocking] = useState(false);
-  
-  console.log('[DEBUG] BlockDatesModal component:', {
-    propIsFullscreen,
-    isFullscreen,
-    documentFullscreen: typeof window !== 'undefined' ? !!document.fullscreenElement : false
-  });
 
   useEffect(() => {
     // Set default dates to today
@@ -1160,7 +1058,7 @@ function BlockDatesModal({
   };
 
   return (
-    <div className={`${isFullscreen ? 'absolute' : 'fixed'} inset-0 z-[100] flex items-center justify-center bg-black/50`}>
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50">
       <div className="w-full max-w-md rounded-lg bg-white p-6 shadow-xl">
         <h3 className="mb-4 text-xl font-bold text-gray-900">Block Dates</h3>
         <p className="mb-4 text-sm text-gray-600">Blocking: {roomName}</p>

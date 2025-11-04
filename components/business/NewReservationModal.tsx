@@ -14,6 +14,7 @@ interface NewReservationModalProps {
     checkOut: string;
     roomId?: string;
   };
+  isFullscreen?: boolean;
 }
 
 interface Room {
@@ -37,7 +38,7 @@ interface GuestProfile {
   special_requests?: string;
 }
 
-export default function NewReservationModal({ hotelId, rooms, onClose, onSuccess, prefillDates }: NewReservationModalProps) {
+export default function NewReservationModal({ hotelId, rooms, onClose, onSuccess, prefillDates, isFullscreen = false }: NewReservationModalProps) {
   const router = useRouter();
   const supabase = createClient();
   
@@ -457,7 +458,7 @@ export default function NewReservationModal({ hotelId, rooms, onClose, onSuccess
   };
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-4">
+    <div className={`${isFullscreen ? 'absolute' : 'fixed'} inset-0 z-[100] flex items-center justify-center bg-black/50 p-4`}>
       <div className="w-full max-w-4xl max-h-[95vh] overflow-y-auto rounded-lg bg-white shadow-xl">
         {/* Header */}
         <div className="sticky top-0 z-10 bg-white border-b border-gray-200 p-6">

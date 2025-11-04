@@ -584,7 +584,7 @@ export default function AvailabilityDashboard({ hotelId, onClose }: Availability
       <div 
         ref={dashboardRef}
         id="availability-dashboard"
-        className={`${isFullscreen ? 'h-screen w-screen max-h-screen max-w-screen rounded-none' : 'max-h-[95vh] w-full max-w-7xl rounded-lg'} overflow-y-auto bg-white shadow-xl`}
+        className={`${isFullscreen ? 'h-screen w-screen max-h-screen max-w-screen rounded-none relative' : 'max-h-[95vh] w-full max-w-7xl rounded-lg'} overflow-y-auto bg-white shadow-xl`}
       >
         {/* Header */}
         <div className="sticky top-0 z-10 bg-white border-b border-gray-200 p-6">
@@ -992,6 +992,7 @@ export default function AvailabilityDashboard({ hotelId, onClose }: Availability
         <ReservationDetailModal
           reservationId={selectedReservationId}
           hotelId={hotelId}
+          isFullscreen={!!document.fullscreenElement}
           onClose={() => {
             setSelectedReservationId(null);
             fetchData();
@@ -1009,6 +1010,7 @@ export default function AvailabilityDashboard({ hotelId, onClose }: Availability
           roomId={blockingRoomId}
           roomName={rooms.find(r => r.id === blockingRoomId)?.name || ''}
           hotelId={hotelId}
+          isFullscreen={!!document.fullscreenElement}
           onClose={() => {
             setShowBlockModal(false);
             setBlockingRoomId(null);
@@ -1023,6 +1025,7 @@ export default function AvailabilityDashboard({ hotelId, onClose }: Availability
         <NewReservationModal
           hotelId={hotelId}
           rooms={rooms}
+          isFullscreen={!!document.fullscreenElement}
           onClose={() => {
             setShowNewReservationModal(false);
             clearDateSelection();
@@ -1051,13 +1054,15 @@ function BlockDatesModal({
   roomName,
   hotelId,
   onClose,
-  onBlock
+  onBlock,
+  isFullscreen = false
 }: {
   roomId: string;
   roomName: string;
   hotelId: string;
   onClose: () => void;
   onBlock: (roomId: string, startDate: string, endDate: string, reason: string) => Promise<void>;
+  isFullscreen?: boolean;
 }) {
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
@@ -1091,7 +1096,7 @@ function BlockDatesModal({
   };
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50">
+    <div className={`${isFullscreen ? 'absolute' : 'fixed'} inset-0 z-[100] flex items-center justify-center bg-black/50`}>
       <div className="w-full max-w-md rounded-lg bg-white p-6 shadow-xl">
         <h3 className="mb-4 text-xl font-bold text-gray-900">Block Dates</h3>
         <p className="mb-4 text-sm text-gray-600">Blocking: {roomName}</p>

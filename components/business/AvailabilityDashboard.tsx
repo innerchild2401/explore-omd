@@ -85,6 +85,7 @@ export default function AvailabilityDashboard({ hotelId, onClose }: Availability
   const [dragOverDate, setDragOverDate] = useState<string | null>(null);
 
   const calendarRef = useRef<HTMLDivElement>(null);
+  const dashboardRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     fetchData();
@@ -566,9 +567,18 @@ export default function AvailabilityDashboard({ hotelId, onClose }: Availability
     return date.toISOString().split('T')[0] === selectedCheckOut;
   };
 
+  // Get portal target - use fullscreen element if in fullscreen, otherwise document.body
+  const getPortalTarget = () => {
+    if (isFullscreen && dashboardRef.current) {
+      return dashboardRef.current;
+    }
+    return typeof window !== 'undefined' ? document.body : null;
+  };
+
   return (
     <div className={`fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 ${isFullscreen ? 'p-0' : ''}`}>
       <div 
+        ref={dashboardRef}
         id="availability-dashboard"
         className={`${isFullscreen ? 'h-screen w-screen max-h-screen max-w-screen rounded-none' : 'max-h-[95vh] w-full max-w-7xl rounded-lg'} overflow-y-auto bg-white shadow-xl`}
       >
@@ -974,7 +984,7 @@ export default function AvailabilityDashboard({ hotelId, onClose }: Availability
       </div>
 
       {/* Reservation Detail Modal - Rendered via Portal */}
-      {selectedReservationId && typeof window !== 'undefined' && createPortal(
+      {selectedReservationId && getPortalTarget() && createPortal(
         <ReservationDetailModal
           reservationId={selectedReservationId}
           hotelId={hotelId}
@@ -986,11 +996,11 @@ export default function AvailabilityDashboard({ hotelId, onClose }: Availability
             fetchData();
           }}
         />,
-        document.body
+        getPortalTarget()!
       )}
 
       {/* Block Dates Modal - Rendered via Portal */}
-      {showBlockModal && blockingRoomId && typeof window !== 'undefined' && createPortal(
+      {showBlockModal && blockingRoomId && getPortalTarget() && createPortal(
         <BlockDatesModal
           roomId={blockingRoomId}
           roomName={rooms.find(r => r.id === blockingRoomId)?.name || ''}
@@ -1001,11 +1011,11 @@ export default function AvailabilityDashboard({ hotelId, onClose }: Availability
           }}
           onBlock={handleBlockRoom}
         />,
-        document.body
+        getPortalTarget()!
       )}
 
       {/* New Reservation Modal - Rendered via Portal */}
-      {showNewReservationModal && selectedCheckIn && selectedCheckOut && selectedRoomForBooking && typeof window !== 'undefined' && createPortal(
+      {showNewReservationModal && selectedCheckIn && selectedCheckOut && selectedRoomForBooking && getPortalTarget() && createPortal(
         <NewReservationModal
           hotelId={hotelId}
           rooms={rooms}
@@ -1025,7 +1035,7 @@ export default function AvailabilityDashboard({ hotelId, onClose }: Availability
             roomId: selectedRoomForBooking
           }}
         />,
-        document.body
+        getPortalTarget()!
       )}
     </div>
   );
@@ -1077,7 +1087,7 @@ function BlockDatesModal({
   };
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50">
       <div className="w-full max-w-md rounded-lg bg-white p-6 shadow-xl">
         <h3 className="mb-4 text-xl font-bold text-gray-900">Block Dates</h3>
         <p className="mb-4 text-sm text-gray-600">Blocking: {roomName}</p>

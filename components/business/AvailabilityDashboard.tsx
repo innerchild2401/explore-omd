@@ -548,10 +548,10 @@ export default function AvailabilityDashboard({ hotelId, onClose }: Availability
   };
 
   return (
-    <div className={`fixed inset-0 z-50 flex items-center justify-center bg-black/50 ${isMaximized ? 'p-0' : 'p-4'}`}>
+    <div className={`fixed inset-0 z-50 ${isMaximized ? 'p-0' : 'flex items-center justify-center bg-black/50 p-4'}`}>
       <div 
         id="availability-dashboard"
-        className={`${isMaximized ? 'fixed inset-0 h-screen w-screen rounded-none overflow-y-auto z-50' : 'max-h-[95vh] w-full max-w-7xl rounded-lg overflow-y-auto'} bg-white shadow-xl`}
+        className={`${isMaximized ? 'fixed inset-0 h-screen w-screen rounded-none overflow-y-auto' : 'max-h-[95vh] w-full max-w-7xl rounded-lg overflow-y-auto'} bg-white shadow-xl`}
       >
         {/* Header */}
         <div className="sticky top-0 z-10 bg-white border-b border-gray-200 p-6">

@@ -636,12 +636,7 @@ export default function IndividualRoomAvailabilityDashboard({ hotelId, onClose }
                   onClick={(e) => {
                     e.preventDefault();
                     e.stopPropagation();
-                    console.log('Maximize button clicked, current state:', isMaximized);
-                    setIsMaximized(prev => {
-                      const newState = !prev;
-                      console.log('Setting isMaximized to:', newState);
-                      return newState;
-                    });
+                    setIsMaximized(prev => !prev);
                   }}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter' || e.key === ' ') {
@@ -649,7 +644,7 @@ export default function IndividualRoomAvailabilityDashboard({ hotelId, onClose }
                       setIsMaximized(prev => !prev);
                     }
                   }}
-                  className="cursor-pointer rounded-lg bg-white bg-opacity-20 px-4 py-2 text-white hover:bg-opacity-30 focus:outline-none focus:ring-2 focus:ring-white"
+                  className="flex cursor-pointer items-center justify-center rounded-lg bg-white bg-opacity-20 px-4 py-2 text-white hover:bg-opacity-30 focus:outline-none focus:ring-2 focus:ring-white"
                   aria-label={isMaximized ? 'Restore' : 'Maximize'}
                 >
                   {isMaximized ? (

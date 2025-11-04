@@ -125,16 +125,6 @@ export default function AvailabilityDashboard({ hotelId, onClose }: Availability
     }
   }, [filterCheckIn, filterCheckOut]);
 
-  const toggleMaximize = (e: React.MouseEvent<HTMLButtonElement>) => {
-    e.preventDefault();
-    e.stopPropagation();
-    e.nativeEvent.stopImmediatePropagation();
-    console.log('toggleMaximize called, current state:', isMaximized);
-    // Update state immediately, synchronously
-    setIsMaximized(prev => !prev);
-    // Return false to ensure no default behavior
-    return false;
-  };
 
   const handleDateCellClick = (date: Date, roomId: string) => {
     const dateStr = date.toISOString().split('T')[0];
@@ -681,6 +671,11 @@ export default function AvailabilityDashboard({ hotelId, onClose }: Availability
                 ref={maximizeButtonRef}
                 role="button"
                 tabIndex={0}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setIsMaximized(prev => !prev);
+                }}
                 onDoubleClick={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
@@ -691,7 +686,7 @@ export default function AvailabilityDashboard({ hotelId, onClose }: Availability
                     setIsMaximized(prev => !prev);
                   }
                 }}
-                className="cursor-pointer rounded-lg bg-gray-100 px-3 py-2 text-gray-700 hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="flex cursor-pointer items-center justify-center rounded-lg bg-gray-100 px-3 py-2 text-gray-700 hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 aria-label={isMaximized ? 'Restore' : 'Maximize'}
                 data-no-fullscreen="true"
               >

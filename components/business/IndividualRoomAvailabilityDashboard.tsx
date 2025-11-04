@@ -66,7 +66,7 @@ export default function IndividualRoomAvailabilityDashboard({ hotelId, onClose }
   const [showBlockModal, setShowBlockModal] = useState(false);
   const [blockingRoomId, setBlockingRoomId] = useState<string | null>(null);
   const [blockingRoomTypeId, setBlockingRoomTypeId] = useState<string | null>(null);
-  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [isMaximized, setIsMaximized] = useState(false);
   const [showNewReservationModal, setShowNewReservationModal] = useState(false);
   
   // Date filtering and selection
@@ -97,27 +97,33 @@ export default function IndividualRoomAvailabilityDashboard({ hotelId, onClose }
     }
   }, [filterCheckIn, filterCheckOut]);
 
-  // Handle fullscreen toggle
+  const maximizeButtonRef = useRef<HTMLDivElement>(null);
+
+  // Add direct event listener to prevent browser fullscreen
   useEffect(() => {
-    const handleFullscreenChange = () => {
-      setIsFullscreen(!!document.fullscreenElement);
+    const button = maximizeButtonRef.current;
+    if (!button) return;
+    
+    const handleClick = (e: MouseEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      e.stopImmediatePropagation();
+      console.log('IndividualRoom - Direct click handler called, current state:', isMaximized);
+      setIsMaximized(prev => !prev);
     };
+    
+    // Capture phase to intercept before browser
+    button.addEventListener('click', handleClick, { capture: true });
+    
+    return () => {
+      button.removeEventListener('click', handleClick, { capture: true });
+    };
+  }, [isMaximized]);
 
-    document.addEventListener('fullscreenchange', handleFullscreenChange);
-    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
-  }, []);
-
-  const toggleFullscreen = async () => {
-    const dashboardElement = document.getElementById('individual-room-availability-dashboard');
-    if (!dashboardElement) return;
-
-    if (!document.fullscreenElement) {
-      await dashboardElement.requestFullscreen();
-      setIsFullscreen(true);
-    } else {
-      await document.exitFullscreen();
-      setIsFullscreen(false);
-    }
+  const toggleMaximize = (e?: React.MouseEvent) => {
+    e?.preventDefault();
+    e?.stopPropagation();
+    setIsMaximized(prev => !prev);
   };
 
   const handleDateCellClick = (date: Date, individualRoomId: string, roomTypeId: string) => {
@@ -527,10 +533,14 @@ export default function IndividualRoomAvailabilityDashboard({ hotelId, onClose }
 
   return (
     <>
-      <div className={`fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 ${isFullscreen ? 'p-0' : 'p-4'}`}>
+      <div className={`fixed inset-0 z-50 ${isMaximized ? 'p-0' : 'flex items-center justify-center bg-black bg-opacity-50 p-4'}`}>
         <div 
           id="individual-room-availability-dashboard"
-          className={`${isFullscreen ? 'h-screen w-screen max-h-screen max-w-screen rounded-none' : 'mx-auto w-full max-w-[95vw] rounded-lg'} bg-white shadow-xl`}
+          className={`${isMaximized ? 'fixed inset-0 h-screen w-screen rounded-none overflow-y-auto' : 'mx-auto w-full max-w-[95vw] rounded-lg'} bg-white shadow-xl`}
+          onDoubleClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+          }}
         >
           {/* Header */}
           <div className="border-b border-gray-200 bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-4">
@@ -647,13 +657,26 @@ export default function IndividualRoomAvailabilityDashboard({ hotelId, onClose }
                   )}
                 </div>
 
-                {/* Fullscreen Toggle */}
-                <button
-                  onClick={toggleFullscreen}
-                  className="rounded-lg bg-white bg-opacity-20 px-4 py-2 text-white hover:bg-opacity-30"
-                  title={isFullscreen ? 'Exit Fullscreen' : 'Enter Fullscreen'}
+                {/* Maximize Toggle - Using div to avoid browser fullscreen detection */}
+                <div
+                  ref={maximizeButtonRef}
+                  role="button"
+                  tabIndex={0}
+                  onDoubleClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      setIsMaximized(prev => !prev);
+                    }
+                  }}
+                  className="cursor-pointer rounded-lg bg-white bg-opacity-20 px-4 py-2 text-white hover:bg-opacity-30 focus:outline-none focus:ring-2 focus:ring-white"
+                  aria-label={isMaximized ? 'Restore' : 'Maximize'}
+                  data-no-fullscreen="true"
                 >
-                  {isFullscreen ? (
+                  {isMaximized ? (
                     <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                     </svg>
@@ -662,7 +685,7 @@ export default function IndividualRoomAvailabilityDashboard({ hotelId, onClose }
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
                     </svg>
                   )}
-                </button>
+                </div>
                 
                 <button
                   onClick={onClose}

@@ -50,6 +50,8 @@ interface ReservationSpan {
   colspan: number;
 }
 
+type BlockedSpan = { startIdx: number; endIdx: number; blockIds: string[] };
+
 export default function IndividualRoomAvailabilityDashboard({ hotelId, onClose }: { hotelId: string; onClose: () => void }) {
   const router = useRouter();
   const supabase = createClient();
@@ -59,6 +61,7 @@ export default function IndividualRoomAvailabilityDashboard({ hotelId, onClose }
   const [roomTypes, setRoomTypes] = useState<RoomType[]>([]);
   const [individualRooms, setIndividualRooms] = useState<Record<string, IndividualRoom[]>>({});
   const [allReservations, setAllReservations] = useState<Reservation[]>([]);
+  const [blockedAvailability, setBlockedAvailability] = useState<Record<string, { date: string; status: string; id: string }[]>>({}); // room_id -> array of blocked dates
   const [arrivalAlerts, setArrivalAlerts] = useState<ArrivalAlert[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAlertsDropdown, setShowAlertsDropdown] = useState(false);
@@ -100,6 +103,16 @@ export default function IndividualRoomAvailabilityDashboard({ hotelId, onClose }
 
   const handleDateCellClick = (date: Date, individualRoomId: string, roomTypeId: string) => {
     const dateStr = date.toISOString().split('T')[0];
+    
+    // Don't allow selection if date is blocked
+    if (isDateBlocked(date, individualRoomId)) {
+      // Show block details modal or allow unblocking
+      const blockedInfo = getBlockedDateInfo(date, individualRoomId);
+      if (blockedInfo && confirm(`This date is blocked. Would you like to unblock it?`)) {
+        handleUnblockRoom(individualRoomId, dateStr);
+      }
+      return;
+    }
     
     // If clicking on a reservation span, don't select dates
     const allSpans = getReservationSpans(individualRoomId, dates);
@@ -143,6 +156,23 @@ export default function IndividualRoomAvailabilityDashboard({ hotelId, onClose }
         setSelectedCheckOut(null);
         return;
       }
+      
+      // Check if the selected range includes any blocked dates
+      const start = new Date(selectedCheckIn);
+      const end = new Date(dateStr);
+      let hasBlocked = false;
+      for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+        if (isDateBlocked(d, individualRoomId)) {
+          hasBlocked = true;
+          break;
+        }
+      }
+      
+      if (hasBlocked) {
+        alert('The selected date range includes blocked dates. Please select a different range or unblock the dates first.');
+        return;
+      }
+      
       setSelectedCheckOut(dateStr);
       return;
     }
@@ -163,6 +193,11 @@ export default function IndividualRoomAvailabilityDashboard({ hotelId, onClose }
 
   const openBookingModal = () => {
     if (selectedCheckIn && selectedCheckOut && selectedRoomTypeId) {
+      // Double-check for blocked dates before opening modal
+      if (selectedIndividualRoomId && hasBlockedDatesInSelection()) {
+        alert('Cannot book: Selected dates include blocked dates. Please unblock them first.');
+        return;
+      }
       setShowNewReservationModal(true);
     }
   };
@@ -269,6 +304,34 @@ export default function IndividualRoomAvailabilityDashboard({ hotelId, onClose }
 
       if (!resError && resData) {
         setAllReservations(resData as any);
+      }
+
+      // Fetch blocked availability for individual rooms
+      const allIndividualRoomIds = Object.values(roomsByType).flat().map(ir => ir.id);
+      if (allIndividualRoomIds.length > 0) {
+        const { data: blockedData, error: blockedError } = await supabase
+          .from('individual_room_availability')
+          .select('id, individual_room_id, date, status')
+          .in('individual_room_id', allIndividualRoomIds)
+          .eq('status', 'blocked')
+          .gte('date', startDate.toISOString().split('T')[0])
+          .lte('date', endDate.toISOString().split('T')[0]);
+
+        if (!blockedError && blockedData) {
+          // Group blocked dates by room_id
+          const blockedByRoom: Record<string, { date: string; status: string; id: string }[]> = {};
+          blockedData.forEach(block => {
+            if (!blockedByRoom[block.individual_room_id]) {
+              blockedByRoom[block.individual_room_id] = [];
+            }
+            blockedByRoom[block.individual_room_id].push({
+              date: block.date,
+              status: block.status,
+              id: block.id
+            });
+          });
+          setBlockedAvailability(blockedByRoom);
+        }
       }
 
     } catch (err: any) {
@@ -490,6 +553,105 @@ export default function IndividualRoomAvailabilityDashboard({ hotelId, onClose }
   const isDateCheckOut = (date: Date) => {
     if (!selectedCheckOut) return false;
     return date.toISOString().split('T')[0] === selectedCheckOut;
+  };
+
+  // Check if a date is blocked for a specific room
+  const isDateBlocked = (date: Date, individualRoomId: string): boolean => {
+    const dateStr = date.toISOString().split('T')[0];
+    const blockedDates = blockedAvailability[individualRoomId] || [];
+    return blockedDates.some(block => block.date === dateStr);
+  };
+
+  // Get blocked date info for a specific room and date
+  const getBlockedDateInfo = (date: Date, individualRoomId: string) => {
+    const dateStr = date.toISOString().split('T')[0];
+    const blockedDates = blockedAvailability[individualRoomId] || [];
+    return blockedDates.find(block => block.date === dateStr);
+  };
+
+  // Check if selected range includes any blocked dates
+  const hasBlockedDatesInSelection = (): boolean => {
+    if (!selectedCheckIn || !selectedCheckOut || !selectedIndividualRoomId) return false;
+    const start = new Date(selectedCheckIn);
+    const end = new Date(selectedCheckOut);
+    for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+      if (isDateBlocked(d, selectedIndividualRoomId)) {
+        return true;
+      }
+    }
+    return false;
+  };
+
+  // Get blocked date spans for a room (similar to reservation spans)
+  const getBlockedSpans = (individualRoomId: string, dates: Date[]): Array<{ startIdx: number; endIdx: number; colspan: number; blockIds: string[] }> => {
+    const spans: Array<{ startIdx: number; endIdx: number; colspan: number; blockIds: string[] }> = [];
+    const dateStrings = dates.map(d => d.toISOString().split('T')[0]);
+    const blockedDates = blockedAvailability[individualRoomId] || [];
+    
+    if (blockedDates.length === 0) return spans;
+
+    // Sort blocked dates
+    const sortedBlocks = [...blockedDates].sort((a, b) => a.date.localeCompare(b.date));
+    
+    let currentSpan: BlockedSpan | null = null;
+
+    sortedBlocks.forEach(block => {
+      const dateIdx = dateStrings.indexOf(block.date);
+      if (dateIdx === -1) return; // Date not in view
+
+      if (!currentSpan) {
+        currentSpan = { startIdx: dateIdx, endIdx: dateIdx, blockIds: [block.id] };
+      } else if (dateIdx === currentSpan.endIdx + 1) {
+        // Consecutive blocked date
+        currentSpan.endIdx = dateIdx;
+        currentSpan.blockIds.push(block.id);
+      } else {
+        // Gap in blocks, save current span and start new one
+        if (currentSpan) {
+          spans.push({
+            startIdx: currentSpan.startIdx,
+            endIdx: currentSpan.endIdx,
+            colspan: currentSpan.endIdx - currentSpan.startIdx + 1,
+            blockIds: currentSpan.blockIds
+          });
+        }
+        currentSpan = { startIdx: dateIdx, endIdx: dateIdx, blockIds: [block.id] };
+      }
+    });
+
+    // Save last span
+    if (currentSpan !== null && currentSpan !== undefined) {
+      const { startIdx, endIdx, blockIds } = currentSpan;
+      spans.push({
+        startIdx,
+        endIdx,
+        colspan: endIdx - startIdx + 1,
+        blockIds
+      });
+    }
+
+    return spans;
+  };
+
+  // Handle unblocking dates
+  const handleUnblockRoom = async (individualRoomId: string, date: string) => {
+    try {
+      const blockedInfo = getBlockedDateInfo(new Date(date), individualRoomId);
+      if (!blockedInfo) return;
+
+      const { error } = await supabase
+        .from('individual_room_availability')
+        .delete()
+        .eq('id', blockedInfo.id);
+
+      if (error) throw error;
+
+      await fetchData();
+      router.refresh();
+    } catch (err: any) {
+      console.error('Error unblocking room:', err);
+      alert(`Failed to unblock: ${err.message}`);
+    }
   };
 
   // Get rooms array for NewReservationModal
@@ -717,7 +879,13 @@ export default function IndividualRoomAvailabilityDashboard({ hotelId, onClose }
                     {selectedCheckIn && selectedCheckOut && (
                       <button
                         onClick={openBookingModal}
-                        className="rounded bg-white px-3 py-1 text-xs font-semibold text-blue-700 hover:bg-white/90"
+                        disabled={hasBlockedDatesInSelection()}
+                        className={`rounded px-3 py-1 text-xs font-semibold ${
+                          hasBlockedDatesInSelection()
+                            ? 'bg-gray-400 text-gray-700 cursor-not-allowed'
+                            : 'bg-white text-blue-700 hover:bg-white/90'
+                        }`}
+                        title={hasBlockedDatesInSelection() ? 'Selected dates include blocked dates. Please unblock them first.' : ''}
                       >
                         Book Now
                       </button>
@@ -800,10 +968,29 @@ export default function IndividualRoomAvailabilityDashboard({ hotelId, onClose }
                               colspan: Math.min(span.colspan, displayDateStrings.length - Math.max(0, span.startIdx - displayStartIdx))
                             }));
                             
+                            // Get blocked spans for display dates
+                            const allBlockedSpans = getBlockedSpans(room.id, dates);
+                            const blockedSpans = allBlockedSpans.filter(span => {
+                              return span.startIdx < displayStartIdx + displayDateStrings.length && 
+                                     span.endIdx >= displayStartIdx;
+                            }).map(span => ({
+                              ...span,
+                              startIdx: Math.max(0, span.startIdx - displayStartIdx),
+                              endIdx: Math.min(displayDateStrings.length - 1, span.endIdx - displayStartIdx),
+                              colspan: Math.min(span.colspan, displayDateStrings.length - Math.max(0, span.startIdx - displayStartIdx))
+                            }));
+                            
                             const occupiedDates = new Set<number>();
                             spans.forEach(span => {
                               for (let i = span.startIdx; i <= span.endIdx; i++) {
                                 occupiedDates.add(i);
+                              }
+                            });
+                            
+                            const blockedDateIndices = new Set<number>();
+                            blockedSpans.forEach(span => {
+                              for (let i = span.startIdx; i <= span.endIdx; i++) {
+                                blockedDateIndices.add(i);
                               }
                             });
 
@@ -847,10 +1034,14 @@ export default function IndividualRoomAvailabilityDashboard({ hotelId, onClose }
                                   // Check if this cell is part of a reservation span
                                   const span = spans.find(s => s.startIdx === displayIdx);
                                   
+                                  // Check if this cell is part of a blocked span
+                                  const blockedSpan = blockedSpans.find(s => s.startIdx === displayIdx);
+                                  
                                   // Check if date is selected for booking
                                   const isSelected = isDateSelected(date);
                                   const isCheckIn = isDateCheckIn(date);
                                   const isCheckOut = isDateCheckOut(date);
+                                  const isBlocked = isDateBlocked(date, room.id);
                                   
                                   if (span) {
                                     // This is the start of a reservation span
@@ -882,20 +1073,55 @@ export default function IndividualRoomAvailabilityDashboard({ hotelId, onClose }
                                   } else if (occupiedDates.has(displayIdx)) {
                                     // This cell is part of a span but not the start - skip it (handled by colspan)
                                     return null;
+                                  } else if (blockedSpan) {
+                                    // This is the start of a blocked span
+                                    const nights = blockedSpan.colspan;
+                                    return (
+                                      <td
+                                        key={dateStr}
+                                        colSpan={blockedSpan.colspan}
+                                        className={`border-b border-l border-gray-200 px-2 py-2 text-center relative ${isToday ? 'border-blue-400' : ''}`}
+                                      >
+                                        <button
+                                          onClick={() => {
+                                            if (confirm(`This date range is blocked (${nights} day${nights !== 1 ? 's' : ''}). Would you like to unblock it?`)) {
+                                              // Unblock all dates in the span
+                                              blockedSpan.blockIds.forEach(blockId => {
+                                                const blockedDate = blockedAvailability[room.id]?.find(b => b.id === blockId);
+                                                if (blockedDate) {
+                                                  handleUnblockRoom(room.id, blockedDate.date);
+                                                }
+                                              });
+                                            }
+                                          }}
+                                          className="w-full rounded-lg bg-red-100 hover:bg-red-200 border-2 border-red-300 px-2 py-2 text-red-700 shadow-sm transition-all hover:shadow-md"
+                                        >
+                                          <div className="text-xs font-bold">🚫 BLOCKED</div>
+                                          <div className="text-[10px] mt-0.5 opacity-90">
+                                            {nights} day{nights !== 1 ? 's' : ''}
+                                          </div>
+                                        </button>
+                                      </td>
+                                    );
+                                  } else if (blockedDateIndices.has(displayIdx)) {
+                                    // This cell is part of a blocked span but not the start - skip it (handled by colspan)
+                                    return null;
                                   } else {
-                                    // Empty cell - can be selected
+                                    // Empty cell - can be selected (if not blocked)
                                     return (
                                       <td
                                         key={dateStr}
                                         onClick={() => handleDateCellClick(date, room.id, room.room_id)}
-                                        className={`border-b border-l border-gray-200 px-1 py-3 text-center text-xs transition-colors cursor-pointer hover:bg-gray-100 ${
+                                        className={`border-b border-l border-gray-200 px-1 py-3 text-center text-xs transition-colors ${
+                                          isBlocked ? 'bg-red-50 cursor-not-allowed' : 'cursor-pointer hover:bg-gray-100'
+                                        } ${
                                           isToday ? 'border-blue-400 bg-blue-50' : '' 
                                         } ${
-                                          isSelected && isRoomSelected ? 'bg-blue-100' : ''
+                                          isSelected && isRoomSelected && !isBlocked ? 'bg-blue-100' : ''
                                         } ${
-                                          isCheckIn && isRoomSelected ? 'bg-blue-200 border-2 border-blue-500' : ''
+                                          isCheckIn && isRoomSelected && !isBlocked ? 'bg-blue-200 border-2 border-blue-500' : ''
                                         } ${
-                                          isCheckOut && isRoomSelected ? 'bg-blue-200 border-2 border-blue-500' : ''
+                                          isCheckOut && isRoomSelected && !isBlocked ? 'bg-blue-200 border-2 border-blue-500' : ''
                                         }`}
                                       >
                                         {isCheckIn && isRoomSelected && (

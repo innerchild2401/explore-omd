@@ -55,13 +55,17 @@ export default function ReservationDetailModal({
   hotelId, 
   onClose, 
   onUpdate,
-  isFullscreen = false
+  isFullscreen: propIsFullscreen = false
 }: ReservationDetailModalProps) {
   const supabase = createClient();
   const router = useRouter();
   
+  // Check fullscreen state directly from DOM instead of relying on prop
+  const isFullscreen = typeof window !== 'undefined' ? !!document.fullscreenElement : propIsFullscreen;
+  
   console.log('[DEBUG] ReservationDetailModal component:', {
     reservationId,
+    propIsFullscreen,
     isFullscreen,
     documentFullscreen: typeof window !== 'undefined' ? !!document.fullscreenElement : false
   });

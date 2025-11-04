@@ -38,14 +38,18 @@ interface GuestProfile {
   special_requests?: string;
 }
 
-export default function NewReservationModal({ hotelId, rooms, onClose, onSuccess, prefillDates, isFullscreen = false }: NewReservationModalProps) {
+export default function NewReservationModal({ hotelId, rooms, onClose, onSuccess, prefillDates, isFullscreen: propIsFullscreen = false }: NewReservationModalProps) {
   const router = useRouter();
   const supabase = createClient();
   
+  // Check fullscreen state directly from DOM instead of relying on prop
+  const isFullscreen = typeof window !== 'undefined' ? !!document.fullscreenElement : propIsFullscreen;
+  
   console.log('[DEBUG] NewReservationModal component:', {
+    propIsFullscreen,
     isFullscreen,
-    positionClass: isFullscreen ? 'absolute' : 'fixed',
-    documentFullscreen: typeof window !== 'undefined' ? !!document.fullscreenElement : false
+    documentFullscreen: typeof window !== 'undefined' ? !!document.fullscreenElement : false,
+    positionClass: isFullscreen ? 'absolute' : 'fixed'
   });
   
   const [currentStep, setCurrentStep] = useState(prefillDates ? 1 : 1); // Start at step 1, but if prefill, could skip to step 2

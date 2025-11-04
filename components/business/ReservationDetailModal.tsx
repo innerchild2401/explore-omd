@@ -65,6 +65,8 @@ export default function ReservationDetailModal({
   // Form state for edits
   const [reservationStatus, setReservationStatus] = useState('');
   const [paymentStatus, setPaymentStatus] = useState('');
+  const [individualRooms, setIndividualRooms] = useState<any[]>([]);
+  const [changingRoom, setChangingRoom] = useState(false);
 
   useEffect(() => {
     fetchReservationDetails();
@@ -91,12 +93,114 @@ export default function ReservationDetailModal({
         setReservation(data as any);
         setReservationStatus(data.reservation_status);
         setPaymentStatus(data.payment_status);
+        
+        // Fetch individual rooms for this room type if room_id exists
+        if ((data as any).room_id) {
+          fetchIndividualRooms((data as any).room_id, data.check_in_date, data.check_out_date, reservationId);
+        }
       }
     } catch (err: any) {
       console.error('Error fetching reservation:', err);
       setError(err.message || 'Failed to load reservation details');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchIndividualRooms = async (roomTypeId: string, checkInDate: string, checkOutDate: string, currentReservationId: string) => {
+    try {
+      // Fetch all individual rooms for this room type
+      const { data: rooms, error } = await supabase
+        .from('individual_rooms')
+        .select('*')
+        .eq('room_id', roomTypeId)
+        .order('floor_number', { ascending: true })
+        .order('room_number', { ascending: true });
+
+      if (error) throw error;
+
+      if (!rooms) {
+        setIndividualRooms([]);
+        return;
+      }
+
+      // Filter out rooms that are occupied during the reservation dates
+      const { data: reservations } = await supabase
+        .from('reservations')
+        .select('id, individual_room_id, check_in_date, check_out_date, reservation_status')
+        .eq('hotel_id', hotelId)
+        .neq('id', currentReservationId)
+        .in('reservation_status', ['confirmed', 'checked_in']);
+
+      const availableRooms = rooms.filter(room => {
+        // Check if this room is already assigned to another reservation during these dates
+        const isOccupied = reservations?.some(otherReservation => {
+          if (!otherReservation.individual_room_id) return false;
+          
+          const otherRoomId = otherReservation.individual_room_id;
+          const otherCheckIn = otherReservation.check_in_date;
+          const otherCheckOut = otherReservation.check_out_date;
+          
+          // Check if room is the same and dates overlap
+          return otherRoomId === room.id && 
+                 otherCheckIn < checkOutDate && 
+                 otherCheckOut > checkInDate;
+        });
+        
+        return !isOccupied;
+      });
+
+      setIndividualRooms(availableRooms);
+    } catch (err: any) {
+      console.error('Error fetching individual rooms:', err);
+    }
+  };
+
+  const handleRoomChange = async (newIndividualRoomId: string) => {
+    if (!reservation) return;
+
+    try {
+      setChangingRoom(true);
+      setError('');
+
+      // Check if the room is available using the database function
+      const { data: availabilityCheck, error: checkError } = await supabase
+        .rpc('is_room_available_for_reservation', {
+          p_individual_room_id: newIndividualRoomId,
+          p_check_in_date: reservation.check_in_date,
+          p_check_out_date: reservation.check_out_date,
+          p_reservation_id: reservationId
+        });
+
+      if (checkError) throw checkError;
+
+      // If room is not available, show error
+      if (!availabilityCheck) {
+        setError('This room is already booked for these dates. Please select a different room.');
+        setChangingRoom(false);
+        return;
+      }
+
+      // Room is available, proceed with assignment
+      const { error: updateError } = await supabase
+        .from('reservations')
+        .update({ 
+          individual_room_id: newIndividualRoomId,
+          assignment_method: 'manual',
+        })
+        .eq('id', reservationId);
+
+      if (updateError) throw updateError;
+
+      // Refresh data
+      await fetchReservationDetails();
+      onUpdate?.();
+      router.refresh();
+    } catch (err: any) {
+      console.error('Error changing room:', err);
+      setError(err.message || 'Failed to change room. Please try again.');
+    } finally {
+      setChangingRoom(false);
     }
   };
 
@@ -286,15 +390,68 @@ export default function ReservationDetailModal({
                     </span>
                   )}
                 </div>
-                {reservation.individual_rooms && (
+                {reservation.individual_rooms ? (
                   <div>
                     <span className="font-medium text-gray-700">Individual Room:</span>
-                    <span className="ml-2 inline-flex items-center gap-1 rounded-full bg-blue-100 px-2 py-1 text-xs font-semibold text-blue-800">
-                      🏠 Room {reservation.individual_rooms.room_number}
-                      {reservation.individual_rooms.floor_number && ` (Floor ${reservation.individual_rooms.floor_number})`}
-                    </span>
+                    <div className="mt-1 space-y-1">
+                      <div className="inline-flex items-center gap-1 rounded-full bg-blue-100 px-2 py-1 text-xs font-semibold text-blue-800">
+                        🏠 Room {reservation.individual_rooms.room_number}
+                        {reservation.individual_rooms.floor_number && ` (Floor ${reservation.individual_rooms.floor_number})`}
+                      </div>
+                      {individualRooms.length > 1 && (
+                        <select
+                          disabled={changingRoom}
+                          onChange={(e) => {
+                            const value = e.target.value;
+                            if (value && value !== '' && value !== reservation.individual_rooms?.id) {
+                              handleRoomChange(value);
+                              // Reset dropdown after selection
+                              e.target.value = '';
+                            }
+                          }}
+                          className="mt-1 block w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-blue-500 focus:outline-none"
+                          defaultValue=""
+                        >
+                          <option value="">Change Room...</option>
+                          {individualRooms.map(room => (
+                            <option 
+                              key={room.id} 
+                              value={room.id}
+                              disabled={room.id === reservation.individual_rooms?.id}
+                            >
+                              Room {room.room_number}{room.floor_number ? ` (Floor ${room.floor_number})` : ''}
+                              {room.id === reservation.individual_rooms?.id ? ' (Current)' : ''}
+                            </option>
+                          ))}
+                        </select>
+                      )}
+                    </div>
                   </div>
-                )}
+                ) : reservation.rooms?.id && individualRooms.length > 0 ? (
+                  <div>
+                    <span className="font-medium text-gray-700">Assign Room:</span>
+                    <select
+                      disabled={changingRoom}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        if (value && value !== '') {
+                          handleRoomChange(value);
+                          // Reset dropdown after selection
+                          e.target.value = '';
+                        }
+                      }}
+                      className="mt-1 block w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-blue-500 focus:outline-none"
+                      defaultValue=""
+                    >
+                      <option value="">Select Room...</option>
+                      {individualRooms.map(room => (
+                        <option key={room.id} value={room.id}>
+                          Room {room.room_number}{room.floor_number ? ` (Floor ${room.floor_number})` : ''}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                ) : null}
                 {reservation.channel && (
                   <div>
                     <span className="font-medium text-gray-700">Booking Channel:</span>

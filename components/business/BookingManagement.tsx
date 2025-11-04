@@ -564,12 +564,71 @@ export default function BookingManagement({ hotelId, rooms, onClose }: BookingMa
                         <div className="text-sm text-gray-600 capitalize">
                           {reservation.rooms?.room_type?.replace('_', ' ') || ''}
                         </div>
-                        {(reservation as any).individual_rooms || reservation.individual_room ? (
-                          <div className="mt-1 inline-flex items-center gap-1 rounded-full bg-blue-100 px-2 py-1 text-xs font-semibold text-blue-800">
-                            🏠 Room {((reservation as any).individual_rooms || reservation.individual_room).room_number}
-                            {((reservation as any).individual_rooms || reservation.individual_room).floor_number && ` (Floor ${((reservation as any).individual_rooms || reservation.individual_room).floor_number})`}
-                          </div>
-                        ) : (() => {
+                        {(reservation as any).individual_rooms || reservation.individual_room ? (() => {
+                          // Room is assigned - show it with option to change
+                          const assignedRoom = (reservation as any).individual_rooms || reservation.individual_room;
+                          const roomId = (reservation as any).room_id;
+                          const allRooms = roomId ? individualRooms[roomId] || [] : [];
+                          
+                          // Filter out rooms that are occupied during the reservation dates
+                          const availableRooms = allRooms.filter(room => {
+                            // Check if this room is already assigned to another reservation during these dates
+                            const isOccupied = reservations.some(otherReservation => {
+                              if (otherReservation.id === reservation.id) return false; // Skip current reservation
+                              if (!otherReservation.individual_room_id) return false; // Skip unassigned reservations
+                              
+                              const otherRoomId = otherReservation.individual_room_id;
+                              const otherCheckIn = otherReservation.check_in_date;
+                              const otherCheckOut = otherReservation.check_out_date;
+                              const currentCheckIn = reservation.check_in_date;
+                              const currentCheckOut = reservation.check_out_date;
+                              
+                              // Check if room is the same and dates overlap
+                              return otherRoomId === room.id && 
+                                     otherCheckIn < currentCheckOut && 
+                                     otherCheckOut > currentCheckIn &&
+                                     ['confirmed', 'checked_in'].includes(otherReservation.reservation_status);
+                            });
+                            
+                            return !isOccupied;
+                          });
+                          
+                          return (
+                            <div className="mt-1 space-y-1">
+                              <div className="inline-flex items-center gap-1 rounded-full bg-blue-100 px-2 py-1 text-xs font-semibold text-blue-800">
+                                🏠 Room {assignedRoom.room_number}
+                                {assignedRoom.floor_number && ` (Floor ${assignedRoom.floor_number})`}
+                              </div>
+                              {availableRooms.length > 1 && (
+                                <select
+                                  disabled={assigningRoom === reservation.id}
+                                  onChange={(e) => {
+                                    const value = e.target.value;
+                                    if (value && value !== '' && value !== reservation.individual_room_id) {
+                                      handleAssignRoom(reservation.id, value);
+                                      // Reset dropdown after selection
+                                      e.target.value = '';
+                                    }
+                                  }}
+                                  className="mt-1 block w-full rounded-lg border border-gray-300 bg-white px-2 py-1 text-xs text-gray-900 focus:border-blue-500 focus:outline-none"
+                                  defaultValue=""
+                                >
+                                  <option value="">Change Room...</option>
+                                  {availableRooms.map(room => (
+                                    <option 
+                                      key={room.id} 
+                                      value={room.id}
+                                      disabled={room.id === reservation.individual_room_id}
+                                    >
+                                      Room {room.room_number}{room.floor_number ? ` (Floor ${room.floor_number})` : ''}
+                                      {room.id === reservation.individual_room_id ? ' (Current)' : ''}
+                                    </option>
+                                  ))}
+                                </select>
+                              )}
+                            </div>
+                          );
+                        })() : (() => {
                           // Get room_id from reservation to find available individual rooms
                           const roomId = (reservation as any).room_id;
                           const allRooms = roomId ? individualRooms[roomId] || [] : [];

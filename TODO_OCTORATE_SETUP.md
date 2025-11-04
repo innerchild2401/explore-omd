@@ -1,8 +1,18 @@
 # Octorate Integration Setup TODO
 
+## ⚠️ CRITICAL: Review Verification Checklist First
+
+**BEFORE** setting up credentials, review `OCTORATE_VERIFICATION_CHECKLIST.md`. This document lists all questions you need to ask Octorate support to ensure our implementation matches their exact API structure. Key items to verify:
+- Portal connection registration process
+- Exact OAuth and API endpoints
+- Webhook subscription requirements
+- Rate limiting details
+- Data format specifications
+
 ## ✅ Completed
 - [x] Database migration (migration 53) - SQL executed in Supabase
 - [x] Code implementation - All services, API routes, and UI components created
+- [x] Verification checklist created - Review before contacting Octorate
 
 ## ⏳ Pending (Waiting for Octorate Credentials)
 
@@ -215,6 +225,7 @@ After completing all steps, verify:
 
 ## 📚 Reference Documents
 
+- **Verification Checklist**: `OCTORATE_VERIFICATION_CHECKLIST.md` - ⚠️ **REVIEW FIRST** - Questions to ask Octorate support
 - **User Instructions**: `OCTORATE_USER_INSTRUCTIONS.md` - Detailed step-by-step guide
 - **Setup Instructions**: `OCTORATE_SETUP_INSTRUCTIONS.md` - Technical setup guide
 - **Integration Plan**: `OCTORATE_INTEGRATION_PLAN.md` - Full implementation plan

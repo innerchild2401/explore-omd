@@ -595,7 +595,7 @@ export default function AvailabilityDashboard({ hotelId, onClose }: Availability
       <div 
         ref={dashboardRef}
         id="availability-dashboard"
-        className={`${isFullscreen ? 'h-screen w-screen max-h-screen max-w-screen rounded-none relative' : 'max-h-[95vh] w-full max-w-7xl rounded-lg'} overflow-y-auto bg-white shadow-xl`}
+        className={`${isFullscreen ? 'h-screen w-screen max-h-screen max-w-screen rounded-none relative overflow-hidden' : 'max-h-[95vh] w-full max-w-7xl rounded-lg overflow-y-auto'} bg-white shadow-xl`}
       >
         {/* Header */}
         <div className="sticky top-0 z-10 bg-white border-b border-gray-200 p-6">

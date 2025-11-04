@@ -107,12 +107,19 @@ export default function AvailabilityDashboard({ hotelId, onClose }: Availability
   // Handle fullscreen toggle
   useEffect(() => {
     const handleFullscreenChange = () => {
-      setIsFullscreen(!!document.fullscreenElement);
+      const isFs = !!document.fullscreenElement;
+      console.log('[DEBUG] Fullscreen change event:', {
+        isFullscreen: isFs,
+        fullscreenElement: document.fullscreenElement?.id || document.fullscreenElement?.tagName,
+        currentState: isFullscreen,
+        willUpdateTo: isFs
+      });
+      setIsFullscreen(isFs);
     };
 
     document.addEventListener('fullscreenchange', handleFullscreenChange);
     return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
-  }, []);
+  }, [isFullscreen]);
 
   const toggleFullscreen = async () => {
     const dashboardElement = document.getElementById('availability-dashboard');
@@ -589,6 +596,12 @@ export default function AvailabilityDashboard({ hotelId, onClose }: Availability
     }
     return document.body;
   };
+
+  console.log('[DEBUG] AvailabilityDashboard render:', {
+    isFullscreen,
+    documentFullscreen: typeof window !== 'undefined' ? !!document.fullscreenElement : false,
+    dashboardRefId: dashboardRef.current?.id
+  });
 
   return (
     <div className={`fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 ${isFullscreen ? 'p-0' : ''}`}>

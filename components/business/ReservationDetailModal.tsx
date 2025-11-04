@@ -59,6 +59,12 @@ export default function ReservationDetailModal({
 }: ReservationDetailModalProps) {
   const supabase = createClient();
   const router = useRouter();
+  
+  console.log('[DEBUG] ReservationDetailModal component:', {
+    reservationId,
+    isFullscreen,
+    documentFullscreen: typeof window !== 'undefined' ? !!document.fullscreenElement : false
+  });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [reservation, setReservation] = useState<ReservationDetails | null>(null);
@@ -149,6 +155,12 @@ export default function ReservationDetailModal({
   };
 
   const positionClass = isFullscreen ? 'absolute' : 'fixed';
+  console.log('[DEBUG] ReservationDetailModal render:', {
+    positionClass,
+    isFullscreen,
+    loading,
+    hasReservation: !!reservation
+  });
 
   if (loading) {
     return (

@@ -42,6 +42,12 @@ export default function NewReservationModal({ hotelId, rooms, onClose, onSuccess
   const router = useRouter();
   const supabase = createClient();
   
+  console.log('[DEBUG] NewReservationModal component:', {
+    isFullscreen,
+    positionClass: isFullscreen ? 'absolute' : 'fixed',
+    documentFullscreen: typeof window !== 'undefined' ? !!document.fullscreenElement : false
+  });
+  
   const [currentStep, setCurrentStep] = useState(prefillDates ? 1 : 1); // Start at step 1, but if prefill, could skip to step 2
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -457,8 +463,15 @@ export default function NewReservationModal({ hotelId, rooms, onClose, onSuccess
     });
   };
 
+  const positionClass = isFullscreen ? 'absolute' : 'fixed';
+  console.log('[DEBUG] NewReservationModal render div:', {
+    positionClass,
+    isFullscreen,
+    className: `${positionClass} inset-0 z-[100] flex items-center justify-center bg-black/50 p-4`
+  });
+  
   return (
-    <div className={`${isFullscreen ? 'absolute' : 'fixed'} inset-0 z-[100] flex items-center justify-center bg-black/50 p-4`}>
+    <div className={`${positionClass} inset-0 z-[100] flex items-center justify-center bg-black/50 p-4`}>
       <div className="w-full max-w-4xl max-h-[95vh] overflow-y-auto rounded-lg bg-white shadow-xl">
         {/* Header */}
         <div className="sticky top-0 z-10 bg-white border-b border-gray-200 p-6">

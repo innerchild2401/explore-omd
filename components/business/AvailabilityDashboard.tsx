@@ -569,10 +569,21 @@ export default function AvailabilityDashboard({ hotelId, onClose }: Availability
 
   // Get portal target - use fullscreen element if in fullscreen, otherwise document.body
   const getPortalTarget = () => {
-    if (typeof window === 'undefined') return null;
+    if (typeof window === 'undefined') {
+      console.log('[DEBUG] getPortalTarget: window is undefined');
+      return null;
+    }
     
     // Check document.fullscreenElement directly for real-time state
     const fullscreenElement = document.fullscreenElement;
+    console.log('[DEBUG] getPortalTarget:', {
+      fullscreenElement: fullscreenElement,
+      fullscreenElementId: fullscreenElement?.id,
+      isFullscreenState: isFullscreen,
+      dashboardRef: dashboardRef.current?.id,
+      willReturn: fullscreenElement ? fullscreenElement : document.body
+    });
+    
     if (fullscreenElement) {
       return fullscreenElement as HTMLElement;
     }
@@ -988,21 +999,31 @@ export default function AvailabilityDashboard({ hotelId, onClose }: Availability
       </div>
 
       {/* Reservation Detail Modal - Rendered via Portal */}
-      {selectedReservationId && getPortalTarget() && createPortal(
-        <ReservationDetailModal
-          reservationId={selectedReservationId}
-          hotelId={hotelId}
-          isFullscreen={!!document.fullscreenElement}
-          onClose={() => {
-            setSelectedReservationId(null);
-            fetchData();
-          }}
-          onUpdate={() => {
-            fetchData();
-          }}
-        />,
-        getPortalTarget()!
-      )}
+      {selectedReservationId && (() => {
+        const portalTarget = getPortalTarget();
+        const isFs = !!document.fullscreenElement;
+        console.log('[DEBUG] ReservationDetailModal render:', {
+          selectedReservationId,
+          portalTarget: portalTarget?.id || portalTarget?.tagName,
+          isFullscreen: isFs,
+          willRender: !!portalTarget
+        });
+        return portalTarget && createPortal(
+          <ReservationDetailModal
+            reservationId={selectedReservationId}
+            hotelId={hotelId}
+            isFullscreen={isFs}
+            onClose={() => {
+              setSelectedReservationId(null);
+              fetchData();
+            }}
+            onUpdate={() => {
+              fetchData();
+            }}
+          />,
+          portalTarget
+        );
+      })()}
 
       {/* Block Dates Modal - Rendered via Portal */}
       {showBlockModal && blockingRoomId && getPortalTarget() && createPortal(
@@ -1021,29 +1042,42 @@ export default function AvailabilityDashboard({ hotelId, onClose }: Availability
       )}
 
       {/* New Reservation Modal - Rendered via Portal */}
-      {showNewReservationModal && selectedCheckIn && selectedCheckOut && selectedRoomForBooking && getPortalTarget() && createPortal(
-        <NewReservationModal
-          hotelId={hotelId}
-          rooms={rooms}
-          isFullscreen={!!document.fullscreenElement}
-          onClose={() => {
-            setShowNewReservationModal(false);
-            clearDateSelection();
-          }}
-          onSuccess={() => {
-            setShowNewReservationModal(false);
-            clearDateSelection();
-            fetchData();
-            router.refresh();
-          }}
-          prefillDates={{
-            checkIn: selectedCheckIn,
-            checkOut: selectedCheckOut,
-            roomId: selectedRoomForBooking
-          }}
-        />,
-        getPortalTarget()!
-      )}
+      {showNewReservationModal && selectedCheckIn && selectedCheckOut && selectedRoomForBooking && (() => {
+        const portalTarget = getPortalTarget();
+        const isFs = !!document.fullscreenElement;
+        console.log('[DEBUG] NewReservationModal render:', {
+          showNewReservationModal,
+          selectedCheckIn,
+          selectedCheckOut,
+          selectedRoomForBooking,
+          portalTarget: portalTarget?.id || portalTarget?.tagName,
+          isFullscreen: isFs,
+          willRender: !!portalTarget
+        });
+        return portalTarget && createPortal(
+          <NewReservationModal
+            hotelId={hotelId}
+            rooms={rooms}
+            isFullscreen={isFs}
+            onClose={() => {
+              setShowNewReservationModal(false);
+              clearDateSelection();
+            }}
+            onSuccess={() => {
+              setShowNewReservationModal(false);
+              clearDateSelection();
+              fetchData();
+              router.refresh();
+            }}
+            prefillDates={{
+              checkIn: selectedCheckIn,
+              checkOut: selectedCheckOut,
+              roomId: selectedRoomForBooking
+            }}
+          />,
+          portalTarget
+        );
+      })()}
     </div>
   );
 }

@@ -63,5 +63,30 @@ export async function scheduleEmailSequence(reservationId: string): Promise<void
         });
     }
   }
+
+  // Schedule post-checkin email (1 day after check-in)
+  // Schedule it now, but it will only be sent if no issue was reported
+  const postCheckinDate = new Date(checkInDate);
+  postCheckinDate.setDate(postCheckinDate.getDate() + 1);
+  postCheckinDate.setHours(10, 0, 0, 0); // Send at 10 AM
+
+  // Check if email already scheduled
+  const { data: existingPostCheckinLog } = await supabase
+    .from('email_sequence_logs')
+    .select('id')
+    .eq('reservation_id', reservationId)
+    .eq('email_type', 'post_checkin')
+    .maybeSingle();
+
+  if (!existingPostCheckinLog) {
+    await supabase
+      .from('email_sequence_logs')
+      .insert({
+        reservation_id: reservationId,
+        email_type: 'post_checkin',
+        scheduled_at: postCheckinDate.toISOString(),
+        status: 'scheduled',
+      });
+  }
 }
 

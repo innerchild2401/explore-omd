@@ -9,6 +9,16 @@ This file tracks all forms and paths that need to be implemented for the booking
 - **Condition**: Only if check-in date is more than 3 days away from booking date
 - **Purpose**: Check if reservation process went smoothly and collect feedback
 
+### Email 2: Post-Checkin Welcome (1 day after check-in)
+- **Trigger**: 1 day after check-in date
+- **Condition**: Only if no issue was reported in Email 1
+- **Purpose**: Welcome guest to destination, recommend restaurants and experiences
+- **Content**: 
+  - Welcome message
+  - 3 featured restaurants (set by OMD admin or randomized)
+  - 3 featured experiences (set by OMD admin or randomized)
+  - Link to explore the destination platform
+
 ## Forms & Pages to Implement
 
 ### 1. Hotel Reservation Staff Rating Form
@@ -173,8 +183,12 @@ Cu respect,
 
 ### Completed ✅
 - Database schema (migration 54) - ✅ RUN
-- Email scheduling service
+- Database schema for featured businesses (migration 55) - ⏳ PENDING
+- Email scheduling service (includes post-checkin scheduling)
 - Post-booking follow-up email template (Romanian)
+- Post-checkin welcome email template (Romanian)
+- Featured businesses service (restaurants & experiences)
+- Issue report check (skips emails if issue reported)
 - Email sequence trigger API
 - Integration into booking creation flows (BookingForm, BookingModal, NewReservationModal, PendingReservations)
 - Token verification system

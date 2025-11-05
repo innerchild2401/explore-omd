@@ -56,7 +56,7 @@ CREATE INDEX IF NOT EXISTS idx_booking_issue_reports_created_at ON booking_issue
 CREATE TABLE IF NOT EXISTS email_sequence_logs (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   reservation_id UUID NOT NULL REFERENCES reservations(id) ON DELETE CASCADE,
-  email_type TEXT NOT NULL CHECK (email_type IN ('post_booking_followup', 'pre_checkin', 'post_checkout', 'cancellation')),
+  email_type TEXT NOT NULL CHECK (email_type IN ('post_booking_followup', 'post_checkin', 'pre_checkin', 'post_checkout', 'cancellation')),
   scheduled_at TIMESTAMPTZ NOT NULL,
   sent_at TIMESTAMPTZ,
   status TEXT DEFAULT 'scheduled' CHECK (status IN ('scheduled', 'sent', 'failed', 'skipped')),

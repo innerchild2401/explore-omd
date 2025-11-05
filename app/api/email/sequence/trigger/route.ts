@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { sendPostBookingFollowupEmail } from '@/lib/services/email-sequence/post-booking-followup';
+import { sendPostCheckinEmail } from '@/lib/services/email-sequence/post-checkin';
 
 /**
  * Trigger scheduled email sequence
@@ -57,6 +58,13 @@ export async function GET(request: NextRequest) {
       try {
         if (emailLog.email_type === 'post_booking_followup') {
           const success = await sendPostBookingFollowupEmail(emailLog.reservation_id);
+          if (success) {
+            sent++;
+          } else {
+            failed++;
+          }
+        } else if (emailLog.email_type === 'post_checkin') {
+          const success = await sendPostCheckinEmail(emailLog.reservation_id);
           if (success) {
             sent++;
           } else {
@@ -123,6 +131,13 @@ export async function POST(request: NextRequest) {
       try {
         if (emailLog.email_type === 'post_booking_followup') {
           const success = await sendPostBookingFollowupEmail(emailLog.reservation_id);
+          if (success) {
+            sent++;
+          } else {
+            failed++;
+          }
+        } else if (emailLog.email_type === 'post_checkin') {
+          const success = await sendPostCheckinEmail(emailLog.reservation_id);
           if (success) {
             sent++;
           } else {

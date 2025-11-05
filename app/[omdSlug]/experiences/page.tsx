@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import OptimizedImage from '@/components/ui/OptimizedImage';
 import AreaFilter from '@/components/hotels/AreaFilter';
+import OmdMemberBadge from '@/components/ui/OmdMemberBadge';
 
 interface ExperiencesPageProps {
   params: { omdSlug: string };
@@ -45,6 +46,8 @@ export default async function ExperiencesPage({ params, searchParams }: Experien
         location,
         contact,
         area_id,
+        rating,
+        is_omd_member,
         areas(
           id,
           name
@@ -52,7 +55,9 @@ export default async function ExperiencesPage({ params, searchParams }: Experien
       )
     `)
     .eq('businesses.omd_id', omd.id)
-    .eq('businesses.status', 'active');
+    .eq('businesses.status', 'active')
+    .order('businesses.is_omd_member', { ascending: false, foreignTable: 'businesses', nullsFirst: false })
+    .order('businesses.rating', { ascending: false, foreignTable: 'businesses' });
 
   // Filter by area if provided (before date filtering)
   if (searchParams.area) {
@@ -192,14 +197,19 @@ export default async function ExperiencesPage({ params, searchParams }: Experien
                       </div>
                     )}
                     
-                    {/* Price Badge */}
-                    {experience.price_from && (
-                      <div className="absolute top-4 left-4 bg-white/90 backdrop-blur-sm rounded-full px-3 py-1">
-                        <span className="text-sm font-semibold text-gray-700">
-                          {require('@/lib/utils').formatPrice(experience.price_from || 0, 'RON')}
-                        </span>
-                      </div>
-                    )}
+                    {/* Badges - Top Left */}
+                    <div className="absolute top-4 left-4 flex flex-col gap-2">
+                      {business.is_omd_member && (
+                        <OmdMemberBadge size="sm" />
+                      )}
+                      {experience.price_from && (
+                        <div className="bg-white/90 backdrop-blur-sm rounded-full px-3 py-1">
+                          <span className="text-sm font-semibold text-gray-700">
+                            {require('@/lib/utils').formatPrice(experience.price_from || 0, 'RON')}
+                          </span>
+                        </div>
+                      )}
+                    </div>
                   </div>
                   <div className="p-4">
                     <div className="mb-2">

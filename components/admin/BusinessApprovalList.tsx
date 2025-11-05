@@ -12,6 +12,7 @@ interface Business {
   status: string;
   created_at: string;
   owner_id: string;
+  is_omd_member?: boolean;
   contact?: {
     name?: string;
     phone?: string;
@@ -146,6 +147,26 @@ export default function BusinessApprovalList({
     } catch (error) {
       console.error('Rejection error:', error);
       alert('Failed to reject business');
+    } finally {
+      setLoading(null);
+    }
+  };
+
+  const handleToggleOmdMember = async (businessId: string, currentStatus: boolean) => {
+    setLoading(businessId);
+    
+    try {
+      const { error } = await supabase
+        .from('businesses')
+        .update({ is_omd_member: !currentStatus })
+        .eq('id', businessId);
+
+      if (error) throw error;
+
+      router.refresh();
+    } catch (error) {
+      console.error('Error toggling OMD member status:', error);
+      alert('Failed to update OMD member status');
     } finally {
       setLoading(null);
     }
@@ -336,13 +357,27 @@ export default function BusinessApprovalList({
                   </p>
                 </div>
 
-                <div className="mt-4">
+                <div className="mt-4 space-y-2">
+                  {/* OMD Member Toggle */}
+                  <label className="flex cursor-pointer items-center justify-between rounded-lg border border-gray-300 bg-gray-50 p-3 hover:bg-gray-100">
+                    <span className="text-sm font-medium text-gray-700">
+                      Membru OMD
+                    </span>
+                    <input
+                      type="checkbox"
+                      checked={business.is_omd_member || false}
+                      onChange={() => handleToggleOmdMember(business.id, business.is_omd_member || false)}
+                      disabled={loading === business.id}
+                      className="h-5 w-5 cursor-pointer rounded border-gray-300 text-blue-600 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:cursor-not-allowed"
+                    />
+                  </label>
+                  
                   <button
                     onClick={() => handleResendEmail(business.id)}
                     disabled={loading === business.id}
                     className="w-full rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-blue-700 disabled:bg-blue-300"
                   >
-                    {loading === business.id ? 'Sending...' : '📧 Resend Email'}
+                    {loading === business.id ? 'Loading...' : '📧 Resend Email'}
                   </button>
                 </div>
               </div>

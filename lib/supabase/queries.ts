@@ -109,6 +109,8 @@ export async function getBusinessesByOMD(
     query = query.limit(limit);
   }
 
+  // Sort by OMD member status first, then by rating
+  query = query.order('is_omd_member', { ascending: false, nullsFirst: false });
   query = query.order('rating', { ascending: false });
 
   const { data, error } = await query;

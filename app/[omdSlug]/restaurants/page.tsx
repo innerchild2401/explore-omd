@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import OptimizedImage from '@/components/ui/OptimizedImage';
 import AreaFilter from '@/components/hotels/AreaFilter';
+import OmdMemberBadge from '@/components/ui/OmdMemberBadge';
 
 interface RestaurantsPageProps {
   params: { omdSlug: string };
@@ -48,6 +49,8 @@ export default async function RestaurantsPage({ params, searchParams }: Restaura
         contact,
         location,
         area_id,
+        rating,
+        is_omd_member,
         areas(
           id,
           name
@@ -55,7 +58,9 @@ export default async function RestaurantsPage({ params, searchParams }: Restaura
       )
     `)
     .eq('businesses.omd_id', omd.id)
-    .eq('businesses.status', 'active');
+    .eq('businesses.status', 'active')
+    .order('businesses.is_omd_member', { ascending: false, foreignTable: 'businesses', nullsFirst: false })
+    .order('businesses.rating', { ascending: false, foreignTable: 'businesses' });
 
   // Filter by area if provided
   if (searchParams.area) {
@@ -140,12 +145,17 @@ export default async function RestaurantsPage({ params, searchParams }: Restaura
                       </div>
                     )}
                     
-                    {/* Price Range Badge */}
-                    {restaurant.price_range && (
-                      <div className="absolute top-4 left-4 bg-white/90 backdrop-blur-sm rounded-full px-3 py-1">
-                        <span className="text-sm font-semibold text-gray-700">{restaurant.price_range}</span>
-                      </div>
-                    )}
+                    {/* Badges - Top Left */}
+                    <div className="absolute top-4 left-4 flex flex-col gap-2">
+                      {business.is_omd_member && (
+                        <OmdMemberBadge size="sm" />
+                      )}
+                      {restaurant.price_range && (
+                        <div className="bg-white/90 backdrop-blur-sm rounded-full px-3 py-1">
+                          <span className="text-sm font-semibold text-gray-700">{restaurant.price_range}</span>
+                        </div>
+                      )}
+                    </div>
                   </div>
 
                   {/* Restaurant Info */}

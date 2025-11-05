@@ -5,6 +5,7 @@ import Link from 'next/link';
 import type { Section, Business } from '@/types';
 import { getImageUrl, formatPrice, getStarRating } from '@/lib/utils';
 import OptimizedImage from '@/components/ui/OptimizedImage';
+import OmdMemberBadge from '@/components/ui/OmdMemberBadge';
 
 interface BusinessCarouselProps {
   section: Section;
@@ -91,11 +92,16 @@ export default function BusinessCarousel({
                         sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                         priority={index < 3} // Prioritize first 3 images
                       />
-                      {business.rating > 0 && (
-                        <div className="absolute right-2 top-2 rounded-full bg-white px-3 py-1 text-sm font-semibold shadow-md text-gray-900">
-                          {business.rating} ⭐
-                        </div>
-                      )}
+                      <div className="absolute right-2 top-2 flex flex-col items-end gap-2">
+                        {business.is_omd_member && (
+                          <OmdMemberBadge size="sm" />
+                        )}
+                        {business.rating > 0 && (
+                          <div className="rounded-full bg-white px-3 py-1 text-sm font-semibold shadow-md text-gray-900">
+                            {business.rating} ⭐
+                          </div>
+                        )}
+                      </div>
                     </div>
 
                     {/* Content */}

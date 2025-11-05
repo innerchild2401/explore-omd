@@ -60,6 +60,7 @@ export interface Business {
   status: 'active' | 'inactive' | 'pending';
   owner_id: string;
   area_id?: string | null;
+  is_omd_member?: boolean;
   areas?: {
     id: string;
     name: string;

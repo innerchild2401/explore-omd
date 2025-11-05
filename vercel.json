@@ -3,6 +3,9 @@
   "devCommand": "npm run dev",
   "installCommand": "npm install",
   "framework": "nextjs",
+  "git": {
+    "deploymentEnabled": true
+  },
   "crons": [
     {
       "path": "/api/email/sequence/trigger",

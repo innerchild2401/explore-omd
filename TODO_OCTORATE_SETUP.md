@@ -16,8 +16,12 @@
 
 ## ⏳ Pending (Waiting for Octorate Credentials)
 
+**Status**: ⏳ Form submitted - Credentials expected in 72 hours
+
+**See**: `OCTORATE_CREDENTIALS_RECEIVED_CHECKLIST.md` for detailed next steps when credentials arrive
+
 ### Step 1: Get Octorate API Credentials
-**Status:** ⏳ Waiting for credentials from Octorate
+**Status:** ⏳ Waiting for credentials from Octorate (Expected in 72 hours)
 
 1. **Log in to Octorate Dashboard**
    - Go to: https://www.octorate.com/
@@ -65,15 +69,24 @@
 **Add these variables:**
 
 ```env
-# Octorate OAuth Credentials (from Step 1)
+# Octorate OAuth Credentials (from Step 1 - in welcome mail)
 OCTORATE_CLIENT_ID=your_client_id_here
 OCTORATE_CLIENT_SECRET=your_client_secret_here
 
-# Octorate API URLs (usually these defaults are correct)
+# Octorate API Configuration
 OCTORATE_API_BASE_URL=https://api.octorate.com
-OCTORATE_OAUTH_URL=https://api.octorate.com/oauth
+OCTORATE_BACKOFFICE_URL=admin.octorate.com
+OCTORATE_ENVIRONMENT=admin.octorate.com
+OCTORATE_API_VERSION=v1
+# Token exchange endpoint: https://{{enviroment}}/rest/{version}/identity/token
+OCTORATE_TOKEN_ENDPOINT=https://admin.octorate.com/rest/v1/identity/token
+# Token refresh endpoint: https://{{enviroment}}/rest/{version}/identity/refresh
+OCTORATE_REFRESH_ENDPOINT=https://admin.octorate.com/rest/v1/identity/refresh
+# Admin ApiLogin endpoint: https://{{enviroment}}/rest/{version}/identity/apilogin
+OCTORATE_API_LOGIN_ENDPOINT=https://admin.octorate.com/rest/v1/identity/apilogin
+# Note: API version and environment URL may need confirmation (see OCTORATE_QUESTIONS.md)
 
-# Redirect URI (must match what you set in Octorate)
+# Redirect URI (must match what you set in Octorate - MUST be HTTPS)
 OCTORATE_REDIRECT_URI=https://your-domain.com/api/octorate/oauth/callback
 # Replace 'your-domain.com' with your actual domain
 
@@ -225,7 +238,8 @@ After completing all steps, verify:
 
 ## 📚 Reference Documents
 
-- **Verification Checklist**: `OCTORATE_VERIFICATION_CHECKLIST.md` - ⚠️ **REVIEW FIRST** - Questions to ask Octorate support
+- **Questions for Octorate**: `OCTORATE_QUESTIONS.md` - ⚠️ **REVIEW FIRST** - Questions to ask Octorate support
+- **Verification Checklist**: `OCTORATE_VERIFICATION_CHECKLIST.md` - Implementation verification checklist
 - **User Instructions**: `OCTORATE_USER_INSTRUCTIONS.md` - Detailed step-by-step guide
 - **Setup Instructions**: `OCTORATE_SETUP_INSTRUCTIONS.md` - Technical setup guide
 - **Integration Plan**: `OCTORATE_INTEGRATION_PLAN.md` - Full implementation plan

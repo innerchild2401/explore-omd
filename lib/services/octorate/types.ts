@@ -74,10 +74,26 @@ export interface OctorateConnection {
   lastSyncAt: Date | null;
 }
 
+// Octorate Token Response - matches their actual API response for token exchange
 export interface OctorateTokenResponse {
   access_token: string;
-  refresh_token: string;
-  expires_in: number;
-  token_type: string;
+  refresh_token: string; // Only included in initial token exchange, not in refresh
+  expireDate: string; // ISO date string (e.g., "2020-03-17T17:41:51.178Z")
+  // Note: Octorate uses expireDate (ISO string) instead of expires_in (number in seconds)
+}
+
+// Octorate Token Refresh Response - only includes access_token and expireDate
+export interface OctorateTokenRefreshResponse {
+  access_token: string;
+  expireDate: string; // ISO date string (e.g., "2020-03-17T17:41:51.178Z")
+  // Note: refresh_token is NOT included in refresh response - keep using existing refresh_token
+}
+
+// Octorate Admin ApiLogin Response - server-to-server authentication for admin operations
+// Used for creating properties, admin operations that don't require user OAuth
+export interface OctorateApiLoginResponse {
+  access_token: string;
+  expireDate: string; // ISO date string (e.g., "2020-03-17T17:41:51.178Z")
+  // Note: No refresh_token - this is a temporary admin token
 }
 

@@ -127,6 +127,30 @@ export default function BookingForm({ hotelId, roomId, roomName, onBookingSubmit
 
       console.log('✅ Reservation created successfully:', reservation.id);
 
+      // Push booking to channel manager (if applicable) - fire-and-forget
+      (async () => {
+        try {
+          const pushResponse = await fetch('/api/channel-manager/push', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ reservationId: reservation.id }),
+          });
+
+          if (!pushResponse.ok) {
+            const pushResult = await pushResponse.json().catch(() => ({ error: 'Failed to parse response' }));
+            console.error('❌ Failed to push booking to channel manager:', pushResult);
+          } else {
+            const pushResult = await pushResponse.json().catch(() => ({}));
+            console.log('✅ Booking pushed to channel manager:', pushResult);
+          }
+        } catch (pushError: any) {
+          console.error('❌ Error pushing booking to channel manager:', pushError);
+          // Don't fail the booking if push fails - it will be handled by the admin
+        }
+      })();
+
       // Send booking confirmation emails (fire-and-forget to not block the UI)
       // This will execute asynchronously and not block the success message
       (async () => {

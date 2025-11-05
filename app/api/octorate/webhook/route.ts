@@ -4,8 +4,78 @@ import { createClient } from '@/lib/supabase/server';
 
 const WEBHOOK_SECRET = process.env.OCTORATE_WEBHOOK_SECRET || '';
 
+// Octorate IP addresses that need to be whitelisted
+// These IPs will call our webhook endpoints
+const OCTORATE_WHITELISTED_IPS = [
+  '94.177.193.204',
+  '5.189.168.114',
+];
+
+/**
+ * Get client IP address from request
+ * Handles various proxy headers (X-Forwarded-For, X-Real-IP, etc.)
+ */
+function getClientIP(request: NextRequest): string | null {
+  // Check X-Forwarded-For header (most common in proxied environments)
+  const forwardedFor = request.headers.get('x-forwarded-for');
+  if (forwardedFor) {
+    // X-Forwarded-For can contain multiple IPs, take the first one
+    return forwardedFor.split(',')[0].trim();
+  }
+
+  // Check X-Real-IP header
+  const realIP = request.headers.get('x-real-ip');
+  if (realIP) {
+    return realIP.trim();
+  }
+
+  // Fallback to connection remote address (if available)
+  const remoteAddr = request.headers.get('remote-addr');
+  if (remoteAddr) {
+    return remoteAddr.trim();
+  }
+
+  return null;
+}
+
+/**
+ * Verify that the request is coming from an authorized Octorate IP
+ * Note: IP whitelisting may also need to be configured at infrastructure level
+ * (firewall, Vercel Edge Config, etc.) depending on your hosting setup
+ */
+function verifyIPAddress(request: NextRequest): boolean {
+  // In development, allow all IPs (for testing)
+  if (process.env.NODE_ENV === 'development') {
+    return true;
+  }
+
+  const clientIP = getClientIP(request);
+  
+  if (!clientIP) {
+    console.warn('Could not determine client IP address');
+    return false; // Deny if we can't determine IP
+  }
+
+  // Check if IP is in whitelist
+  const isWhitelisted = OCTORATE_WHITELISTED_IPS.includes(clientIP);
+  
+  if (!isWhitelisted) {
+    console.warn(`Unauthorized IP attempt: ${clientIP}`);
+  }
+
+  return isWhitelisted;
+}
+
 export async function POST(request: NextRequest) {
   try {
+    // Verify IP address is from Octorate
+    if (!verifyIPAddress(request)) {
+      return NextResponse.json(
+        { error: 'Unauthorized IP address' },
+        { status: 403 }
+      );
+    }
+
     // Verify webhook signature (if provided by Octorate)
     const signature = request.headers.get('x-octorate-signature');
     if (WEBHOOK_SECRET && signature) {

@@ -4,40 +4,80 @@ This document verifies our implementation against Octorate's official OTA API do
 
 ## Resources to Check
 - **Integration Central**: https://api.octorate.com/connect/
-- **Quick Start Guide**: Step 0 in Integration Central
-- **Showcase & Guides**: Step 1 - OTA integration examples
-- **Dynamic Swagger**: Step 2a - Interactive API testing
+- **Quick Start Guide**: Step 0 in Integration Central ⚠️ **READ CAREFULLY**
+- **Showcase & Guides**: Step 1 - OTA integration examples (check for tricky parts)
+- **Dynamic Swagger**: Step 2a - Interactive API testing (check schemas at bottom for field descriptions)
 - **Postman Collection**: Step 2b - Postman documentation
+- **OpenAPI**: Import OpenAPI link to generate all requests in Postman
 - **API Access Request**: Step 3 - Get client_id and client_secret
+
+**Important**: See `OCTORATE_DEVELOPMENT_GUIDELINES.md` for development best practices
 
 ---
 
 ## 1. OAuth 2.0 Authentication Flow ✅
 
-### ✅ Implementation Status
+### ✅ Implementation Status (Updated based on Octorate docs)
 - **File**: `lib/services/octorate/auth.ts`
-- **OAuth URL**: Using `OCTORATE_OAUTH_URL` environment variable
-- **Authorization Endpoint**: `/oauth/authorize`
-- **Token Endpoint**: `/oauth/token`
-- **Grant Type**: `authorization_code` (standard OAuth 2.0)
-- **Refresh Token**: Implemented with automatic refresh
+- **Authorization URL**: `https://{{octorate user backoffice}}/octobook/identity/oauth.xhtml`
+  - Currently using: `admin.octorate.com` as default (based on example)
+  - Environment variable: `OCTORATE_BACKOFFICE_URL`
+- **OAuth Flow**: User consent screen (browser redirect) ✅
+  - User is redirected to Octorate consent screen
+  - User clicks "authorize this api user" button
+  - Octorate redirects back to our callback URL
+- **Query Parameters**: Only `client_id`, `redirect_uri`, and `state` (as per Octorate docs)
+  - Removed `response_type` and `scope` parameters (not mentioned in docs)
+- **Token Endpoint**: `https://{{enviroment}}/rest/{version}/identity/token`
+  - Current: `https://{{backoffice}}/rest/v1/identity/token`
+  - Environment variables: `OCTORATE_ENVIRONMENT`, `OCTORATE_API_VERSION`, `OCTORATE_TOKEN_ENDPOINT`
+- **Grant Type**: `code` (Octorate uses 'code' not 'authorization_code')
+- **Content-Type**: `application/x-www-form-urlencoded` ✅
+- **Form Parameters**: Using `URLSearchParams` for form-encoded data ✅
+- **Token Response**: Uses `expireDate` (ISO string) instead of `expires_in` (number) ✅
+- **Timeout**: Must be done within 1 minute after redirect ✅
+- **API Requests**: Uses `Authorization: Bearer {{access_token}}` header ✅
+- **Token Refresh**: 
+  - Endpoint: `/identity/refresh` (separate from token exchange) ✅
+  - Response: Only `access_token` and `expireDate` (not `refresh_token`) ✅
+  - Request format: Using form params (may need confirmation) ⚠️
+- **State Parameter**: ✅ Implemented correctly
+  - Stored in httpOnly cookies for verification
+  - Includes hotel_id and user_id (base64 encoded)
+- **Admin Operations Flow (ApiLogin)**: ✅ Implemented
+  - Endpoint: `/identity/apilogin`
+  - Server-to-server authentication using `client_id` and `client_secret`
+  - Response: `access_token` and `expireDate` (no refresh_token)
+  - Note: As OTA, typically only used for admin operations if needed
 
 ### ⚠️ Verification Needed
-1. **Confirm OAuth URL**: Verify the exact OAuth base URL with Octorate
-   - Current assumption: `https://api.octorate.com/oauth`
-   - May need: `https://api.octorate.com/connect/oauth` or different path
+1. **Confirm Backoffice URL**: Verify the exact value for `{{octorate user backoffice}}`
+   - Current assumption: `admin.octorate.com` (based on example)
+   - Question: Is it the same for all users or does it vary?
+   - **See**: `OCTORATE_QUESTIONS.md` Question #1
 
-2. **Scopes**: Verify required scopes with Octorate
-   - Current: `read_accommodations read_rooms read_availability read_rates write_bookings`
-   - May need additional scopes or different naming
+2. **Confirm Token Endpoint**: ✅ Updated based on documentation
+   - Endpoint format: `https://{{enviroment}}/rest/{version}/identity/token`
+   - Current implementation: `https://{{backoffice}}/rest/v1/identity/token`
+   - Questions: What is `{{enviroment}}`? What is the API version?
+   - **See**: `OCTORATE_QUESTIONS.md` Question #2
 
-3. **Redirect URI**: Must be registered in Octorate's developer portal
+3. **OAuth Parameters**: Confirm if `response_type` and `scope` are needed
+   - Documentation only mentions: `client_id`, `redirect_uri`, `state`
+   - Currently removed from implementation
+   - **See**: `OCTORATE_QUESTIONS.md` Question #3
+
+4. **Redirect URI**: ✅ Must be whitelisted in Octorate's API configuration
    - Current: `${NEXT_PUBLIC_SITE_URL}/api/octorate/oauth/callback`
-   - Must match exactly what's configured in Octorate
+   - Must be HTTPS (mandatory for security)
+   - **Can be changed later** for production/sandbox environments ✅
+   - User consent screen: User clicks "authorize this api user" button ✅
+   - **See**: `OCTORATE_QUESTIONS.md` Question #6
 
-4. **State Parameter**: ✅ Implemented correctly
-   - Stored in cookies for verification
-   - Includes hotel_id and user_id
+5. **Token Refresh Request Format**: Confirm how to send refresh_token to `/identity/refresh`
+   - Current: Using form params (`refresh_token` in body)
+   - May need: Bearer header or other format
+   - **See**: `OCTORATE_QUESTIONS.md` Question #4
 
 ---
 
@@ -178,6 +218,26 @@ POST /api/octorate/webhook
 
 **Webhook URL**: Must be provided to Octorate during setup
 - Format: `${NEXT_PUBLIC_SITE_URL}/api/octorate/webhook`
+- Example: `https://destexplore.eu/api/octorate/webhook`
+
+### 4.2 IP Authorization ✅
+
+**Octorate IP Addresses to Whitelist:**
+- `94.177.193.204`
+- `5.189.168.114`
+
+**Implementation Status:**
+- ✅ IP whitelisting added to webhook endpoint
+- ✅ Checks X-Forwarded-For and X-Real-IP headers
+- ✅ Returns 403 if IP is not whitelisted
+- ⚠️ **Also configure at infrastructure level** (firewall, hosting provider settings)
+
+**Important**: 
+- Application-level IP check is implemented
+- **ALSO configure IP whitelisting at infrastructure level**:
+  - Vercel: Edge Config or Middleware
+  - Other hosting: Firewall rules or IP restriction settings
+  - Check your hosting provider's documentation
 
 ### 4.2 Webhook Event Types ✅
 
@@ -208,32 +268,54 @@ POST /api/octorate/webhook
 
 ---
 
-## 5. Rate Limiting ⚠️
+## 5. Rate Limiting & Quota ⚠️
 
 **Our Implementation:**
 - Rate limit: 100 calls per 5 minutes per accommodation
 - In-memory tracking (needs improvement for production)
+- ⚠️ **Quota optimization needed** (quota is limited and based on active properties)
+
+**⚠️ CRITICAL**: Per Octorate guidelines, **quota is not infinite** and is based on active properties. Must optimize API calls.
+
+**Optimization Strategies Needed:**
+- [ ] Use webhooks instead of polling (reduces API calls)
+- [ ] Implement response caching
+- [ ] Batch requests when possible
+- [ ] Only sync changed data (incremental syncs)
+- [ ] Monitor quota usage
 
 **⚠️ Verification Needed:**
 - [ ] Confirm exact rate limit (100/5min per accommodation)
 - [ ] Check if rate limit headers are included in responses
 - [ ] Verify if different endpoints have different limits
 - [ ] Check if we need to handle 429 responses with retry-after headers
+- [ ] Understand quota limits based on active properties
+- [ ] Implement quota monitoring
 
 ---
 
 ## 6. Error Handling ⚠️
 
 **Our Implementation:**
-- Basic error handling with try-catch
-- Token refresh on 401 errors
-- Error logging
+- ✅ **HTTP response codes checked FIRST** (per Octorate guidelines)
+- ✅ Token refresh on 401 errors
+- ✅ Rate limit handling (429 status code)
+- ✅ Error logging
+- ✅ Proper error messages from response body
+
+**⚠️ CRITICAL**: Per Octorate guidelines, **always give precedence to HTTP response codes** - they are the definitive status indicator.
+
+**Implementation Details:**
+- Status code checked before parsing response body
+- 401: Token expired → Refresh token
+- 429: Rate limit exceeded → Handle with retry-after header
+- 400/403/404/500: Extract error details from response body
 
 **⚠️ Verification Needed:**
-- [ ] Get list of possible error codes and meanings
-- [ ] Verify error response structure
+- [ ] Get list of all possible error codes and meanings
+- [ ] Verify error response structure for each status code
 - [ ] Check if errors include retry information
-- [ ] Verify handling of rate limit errors (429)
+- [ ] Test all error scenarios
 
 ---
 
@@ -241,21 +323,30 @@ POST /api/octorate/webhook
 
 ### Required Variables:
 ```env
+# API Configuration
 OCTORATE_API_BASE_URL=https://api.octorate.com
-OCTORATE_OAUTH_URL=https://api.octorate.com/oauth
-OCTORATE_CLIENT_ID=<from Octorate>
-OCTORATE_CLIENT_SECRET=<from Octorate>
-OCTORATE_REDIRECT_URI=<must match Octorate config>
+OCTORATE_BACKOFFICE_URL=admin.octorate.com
+OCTORATE_TOKEN_ENDPOINT=https://admin.octorate.com/octobook/identity/oauth/token
+
+# OAuth Credentials
+OCTORATE_CLIENT_ID=<from Octorate - in welcome mail>
+OCTORATE_CLIENT_SECRET=<from Octorate - in welcome mail>
+OCTORATE_REDIRECT_URI=<must match Octorate config - must be HTTPS>
+
+# Security
 OCTORATE_WEBHOOK_SECRET=<if provided by Octorate>
-ENCRYPTION_KEY=<for token encryption>
+OCTORATE_ENCRYPTION_KEY=<for token encryption>
+
+# Application
 NEXT_PUBLIC_SITE_URL=<your site URL>
 ```
 
 **⚠️ Verification Needed:**
-- [ ] Confirm exact API base URL
-- [ ] Confirm exact OAuth URL
-- [ ] Get client_id and client_secret from Octorate
-- [ ] Register redirect URI in Octorate portal
+- [ ] Confirm exact API base URL (see Question #5 in OCTORATE_QUESTIONS.md)
+- [ ] Confirm exact backoffice URL (see Question #1 in OCTORATE_QUESTIONS.md)
+- [ ] Confirm token endpoint URL (see Question #2 in OCTORATE_QUESTIONS.md)
+- [ ] Get client_id and client_secret from Octorate (in welcome mail)
+- [ ] Register redirect URI in Octorate API configuration (must be HTTPS)
 - [ ] Get webhook secret (if available)
 
 ---

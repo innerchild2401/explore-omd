@@ -373,28 +373,31 @@ export default function NewReservationModal({ hotelId, rooms, onClose, onSuccess
 
       console.log('✅ Reservation created successfully:', reservation.id);
 
-      // Push booking to Octorate if hotel uses Octorate
-      try {
-        const { data: hotelData } = await supabase
-          .from('hotels')
-          .select('pms_type, octorate_connection_id')
-          .eq('id', hotelId)
-          .single();
+      // Push booking to channel manager (if applicable) - only for confirmed bookings
+      // Tentative bookings will be pushed when approved
+      if (confirmationData.reservation_status === 'confirmed') {
+        (async () => {
+          try {
+            const pushResponse = await fetch('/api/channel-manager/push', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({ reservationId: reservation.id }),
+            });
 
-        if (hotelData?.pms_type === 'octorate' && hotelData.octorate_connection_id) {
-          // Push to Octorate in the background
-          fetch('/api/octorate/bookings/push', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ reservationId: reservation.id }),
-          }).catch(err => {
-            console.error('Failed to push booking to Octorate:', err);
-            // Don't block the success flow - booking is created locally
-          });
-        }
-      } catch (err) {
-        console.error('Error checking Octorate connection:', err);
-        // Continue anyway - booking is created
+            if (!pushResponse.ok) {
+              const pushResult = await pushResponse.json().catch(() => ({ error: 'Failed to parse response' }));
+              console.error('❌ Failed to push booking to channel manager:', pushResult);
+            } else {
+              const pushResult = await pushResponse.json().catch(() => ({}));
+              console.log('✅ Booking pushed to channel manager:', pushResult);
+            }
+          } catch (pushError: any) {
+            console.error('❌ Error pushing booking to channel manager:', pushError);
+            // Don't fail the booking if push fails
+          }
+        })();
       }
 
       // Send booking confirmation emails

@@ -1,10 +1,21 @@
 import { createClient as createServerClient } from '@/lib/supabase/server';
 import { decrypt, encrypt } from './encryption';
-import { OctorateTokenResponse } from './types';
+import { OctorateTokenResponse, OctorateTokenRefreshResponse } from './types';
 
 const OCTORATE_API_BASE_URL = process.env.OCTORATE_API_BASE_URL || 'https://api.octorate.com';
+const OCTORATE_BACKOFFICE_URL = process.env.OCTORATE_BACKOFFICE_URL || 'admin.octorate.com';
+const OCTORATE_API_VERSION = process.env.OCTORATE_API_VERSION || 'v1';
 const OCTORATE_CLIENT_ID = process.env.OCTORATE_CLIENT_ID || '';
 const OCTORATE_CLIENT_SECRET = process.env.OCTORATE_CLIENT_SECRET || '';
+
+// Token endpoint format: https://{{enviroment}}/rest/{version}/identity/token
+// Used for initial token exchange (authorization code → tokens)
+const OCTORATE_ENVIRONMENT = process.env.OCTORATE_ENVIRONMENT || OCTORATE_BACKOFFICE_URL;
+const OCTORATE_TOKEN_ENDPOINT = process.env.OCTORATE_TOKEN_ENDPOINT || `https://${OCTORATE_ENVIRONMENT}/rest/${OCTORATE_API_VERSION}/identity/token`;
+
+// Token refresh endpoint: https://{{enviroment}}/rest/{version}/identity/refresh
+// Used to refresh access token using refresh_token
+const OCTORATE_REFRESH_ENDPOINT = process.env.OCTORATE_REFRESH_ENDPOINT || `https://${OCTORATE_ENVIRONMENT}/rest/${OCTORATE_API_VERSION}/identity/refresh`;
 
 export class OctorateClient {
   private connectionId: string;
@@ -49,22 +60,25 @@ export class OctorateClient {
   }
 
   // Refresh access token using refresh token
+  // Endpoint: /identity/refresh (not /identity/token)
+  // Response only includes access_token and expireDate (not refresh_token)
   private async refreshAccessToken(): Promise<void> {
     if (!this.refreshToken) {
       await this.loadTokens();
     }
 
     try {
-      const response = await fetch(`${OCTORATE_API_BASE_URL}/oauth/token`, {
+      // Refresh endpoint: /identity/refresh
+      // Note: Documentation doesn't specify request format
+      // Using form params (consistent with token exchange endpoint)
+      // May need to confirm with Octorate if this is correct
+      const response = await fetch(OCTORATE_REFRESH_ENDPOINT, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
         },
         body: new URLSearchParams({
-          grant_type: 'refresh_token',
           refresh_token: this.refreshToken!,
-          client_id: OCTORATE_CLIENT_ID,
-          client_secret: OCTORATE_CLIENT_SECRET,
         }),
       });
 
@@ -72,16 +86,17 @@ export class OctorateClient {
         throw new Error(`Token refresh failed: ${response.statusText}`);
       }
 
-      const data: OctorateTokenResponse = await response.json();
-      const expiresAt = new Date(Date.now() + data.expires_in * 1000);
+      const data: OctorateTokenRefreshResponse = await response.json();
+      // Octorate returns expireDate as ISO string, not expires_in as number
+      const expiresAt = new Date(data.expireDate);
 
-      // Update tokens in database
+      // Update only access_token and expireDate (refresh_token stays the same)
       const supabase = await createServerClient();
       const { error } = await supabase
         .from('octorate_hotel_connections')
         .update({
           access_token: encrypt(data.access_token),
-          refresh_token: encrypt(data.refresh_token),
+          // Note: refresh_token is NOT updated - keep existing one
           token_expires_at: expiresAt.toISOString(),
         })
         .eq('id', this.connectionId);
@@ -99,6 +114,8 @@ export class OctorateClient {
   }
 
   // Make authenticated API request
+  // IMPORTANT: Always check HTTP response codes first (per Octorate guidelines)
+  // Response codes are the definitive status indicator
   async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
     await this.ensureValidToken();
 
@@ -112,17 +129,36 @@ export class OctorateClient {
       },
     });
 
+    // CRITICAL: Give precedence to HTTP response codes (per Octorate guidelines)
+    // Check status code FIRST before parsing response body
+
     if (response.status === 401) {
       // Token expired, try refreshing once more
       await this.refreshAccessToken();
       return this.request<T>(endpoint, options);
     }
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`Octorate API error (${response.status}): ${errorText}`);
+    if (response.status === 429) {
+      // Rate limit exceeded
+      const retryAfter = response.headers.get('Retry-After');
+      throw new Error(`Rate limit exceeded. Retry after: ${retryAfter || 'unknown'} seconds`);
     }
 
+    if (!response.ok) {
+      // Get error details from response body if available
+      let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+      try {
+        const errorBody = await response.text();
+        if (errorBody) {
+          errorMessage = `Octorate API error (${response.status}): ${errorBody}`;
+        }
+      } catch {
+        // If we can't parse error body, use status code and status text
+      }
+      throw new Error(errorMessage);
+    }
+
+    // Only parse response if status is OK (200, 201, etc.)
     return response.json();
   }
 

@@ -132,6 +132,30 @@ export default function PendingReservations({ hotelId, onClose }: PendingReserva
         .eq('id', reservationId);
 
       if (error) throw error;
+
+      // Push booking to channel manager (if applicable) - fire-and-forget
+      (async () => {
+        try {
+          const pushResponse = await fetch('/api/channel-manager/push', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ reservationId }),
+          });
+
+          if (!pushResponse.ok) {
+            const pushResult = await pushResponse.json().catch(() => ({ error: 'Failed to parse response' }));
+            console.error('❌ Failed to push booking to channel manager:', pushResult);
+          } else {
+            const pushResult = await pushResponse.json().catch(() => ({}));
+            console.log('✅ Booking pushed to channel manager:', pushResult);
+          }
+        } catch (pushError: any) {
+          console.error('❌ Error pushing booking to channel manager:', pushError);
+          // Don't fail the approval if push fails - admin can retry manually
+        }
+      })();
       
       await fetchPendingReservations();
     } catch (err: any) {

@@ -53,12 +53,22 @@ This guide will help you set up the Octorate channel manager integration for you
    - Provide them with the following credentials:
 
    ```
+   # Octorate OAuth Credentials (from welcome mail)
    OCTORATE_CLIENT_ID=your_client_id_here
    OCTORATE_CLIENT_SECRET=your_client_secret_here
+   
+   # Octorate API Configuration
    OCTORATE_API_BASE_URL=https://api.octorate.com
-   OCTORATE_OAUTH_URL=https://api.octorate.com/oauth
+   OCTORATE_BACKOFFICE_URL=admin.octorate.com
+   OCTORATE_TOKEN_ENDPOINT=https://admin.octorate.com/octobook/identity/oauth/token
+   
+   # Redirect URI (must be HTTPS - must match Octorate config)
    OCTORATE_REDIRECT_URI=https://your-domain.com/api/octorate/oauth/callback
-   OCTORATE_WEBHOOK_SECRET=your_webhook_secret_here (if provided)
+   
+   # Webhook Secret (if provided)
+   OCTORATE_WEBHOOK_SECRET=your_webhook_secret_here
+   
+   # Encryption Key (generate random 32-character string)
    OCTORATE_ENCRYPTION_KEY=generate_a_random_32_character_string
    ```
 

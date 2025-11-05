@@ -13,6 +13,7 @@ export async function scheduleEmailSequence(reservationId: string): Promise<void
     .select(`
       id,
       check_in_date,
+      check_out_date,
       created_at,
       reservation_status,
       guest_profiles!guest_id(email)
@@ -85,6 +86,32 @@ export async function scheduleEmailSequence(reservationId: string): Promise<void
         reservation_id: reservationId,
         email_type: 'post_checkin',
         scheduled_at: postCheckinDate.toISOString(),
+        status: 'scheduled',
+      });
+  }
+
+  // Schedule post-checkout email (1 day after check-out)
+  // Schedule it now, but it will only be sent if no issue was reported
+  const checkOutDate = new Date(reservation.check_out_date);
+  const postCheckoutDate = new Date(checkOutDate);
+  postCheckoutDate.setDate(postCheckoutDate.getDate() + 1);
+  postCheckoutDate.setHours(10, 0, 0, 0); // Send at 10 AM
+
+  // Check if email already scheduled
+  const { data: existingPostCheckoutLog } = await supabase
+    .from('email_sequence_logs')
+    .select('id')
+    .eq('reservation_id', reservationId)
+    .eq('email_type', 'post_checkout')
+    .maybeSingle();
+
+  if (!existingPostCheckoutLog) {
+    await supabase
+      .from('email_sequence_logs')
+      .insert({
+        reservation_id: reservationId,
+        email_type: 'post_checkout',
+        scheduled_at: postCheckoutDate.toISOString(),
         status: 'scheduled',
       });
   }

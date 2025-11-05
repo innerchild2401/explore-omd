@@ -19,6 +19,16 @@ This file tracks all forms and paths that need to be implemented for the booking
   - 3 featured experiences (set by OMD admin or randomized)
   - Link to explore the destination platform
 
+### Email 3: Post-Checkout Rating Request (1 day after check-out)
+- **Trigger**: 1 day after check-out date
+- **Condition**: Only if no issue was reported in Email 1
+- **Purpose**: Thank guest for their stay and ask them to rate the destination
+- **Content**: 
+  - Thank you message
+  - Hope they enjoyed their stay
+  - Request to rate the destination
+  - Link to destination page
+
 ## Forms & Pages to Implement
 
 ### 1. Hotel Reservation Staff Rating Form
@@ -187,6 +197,7 @@ Cu respect,
 - Email scheduling service (includes post-checkin scheduling)
 - Post-booking follow-up email template (Romanian)
 - Post-checkin welcome email template (Romanian)
+- Post-checkout rating request email template (Romanian)
 - Featured businesses service (restaurants & experiences)
 - Issue report check (skips emails if issue reported)
 - Email sequence trigger API

@@ -127,6 +127,21 @@ export default function BookingForm({ hotelId, roomId, roomName, onBookingSubmit
 
       console.log('✅ Reservation created successfully:', reservation.id);
 
+      // Schedule email sequence (fire-and-forget)
+      (async () => {
+        try {
+          await fetch('/api/email/sequence/schedule', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ reservationId: reservation.id }),
+          });
+        } catch (err) {
+          console.error('Failed to schedule email sequence:', err);
+        }
+      })();
+
       // Push booking to channel manager (if applicable) - fire-and-forget
       (async () => {
         try {

@@ -49,14 +49,9 @@ export default function AdminSidebar({ userRole, omdId }: AdminSidebarProps) {
       icon: '📅',
     },
     {
-      label: 'Reviews',
-      href: '/admin/reviews',
+      label: 'Ratings & Feedback',
+      href: '/admin/ratings',
       icon: '⭐',
-    },
-    {
-      label: 'Translations',
-      href: '/admin/translations',
-      icon: '🌐',
     },
     {
       label: 'OMD Approvals',

@@ -295,16 +295,6 @@ export default async function AdminDashboard() {
                   View booking issue reports
                 </p>
               </a>
-
-              <a
-                href="/admin/translations"
-                className="rounded-lg bg-purple-600 p-6 text-white shadow transition-colors hover:bg-purple-700"
-              >
-                <h4 className="mb-2 text-lg font-semibold">Translations</h4>
-                <p className="text-sm text-purple-100">
-                  Manage multi-language content
-                </p>
-              </a>
             </>
           )}
         </div>

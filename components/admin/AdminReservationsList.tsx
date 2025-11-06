@@ -12,17 +12,23 @@ export default function AdminReservationsList({ reservations, userRole }: AdminR
   const [filter, setFilter] = useState<'all' | 'tentative' | 'confirmed' | 'cancelled'>('all');
   const [selectedReservation, setSelectedReservation] = useState<any | null>(null);
 
-  const filteredReservations = reservations.filter(reservation => {
+  const filteredReservations = (reservations || []).filter(reservation => {
+    if (!reservation) return false;
     if (filter === 'all') return true;
     return reservation.reservation_status === filter;
   });
 
-  const formatDate = (dateStr: string) => {
-    return new Date(dateStr).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
-    });
+  const formatDate = (dateStr: string | null | undefined) => {
+    if (!dateStr) return 'N/A';
+    try {
+      return new Date(dateStr).toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric'
+      });
+    } catch {
+      return 'Invalid Date';
+    }
   };
 
   const getStatusColor = (status: string) => {
@@ -37,9 +43,9 @@ export default function AdminReservationsList({ reservations, userRole }: AdminR
     }
   };
 
-  const cancelledCount = reservations.filter(r => r.reservation_status === 'cancelled').length;
-  const tentativeCount = reservations.filter(r => r.reservation_status === 'tentative').length;
-  const confirmedCount = reservations.filter(r => r.reservation_status === 'confirmed').length;
+  const cancelledCount = (reservations || []).filter(r => r?.reservation_status === 'cancelled').length;
+  const tentativeCount = (reservations || []).filter(r => r?.reservation_status === 'tentative').length;
+  const confirmedCount = (reservations || []).filter(r => r?.reservation_status === 'confirmed').length;
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-8">

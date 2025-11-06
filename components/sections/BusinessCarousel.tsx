@@ -75,9 +75,15 @@ export default function BusinessCarousel({
                 viewport={{ once: true }}
                 transition={{ duration: 0.5, delay: index * 0.1 }}
                 className="flex-shrink-0"
+                style={{ pointerEvents: 'auto' }}
               >
-                <Link href={`/${omdSlug}/${type}s/${business.slug}`}>
-                  <div className="group w-80 overflow-hidden rounded-2xl bg-white shadow-lg transition-all hover:shadow-xl">
+                <Link 
+                  href={`/${omdSlug}/${type}s/${business.slug}`}
+                  className="block touch-manipulation"
+                  style={{ touchAction: 'manipulation' }}
+                  prefetch={true}
+                >
+                  <div className="group w-80 overflow-hidden rounded-2xl bg-white shadow-lg transition-shadow hover:shadow-xl">
                     {/* Image */}
                     <div className="relative h-48 overflow-hidden">
                       <OptimizedImage
@@ -88,7 +94,7 @@ export default function BusinessCarousel({
                         )}
                         alt={business.name}
                         fill
-                        className="object-cover transition-transform duration-300 group-hover:scale-110"
+                        className="object-cover transition-transform duration-300 group-hover:scale-110 pointer-events-none"
                         sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                         priority={index < 3} // Prioritize first 3 images
                       />
@@ -173,7 +179,8 @@ export default function BusinessCarousel({
         <div className="mt-8 text-center">
           <Link
             href={`/${omdSlug}/${type}s`}
-            className="inline-flex items-center text-lg font-semibold text-blue-600 hover:underline"
+            className="inline-flex items-center text-lg font-semibold text-blue-600 hover:underline touch-manipulation"
+            style={{ touchAction: 'manipulation' }}
           >
             View All {type === 'hotel' ? 'Hotels' : type === 'restaurant' ? 'Restaurants' : 'Experiences'}
             <svg

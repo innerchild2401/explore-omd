@@ -1,6 +1,7 @@
 'use client';
 
 import { motion } from 'framer-motion';
+import Link from 'next/link';
 import type { Section, OMD } from '@/types';
 import { getImageUrl } from '@/lib/utils';
 import OptimizedImage from '@/components/ui/OptimizedImage';
@@ -89,18 +90,16 @@ export default function HeroSection({ section, omd }: HeroSectionProps) {
 
           {/* CTA Button */}
           {cta && (
-            <motion.a
+            <Link
               href={`/${omd.slug}/explore`}
-              className="inline-block rounded-full px-8 py-4 text-lg font-semibold text-white transition-all hover:scale-105"
-              style={{ backgroundColor: omd.colors.primary }}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, delay: 0.6 }}
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
+              className="inline-block rounded-full px-8 py-4 text-lg font-semibold text-white transition-transform hover:scale-105 touch-manipulation"
+              style={{ 
+                backgroundColor: omd.colors.primary,
+                touchAction: 'manipulation'
+              }}
             >
               {cta}
-            </motion.a>
+            </Link>
           )}
         </motion.div>
 

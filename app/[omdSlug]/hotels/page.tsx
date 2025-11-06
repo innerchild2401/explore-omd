@@ -326,7 +326,7 @@ export default async function HotelsPage({ params, searchParams }: HotelsPagePro
                         src={typeof mainImage === 'string' ? mainImage : (mainImage as any)?.url || '/placeholder-hotel.jpg'}
                         alt={business.name}
                         fill
-                        className="object-cover hover:scale-105 transition-transform duration-300"
+                        className="object-cover hover:scale-105 transition-transform duration-300 pointer-events-none"
                         sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                       />
                     ) : (
@@ -400,7 +400,9 @@ export default async function HotelsPage({ params, searchParams }: HotelsPagePro
                     {/* Action Button */}
                     <Link
                       href={`/${params.omdSlug}/hotels/${business.slug}${hasSearchParams ? `?checkIn=${searchParams.checkIn}&checkOut=${searchParams.checkOut}&adults=${searchParams.adults || '1'}&children=${searchParams.children || '0'}` : ''}`}
-                      className="w-full bg-blue-600 text-white font-semibold py-3 px-4 rounded-lg hover:bg-blue-700 transition-colors text-center block"
+                      className="w-full bg-blue-600 text-white font-semibold py-3 px-4 rounded-lg hover:bg-blue-700 transition-colors text-center block touch-manipulation"
+                      style={{ touchAction: 'manipulation' }}
+                      prefetch={true}
                     >
                       View Details & Book
                     </Link>

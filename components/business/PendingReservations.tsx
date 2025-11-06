@@ -123,7 +123,7 @@ export default function PendingReservations({ hotelId, onClose }: PendingReserva
         taxes: taxes,
         fees: fees,
         total_amount: totalAmount,
-        currency: reservation.currency || 'RON', // Preserve existing currency or default to RON
+        currency: 'RON', // Always use RON
       };
 
       const { error } = await supabase
@@ -305,7 +305,7 @@ export default function PendingReservations({ hotelId, onClose }: PendingReserva
                         <div>
                           <p className="text-sm font-medium text-gray-700">Total Amount</p>
                           <p className="text-lg font-semibold text-gray-900">
-                            {formatCurrency(reservation.total_amount, reservation.currency)}
+                            {formatCurrency(reservation.total_amount, 'RON')}
                           </p>
                         </div>
                       </div>

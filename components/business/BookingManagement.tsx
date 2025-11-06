@@ -743,7 +743,7 @@ export default function BookingManagement({ hotelId, rooms, onClose }: BookingMa
                     {/* Amount */}
                     <div className="mt-4 flex items-center justify-between">
                       <div className="text-lg font-bold text-gray-900">
-                        {formatCurrency(reservation.total_amount, reservation.currency)}
+                        {formatCurrency(reservation.total_amount, 'RON')}
                       </div>
                       <div className="text-sm text-gray-500">
                         Created: {formatDate(reservation.created_at)}

@@ -468,14 +468,14 @@ export default function ReservationDetailModal({
                 <div className="flex justify-between">
                   <span className="text-gray-700">Base Rate ({nights} night{nights !== 1 ? 's' : ''}):</span>
                   <span className="font-medium text-gray-900">
-                    {formatPrice(reservation.base_rate, reservation.currency || 'RON')}
+                    {formatPrice(reservation.base_rate, 'RON')}
                   </span>
                 </div>
                 {reservation.taxes > 0 && (
                   <div className="flex justify-between">
                     <span className="text-gray-700">Taxes:</span>
                     <span className="font-medium text-gray-900">
-                      {formatPrice(reservation.taxes, reservation.currency || 'RON')}
+                      {formatPrice(reservation.taxes, 'RON')}
                     </span>
                   </div>
                 )}
@@ -483,7 +483,7 @@ export default function ReservationDetailModal({
                   <div className="flex justify-between">
                     <span className="text-gray-700">Fees:</span>
                     <span className="font-medium text-gray-900">
-                      {formatPrice(reservation.fees, reservation.currency || 'RON')}
+                      {formatPrice(reservation.fees, 'RON')}
                     </span>
                   </div>
                 )}
@@ -491,7 +491,7 @@ export default function ReservationDetailModal({
                   <div className="flex justify-between">
                     <span className="font-semibold text-gray-900">Total:</span>
                     <span className="text-lg font-bold text-gray-900">
-                      {formatPrice(reservation.total_amount, reservation.currency || 'RON')}
+                      {formatPrice(reservation.total_amount, 'RON')}
                     </span>
                   </div>
                 </div>

@@ -20,7 +20,7 @@ export default function RoomImageCarousel({ images, roomName }: RoomImageCarouse
 
   if (normalizedImages.length === 0) {
     return (
-      <div className="relative h-64 w-full rounded-lg bg-gray-200 flex items-center justify-center">
+      <div className="relative h-64 w-full min-w-0 max-w-full rounded-lg bg-gray-200 flex items-center justify-center">
         <span className="text-gray-400">No images</span>
       </div>
     );
@@ -38,7 +38,7 @@ export default function RoomImageCarousel({ images, roomName }: RoomImageCarouse
 
   return (
     <>
-      <div className="relative h-64 w-full overflow-hidden rounded-lg bg-gray-900 group">
+      <div className="relative h-64 w-full min-w-0 max-w-full overflow-hidden rounded-lg bg-gray-900 group">
         {/* Main Image - Now using OptimizedImage */}
         <OptimizedImage
           src={normalizedImages[currentIndex].url}

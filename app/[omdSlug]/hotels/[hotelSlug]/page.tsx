@@ -183,7 +183,7 @@ export default async function HotelDetailPage({ params, searchParams }: HotelPag
       <div className="mx-auto max-w-7xl px-4 py-8">
         <div className="grid gap-8 lg:grid-cols-3">
           {/* Left Column - Main Info */}
-          <div className="lg:col-span-2">
+          <div className="lg:col-span-2 w-full min-w-0">
             {/* Hotel Title & Rating */}
             <div className="mb-6">
               <div className="mb-2 flex items-center gap-3">
@@ -247,12 +247,12 @@ export default async function HotelDetailPage({ params, searchParams }: HotelPag
             )}
 
             {/* Rooms */}
-            <div id="rooms-section" className="mb-8">
+            <div id="rooms-section" className="mb-8 w-full min-w-0">
               <h2 className="mb-4 text-2xl font-bold text-gray-900">
                 {searchParams.checkIn && searchParams.checkOut ? 'Available Rooms' : 'Rooms & Suites'}
               </h2>
               {rooms && rooms.length > 0 ? (
-                <div className="space-y-4">
+                <div className="space-y-4 w-full min-w-0">
                   {rooms.map((room, index) => (
                     <LazyLoadWrapper
                       key={room.id}

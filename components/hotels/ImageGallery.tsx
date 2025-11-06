@@ -21,7 +21,7 @@ export default function ImageGallery({ images, hotelName }: ImageGalleryProps) {
 
   if (images.length === 0) {
     return (
-      <div className="h-96 w-full rounded-2xl bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center">
+      <div className="h-96 w-full min-w-0 max-w-full rounded-2xl bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center">
         <div className="text-center text-gray-500">
           <svg className="mx-auto h-16 w-16 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
@@ -35,13 +35,13 @@ export default function ImageGallery({ images, hotelName }: ImageGalleryProps) {
   return (
     <>
       {/* Main Gallery - Beautiful Responsive Layout */}
-      <div className="w-full">
+      <div className="w-full min-w-0 max-w-full">
         {/* Mobile Layout: Stack vertically */}
         <div className="block md:hidden">
-          <div className="space-y-2">
+          <div className="space-y-2 w-full min-w-0">
             {/* Hero Image */}
             <div 
-              className="relative h-80 w-full cursor-pointer overflow-hidden rounded-2xl group"
+              className="relative h-80 w-full min-w-0 max-w-full cursor-pointer overflow-hidden rounded-2xl group"
               onClick={() => setSelectedImage(0)}
             >
               <OptimizedImage
@@ -71,7 +71,7 @@ export default function ImageGallery({ images, hotelName }: ImageGalleryProps) {
 
             {/* Thumbnail Grid */}
             {displayImages.length > 1 && (
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-2 gap-2 w-full min-w-0">
                 {displayImages.slice(1, 5).map((image, index) => (
                   <div
                     key={index}
@@ -109,7 +109,7 @@ export default function ImageGallery({ images, hotelName }: ImageGalleryProps) {
 
         {/* Desktop Layout: Hero + Side Grid */}
         <div className="hidden md:block">
-          <div className="grid h-[60vh] grid-cols-4 gap-3 overflow-hidden rounded-2xl">
+          <div className="grid h-[60vh] grid-cols-4 gap-3 overflow-hidden rounded-2xl w-full min-w-0">
             {/* Hero Image - Takes 2 columns, 2 rows */}
             <div 
               className="col-span-2 row-span-2 cursor-pointer overflow-hidden group relative"

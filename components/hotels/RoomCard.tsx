@@ -49,9 +49,9 @@ export default function RoomCard({ room, hotelSlug, omdSlug, hotelId, amenities 
     <div className={`overflow-hidden rounded-2xl bg-white shadow-sm transition-shadow hover:shadow-md ${
       !canBook ? 'opacity-75' : ''
     }`}>
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-4 md:grid-cols-3 w-full min-w-0">
         {/* Room Image Carousel */}
-        <div className="md:col-span-1">
+        <div className="md:col-span-1 w-full min-w-0">
           <RoomImageCarousel 
             images={room.images || []} 
             roomName={room.name} 
@@ -59,7 +59,7 @@ export default function RoomCard({ room, hotelSlug, omdSlug, hotelId, amenities 
         </div>
 
         {/* Room Info */}
-        <div className="p-6 md:col-span-2">
+        <div className="p-6 md:col-span-2 w-full min-w-0">
           <div className="flex items-start justify-between">
             <div className="flex-1">
               <h3 className="mb-2 text-2xl font-bold text-gray-900">{room.name}</h3>
@@ -120,7 +120,7 @@ export default function RoomCard({ room, hotelSlug, omdSlug, hotelId, amenities 
             </div>
 
             {/* Price & Booking */}
-            <div className="ml-4 text-right">
+            <div className="ml-4 text-right flex-shrink-0">
               <div className="mb-2">
                 <div className="text-3xl font-bold text-gray-900">{formatPrice(dynamicPrice, 'RON')}</div>
                 <div className="text-sm text-gray-600">per night</div>

@@ -1,11 +1,12 @@
-import { createClient } from '@/lib/supabase/server';
+import { createServiceRoleClient } from '@/lib/supabase/server';
 
 /**
  * Schedule email sequence for a reservation
  * Checks conditions and schedules emails accordingly
  */
 export async function scheduleEmailSequence(reservationId: string): Promise<void> {
-  const supabase = await createClient();
+  // Use service role client to bypass RLS for email scheduling
+  const supabase = createServiceRoleClient();
 
   // Get reservation details
   const { data: reservation, error: reservationError } = await supabase
@@ -54,7 +55,7 @@ export async function scheduleEmailSequence(reservationId: string): Promise<void
       .maybeSingle();
 
     if (!existingLog) {
-      await supabase
+      const { error: insertError } = await supabase
         .from('email_sequence_logs')
         .insert({
           reservation_id: reservationId,
@@ -62,6 +63,10 @@ export async function scheduleEmailSequence(reservationId: string): Promise<void
           scheduled_at: scheduledDate.toISOString(),
           status: 'scheduled',
         });
+      
+      if (insertError) {
+        console.error('Error scheduling post-booking followup email:', insertError);
+      }
     }
   }
 
@@ -80,7 +85,7 @@ export async function scheduleEmailSequence(reservationId: string): Promise<void
     .maybeSingle();
 
   if (!existingPostCheckinLog) {
-    await supabase
+    const { error: insertError } = await supabase
       .from('email_sequence_logs')
       .insert({
         reservation_id: reservationId,
@@ -88,6 +93,10 @@ export async function scheduleEmailSequence(reservationId: string): Promise<void
         scheduled_at: postCheckinDate.toISOString(),
         status: 'scheduled',
       });
+    
+    if (insertError) {
+      console.error('Error scheduling post-checkin email:', insertError);
+    }
   }
 
   // Schedule post-checkout email (1 day after check-out)
@@ -106,7 +115,7 @@ export async function scheduleEmailSequence(reservationId: string): Promise<void
     .maybeSingle();
 
   if (!existingPostCheckoutLog) {
-    await supabase
+    const { error: insertError } = await supabase
       .from('email_sequence_logs')
       .insert({
         reservation_id: reservationId,
@@ -114,6 +123,10 @@ export async function scheduleEmailSequence(reservationId: string): Promise<void
         scheduled_at: postCheckoutDate.toISOString(),
         status: 'scheduled',
       });
+    
+    if (insertError) {
+      console.error('Error scheduling post-checkout email:', insertError);
+    }
   }
 }
 

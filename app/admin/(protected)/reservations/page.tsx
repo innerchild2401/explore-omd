@@ -23,8 +23,8 @@ export default async function AdminReservationsPage() {
   }
 
   // Get all reservations with related data
-  // Filter by OMD if not super admin
-  let query = supabase
+  // We'll filter by OMD client-side to ensure cancelled reservations are included
+  const { data: allReservations, error: reservationsError } = await supabase
     .from('reservations')
     .select(`
       *,
@@ -58,12 +58,13 @@ export default async function AdminReservationsPage() {
     .order('created_at', { ascending: false })
     .limit(1000);
 
-  // If not super admin, filter by OMD
-  if (profile.role !== 'super_admin' && profile.omd_id) {
-    query = query.eq('businesses.omd_id', profile.omd_id);
-  }
-
-  const { data: reservations, error: reservationsError } = await query;
+  // Filter by OMD if not super admin (client-side filtering to ensure all statuses are included)
+  const reservations = profile.role === 'super_admin'
+    ? allReservations
+    : allReservations?.filter((reservation: any) => {
+        const omdId = reservation.businesses?.omd_id;
+        return omdId === profile.omd_id;
+      }) || [];
 
   if (reservationsError) {
     console.error('Error fetching reservations:', reservationsError);

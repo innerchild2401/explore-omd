@@ -35,7 +35,7 @@ export default function AreaFilter({ areas }: AreaFilterProps) {
     <select 
       value={currentArea}
       onChange={handleAreaChange}
-      className="rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none bg-white"
+      className="rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-blue-500 focus:outline-none bg-white"
     >
       <option value="">All Areas</option>
       {areas.map((area) => (

@@ -35,6 +35,34 @@ a, button {
   -webkit-tap-highlight-color: transparent;
 }
 
+/* Ensure all form elements have explicit text colors for readability */
+input[type="text"],
+input[type="email"],
+input[type="tel"],
+input[type="number"],
+input[type="date"],
+input[type="time"],
+input[type="datetime-local"],
+input[type="password"],
+input[type="search"],
+input[type="url"],
+select,
+textarea {
+  color: #111827 !important; /* text-gray-900 */
+}
+
+/* Ensure date inputs are readable on all devices */
+input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(0);
+}
+
+input[type="date"]::-webkit-datetime-edit-text,
+input[type="date"]::-webkit-datetime-edit-month-field,
+input[type="date"]::-webkit-datetime-edit-day-field,
+input[type="date"]::-webkit-datetime-edit-year-field {
+  color: #111827 !important; /* text-gray-900 */
+}
+
 @layer utilities {
   .text-balance {
     text-wrap: balance;

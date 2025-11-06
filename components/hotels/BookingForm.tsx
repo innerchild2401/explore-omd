@@ -261,7 +261,7 @@ export default function BookingForm({ hotelId, roomId, roomName, onBookingSubmit
             required
             value={formData.first_name}
             onChange={(e) => setFormData({ ...formData, first_name: e.target.value })}
-            className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none"
+            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 focus:border-blue-500 focus:outline-none"
           />
         </div>
         <div>
@@ -274,7 +274,7 @@ export default function BookingForm({ hotelId, roomId, roomName, onBookingSubmit
             required
             value={formData.last_name}
             onChange={(e) => setFormData({ ...formData, last_name: e.target.value })}
-            className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none"
+            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 focus:border-blue-500 focus:outline-none"
           />
         </div>
       </div>
@@ -289,7 +289,7 @@ export default function BookingForm({ hotelId, roomId, roomName, onBookingSubmit
           required
           value={formData.email}
           onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-          className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none"
+          className="w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 focus:border-blue-500 focus:outline-none"
         />
       </div>
 
@@ -303,7 +303,7 @@ export default function BookingForm({ hotelId, roomId, roomName, onBookingSubmit
           required
           value={formData.phone}
           onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-          className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none"
+          className="w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 focus:border-blue-500 focus:outline-none"
         />
       </div>
 
@@ -318,7 +318,7 @@ export default function BookingForm({ hotelId, roomId, roomName, onBookingSubmit
             required
             value={formData.check_in_date}
             onChange={(e) => setFormData({ ...formData, check_in_date: e.target.value })}
-            className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none"
+            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 focus:border-blue-500 focus:outline-none"
           />
         </div>
         <div>
@@ -331,7 +331,7 @@ export default function BookingForm({ hotelId, roomId, roomName, onBookingSubmit
             required
             value={formData.check_out_date}
             onChange={(e) => setFormData({ ...formData, check_out_date: e.target.value })}
-            className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none"
+            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 focus:border-blue-500 focus:outline-none"
           />
         </div>
       </div>
@@ -348,7 +348,7 @@ export default function BookingForm({ hotelId, roomId, roomName, onBookingSubmit
             min="1"
             value={formData.adults}
             onChange={(e) => setFormData({ ...formData, adults: parseInt(e.target.value) })}
-            className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none"
+            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 focus:border-blue-500 focus:outline-none"
           />
         </div>
         <div>
@@ -361,7 +361,7 @@ export default function BookingForm({ hotelId, roomId, roomName, onBookingSubmit
             min="0"
             value={formData.children}
             onChange={(e) => setFormData({ ...formData, children: parseInt(e.target.value) })}
-            className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none"
+            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 focus:border-blue-500 focus:outline-none"
           />
         </div>
         <div>
@@ -374,7 +374,7 @@ export default function BookingForm({ hotelId, roomId, roomName, onBookingSubmit
             min="0"
             value={formData.infants}
             onChange={(e) => setFormData({ ...formData, infants: parseInt(e.target.value) })}
-            className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none"
+            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 focus:border-blue-500 focus:outline-none"
           />
         </div>
       </div>
@@ -388,7 +388,7 @@ export default function BookingForm({ hotelId, roomId, roomName, onBookingSubmit
           rows={3}
           value={formData.special_requests}
           onChange={(e) => setFormData({ ...formData, special_requests: e.target.value })}
-          className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none"
+          className="w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 focus:border-blue-500 focus:outline-none"
         />
       </div>
 

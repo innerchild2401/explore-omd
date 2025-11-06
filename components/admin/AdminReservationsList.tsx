@@ -147,7 +147,7 @@ export default function AdminReservationsList({ reservations, userRole }: AdminR
                   <div className="grid grid-cols-2 gap-4 mb-3">
                     <div>
                       <p className="text-sm font-medium text-gray-700">Hotel</p>
-                      <p className="text-gray-900">{reservation.businesses?.name || 'N/A'}</p>
+                      <p className="text-gray-900">{reservation.hotels?.businesses?.name || 'N/A'}</p>
                     </div>
                     <div>
                       <p className="text-sm font-medium text-gray-700">Room</p>
@@ -240,7 +240,7 @@ export default function AdminReservationsList({ reservations, userRole }: AdminR
                   </div>
                   <div>
                     <p className="text-sm font-medium text-gray-700">Hotel</p>
-                    <p className="text-gray-900">{selectedReservation.businesses?.name || 'N/A'}</p>
+                    <p className="text-gray-900">{selectedReservation.hotels?.businesses?.name || 'N/A'}</p>
                   </div>
                   <div>
                     <p className="text-sm font-medium text-gray-700">Room</p>

@@ -24,6 +24,7 @@ export default async function AdminReservationsPage() {
 
   // Get all reservations with related data
   // We'll filter by OMD client-side to ensure cancelled reservations are included
+  // Note: reservations -> hotels -> businesses (no direct relationship)
   const { data: allReservations, error: reservationsError } = await supabase
     .from('reservations')
     .select(`
@@ -41,13 +42,13 @@ export default async function AdminReservationsPage() {
       ),
       hotels!left(
         id,
-        business_id
-      ),
-      businesses!left(
-        id,
-        name,
-        slug,
-        omd_id
+        business_id,
+        businesses!left(
+          id,
+          name,
+          slug,
+          omd_id
+        )
       ),
       booking_channels!left(
         name,
@@ -62,7 +63,7 @@ export default async function AdminReservationsPage() {
   const reservations = profile.role === 'super_admin'
     ? allReservations
     : allReservations?.filter((reservation: any) => {
-        const omdId = reservation.businesses?.omd_id;
+        const omdId = reservation.hotels?.businesses?.omd_id;
         return omdId === profile.omd_id;
       }) || [];
 

@@ -11,6 +11,11 @@ interface Inquiry {
   message: string;
   status: string;
   notes?: string;
+  omd_id?: string;
+  omds?: {
+    name: string;
+    slug: string;
+  } | null;
   created_at: string;
   updated_at: string;
 }
@@ -141,6 +146,11 @@ export default function ContactInquiriesList({ inquiries }: ContactInquiriesList
                     </span>
                   </div>
                   <p className="text-gray-600">{inquiry.email}</p>
+                  {inquiry.omds && (
+                    <p className="text-sm text-blue-600 font-medium">
+                      OMD: {inquiry.omds.name}
+                    </p>
+                  )}
                   <p className="text-sm text-gray-500">
                     {new Date(inquiry.created_at).toLocaleString()}
                   </p>

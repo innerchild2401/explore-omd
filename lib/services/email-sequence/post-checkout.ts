@@ -146,6 +146,7 @@ export async function sendPostCheckoutEmail(reservationId: string): Promise<bool
   // Get base URL
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://destexplore.eu';
   const destinationUrl = `${baseUrl}/${omdSlug}`;
+  const ratingUrl = `${baseUrl}/${omdSlug}/rate`;
 
   // Send email via MailerSend
   try {
@@ -172,8 +173,8 @@ export async function sendPostCheckoutEmail(reservationId: string): Promise<bool
       .setTo(recipients)
       .setReplyTo(sender)
       .setSubject(`Sperăm că te-ai bucurat de ${omdName}!`)
-      .setHtml(generateEmailHTML(guestName, omdName, hotelName, destinationUrl))
-      .setText(generateEmailText(guestName, omdName, hotelName, destinationUrl));
+      .setHtml(generateEmailHTML(guestName, omdName, hotelName, destinationUrl, ratingUrl))
+      .setText(generateEmailText(guestName, omdName, hotelName, destinationUrl, ratingUrl));
 
     await mailerSend.email.send(emailParams);
 
@@ -229,7 +230,8 @@ function generateEmailHTML(
   guestName: string,
   omdName: string,
   hotelName: string,
-  destinationUrl: string
+  destinationUrl: string,
+  ratingUrl: string
 ): string {
   return `
 <!DOCTYPE html>
@@ -321,7 +323,7 @@ function generateEmailHTML(
                 <p>Experiența ta este importantă pentru noi. Ne-ar face plăcere să ne spui cum ți-a plăcut destinația.</p>
 
                 <div class="cta-container">
-                    <a href="${destinationUrl}" class="cta-button">Evaluează ${omdName}</a>
+                    <a href="${ratingUrl}" class="cta-button">Evaluează ${omdName}</a>
                 </div>
 
                 <p style="text-align: center; color: #666; font-size: 14px; margin-top: 20px;">
@@ -344,7 +346,8 @@ function generateEmailText(
   guestName: string,
   omdName: string,
   hotelName: string,
-  destinationUrl: string
+  destinationUrl: string,
+  ratingUrl: string
 ): string {
   return `
 Salut ${guestName}!
@@ -353,7 +356,7 @@ Sperăm că te-ai bucurat de șederea ta la ${hotelName} și că ai petrecut mom
 
 Experiența ta este importantă pentru noi. Ne-ar face plăcere să ne spui cum ți-a plăcut destinația.
 
-Evaluează ${omdName}: ${destinationUrl}
+Evaluează ${omdName}: ${ratingUrl}
 
 Feedback-ul tău ne ajută să continuăm să oferim experiențe minunate.
 

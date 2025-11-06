@@ -6,7 +6,7 @@ export async function POST(request: Request) {
     const supabase = await createClient();
     
     const body = await request.json();
-    const { nume, email, mesaj } = body;
+    const { nume, email, mesaj, omdSlug } = body;
 
     // Validate required fields
     if (!nume || !email || !mesaj) {
@@ -14,6 +14,20 @@ export async function POST(request: Request) {
         { error: 'Toate câmpurile sunt obligatorii' },
         { status: 400 }
       );
+    }
+
+    // Get OMD ID from slug
+    let omdId: string | null = null;
+    if (omdSlug) {
+      const { data: omd } = await supabase
+        .from('omds')
+        .select('id')
+        .eq('slug', omdSlug)
+        .single();
+      
+      if (omd) {
+        omdId = omd.id;
+      }
     }
 
     // Insert inquiry into database
@@ -24,6 +38,7 @@ export async function POST(request: Request) {
         email: email,
         message: mesaj,
         status: 'new',
+        omd_id: omdId,
       })
       .select()
       .single();

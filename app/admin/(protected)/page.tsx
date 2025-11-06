@@ -225,6 +225,26 @@ export default async function AdminDashboard() {
               </a>
 
               <a
+                href="/admin/booking-issues"
+                className="rounded-lg bg-red-600 p-6 text-white shadow transition-colors hover:bg-red-700"
+              >
+                <h4 className="mb-2 text-lg font-semibold">Booking Issues</h4>
+                <p className="text-sm text-red-100">
+                  View and manage booking issue reports
+                </p>
+              </a>
+
+              <a
+                href="/admin/ratings"
+                className="rounded-lg bg-yellow-600 p-6 text-white shadow transition-colors hover:bg-yellow-700"
+              >
+                <h4 className="mb-2 text-lg font-semibold">Ratings & Feedback</h4>
+                <p className="text-sm text-yellow-100">
+                  View reservation and destination ratings
+                </p>
+              </a>
+
+              <a
                 href="/admin/users"
                 className="rounded-lg bg-purple-600 p-6 text-white shadow transition-colors hover:bg-purple-700"
               >
@@ -253,6 +273,26 @@ export default async function AdminDashboard() {
                 <h4 className="mb-2 text-lg font-semibold">Manage Businesses</h4>
                 <p className="text-sm text-green-100">
                   Approve and manage business listings
+                </p>
+              </a>
+
+              <a
+                href="/admin/contact-inquiries"
+                className="rounded-lg bg-blue-600 p-6 text-white shadow transition-colors hover:bg-blue-700"
+              >
+                <h4 className="mb-2 text-lg font-semibold">Contact Inquiries</h4>
+                <p className="text-sm text-blue-100">
+                  View contact form submissions
+                </p>
+              </a>
+
+              <a
+                href="/admin/booking-issues"
+                className="rounded-lg bg-red-600 p-6 text-white shadow transition-colors hover:bg-red-700"
+              >
+                <h4 className="mb-2 text-lg font-semibold">Booking Issues</h4>
+                <p className="text-sm text-red-100">
+                  View booking issue reports
                 </p>
               </a>
 

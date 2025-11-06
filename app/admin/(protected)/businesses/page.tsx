@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 import BusinessApprovalList from '@/components/admin/BusinessApprovalList';
+import FeaturedBusinessOrder from '@/components/admin/FeaturedBusinessOrder';
 
 export default async function BusinessesAdminPage() {
   const supabase = await createClient();
@@ -60,13 +61,27 @@ export default async function BusinessesAdminPage() {
     .order('created_at', { ascending: false });
 
   return (
-    <div>
-      <div className="mb-6">
+    <div className="space-y-8">
+      <div>
         <h1 className="text-3xl font-bold text-gray-900">Business Management</h1>
         <p className="mt-2 text-gray-600">
           Review and approve business registrations
         </p>
       </div>
+
+      {/* Featured Business Ordering */}
+      {approvedBusinesses && approvedBusinesses.length > 0 && (
+        <FeaturedBusinessOrder
+          businesses={approvedBusinesses.map((b: any) => ({
+            id: b.id,
+            name: b.name,
+            type: b.type,
+            is_omd_member: b.is_omd_member,
+            featured_order: b.featured_order,
+          }))}
+          omdId={profile.omd_id}
+        />
+      )}
 
       <BusinessApprovalList
         pendingBusinesses={pendingBusinesses || []}

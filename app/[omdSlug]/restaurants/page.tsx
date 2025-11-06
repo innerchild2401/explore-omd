@@ -4,6 +4,7 @@ import Link from 'next/link';
 import OptimizedImage from '@/components/ui/OptimizedImage';
 import AreaFilter from '@/components/hotels/AreaFilter';
 import OmdMemberBadge from '@/components/ui/OmdMemberBadge';
+import { sortBusinessesByFeaturedOrder } from '@/lib/utils/business-sorting';
 
 interface RestaurantsPageProps {
   params: { omdSlug: string };
@@ -51,6 +52,7 @@ export default async function RestaurantsPage({ params, searchParams }: Restaura
         area_id,
         rating,
         is_omd_member,
+        featured_order,
         areas(
           id,
           name
@@ -58,9 +60,7 @@ export default async function RestaurantsPage({ params, searchParams }: Restaura
       )
     `)
     .eq('businesses.omd_id', omd.id)
-    .eq('businesses.status', 'active')
-    .order('businesses.is_omd_member', { ascending: false, foreignTable: 'businesses', nullsFirst: false })
-    .order('businesses.rating', { ascending: false, foreignTable: 'businesses' });
+    .eq('businesses.status', 'active');
 
   // Filter by area if provided
   if (searchParams.area) {
@@ -68,6 +68,9 @@ export default async function RestaurantsPage({ params, searchParams }: Restaura
   }
 
   const { data: restaurants } = await restaurantsQuery;
+  
+  // Sort restaurants using featured ordering: featured first (1,2,3), then remaining members (random), then non-members (random)
+  const sortedRestaurants = restaurants ? sortBusinessesByFeaturedOrder(restaurants) : null;
 
   return (
     <div className="min-h-screen bg-gray-50 w-full overflow-x-hidden" style={{ maxWidth: '100vw', boxSizing: 'border-box' as const }}>
@@ -91,13 +94,13 @@ export default async function RestaurantsPage({ params, searchParams }: Restaura
       {/* Restaurants List */}
       <main className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8 w-full min-w-0" style={{ maxWidth: '100%', boxSizing: 'border-box' }}>
         {/* Filters */}
-        {restaurants && restaurants.length > 0 && areas && areas.length > 0 && (
+        {sortedRestaurants && sortedRestaurants.length > 0 && areas && areas.length > 0 && (
           <div className="mb-6 flex items-center justify-end">
             <AreaFilter areas={areas} />
           </div>
         )}
 
-        {!restaurants || restaurants.length === 0 ? (
+        {!sortedRestaurants || sortedRestaurants.length === 0 ? (
           <div className="text-center py-16">
             <div className="mx-auto w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mb-6">
               <svg
@@ -119,7 +122,7 @@ export default async function RestaurantsPage({ params, searchParams }: Restaura
           </div>
         ) : (
           <div className="grid grid-cols-1 gap-6 sm:gap-8 sm:grid-cols-2 lg:grid-cols-3 w-full min-w-0 max-w-full">
-            {restaurants.map((restaurant) => {
+            {sortedRestaurants.map((restaurant) => {
               const business = restaurant.businesses;
               const mainImage = business.images?.[0];
               

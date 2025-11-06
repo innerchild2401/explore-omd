@@ -88,6 +88,18 @@ export async function getSectionByType(omdId: string, type: string): Promise<Sec
 // BUSINESS QUERIES
 // ============================================
 
+/**
+ * Shuffle array using Fisher-Yates algorithm
+ */
+function shuffleArray<T>(array: T[]): T[] {
+  const shuffled = [...array];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  return shuffled;
+}
+
 export async function getBusinessesByOMD(
   omdId: string,
   type?: 'hotel' | 'restaurant' | 'experience',
@@ -105,14 +117,8 @@ export async function getBusinessesByOMD(
     query = query.eq('type', type);
   }
 
-  if (limit) {
-    query = query.limit(limit);
-  }
-
-  // Sort by OMD member status first, then by rating
-  query = query.order('is_omd_member', { ascending: false, nullsFirst: false });
-  query = query.order('rating', { ascending: false });
-
+  // Don't apply limit here - we need to sort first, then apply limit
+  // Fetch all matching businesses first
   const { data, error } = await query;
 
   if (error) {
@@ -120,7 +126,45 @@ export async function getBusinessesByOMD(
     return [];
   }
 
-  return data as Business[];
+  if (!data || data.length === 0) {
+    return [];
+  }
+
+  // Sort businesses according to the new logic:
+  // 1. Featured businesses (featured_order 1, 2, 3) - in order
+  // 2. Remaining OMD members (random)
+  // 3. Non-members (random)
+  
+  const featured: Business[] = [];
+  const remainingMembers: Business[] = [];
+  const nonMembers: Business[] = [];
+
+  for (const business of data) {
+    if (business.featured_order !== null && business.featured_order !== undefined) {
+      featured.push(business);
+    } else if (business.is_omd_member === true) {
+      remainingMembers.push(business);
+    } else {
+      nonMembers.push(business);
+    }
+  }
+
+  // Sort featured businesses by featured_order (1, 2, 3)
+  featured.sort((a, b) => (a.featured_order || 0) - (b.featured_order || 0));
+
+  // Shuffle remaining members and non-members
+  const shuffledMembers = shuffleArray(remainingMembers);
+  const shuffledNonMembers = shuffleArray(nonMembers);
+
+  // Combine: featured first, then shuffled members, then shuffled non-members
+  const sorted = [...featured, ...shuffledMembers, ...shuffledNonMembers];
+
+  // Apply limit if specified
+  if (limit) {
+    return sorted.slice(0, limit) as Business[];
+  }
+
+  return sorted as Business[];
 }
 
 export async function getBusinessBySlug(omdId: string, slug: string): Promise<Business | null> {

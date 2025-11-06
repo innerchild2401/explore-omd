@@ -61,6 +61,7 @@ export interface Business {
   owner_id: string;
   area_id?: string | null;
   is_omd_member?: boolean;
+  featured_order?: number | null; // 1, 2, or 3 for featured businesses
   areas?: {
     id: string;
     name: string;

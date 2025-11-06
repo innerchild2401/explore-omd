@@ -4,6 +4,7 @@ import Link from 'next/link';
 import OptimizedImage from '@/components/ui/OptimizedImage';
 import AreaFilter from '@/components/hotels/AreaFilter';
 import OmdMemberBadge from '@/components/ui/OmdMemberBadge';
+import { sortBusinessesByFeaturedOrder } from '@/lib/utils/business-sorting';
 
 interface HotelsPageProps {
   params: { omdSlug: string };
@@ -58,6 +59,7 @@ export default async function HotelsPage({ params, searchParams }: HotelsPagePro
         rating,
         area_id,
         is_omd_member,
+        featured_order,
         areas(
           id,
           name
@@ -142,18 +144,8 @@ export default async function HotelsPage({ params, searchParams }: HotelsPagePro
     }
   }
 
-  // Sort hotels: OMD members first, then by rating
-  filteredHotels = filteredHotels.sort((a, b) => {
-    const aIsMember = a.businesses?.is_omd_member ? 1 : 0;
-    const bIsMember = b.businesses?.is_omd_member ? 1 : 0;
-    if (aIsMember !== bIsMember) {
-      return bIsMember - aIsMember; // OMD members first
-    }
-    // Then sort by rating
-    const aRating = a.businesses?.rating || 0;
-    const bRating = b.businesses?.rating || 0;
-    return bRating - aRating;
-  });
+  // Sort hotels using featured ordering: featured first (1,2,3), then remaining members (random), then non-members (random)
+  filteredHotels = sortBusinessesByFeaturedOrder(filteredHotels);
 
   const hasSearchParams = searchParams.checkIn || searchParams.checkOut;
   

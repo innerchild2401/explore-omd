@@ -4,6 +4,7 @@ import Link from 'next/link';
 import OptimizedImage from '@/components/ui/OptimizedImage';
 import AreaFilter from '@/components/hotels/AreaFilter';
 import OmdMemberBadge from '@/components/ui/OmdMemberBadge';
+import { sortBusinessesByFeaturedOrder } from '@/lib/utils/business-sorting';
 
 interface ExperiencesPageProps {
   params: { omdSlug: string };
@@ -48,6 +49,7 @@ export default async function ExperiencesPage({ params, searchParams }: Experien
         area_id,
         rating,
         is_omd_member,
+        featured_order,
         areas(
           id,
           name
@@ -55,9 +57,7 @@ export default async function ExperiencesPage({ params, searchParams }: Experien
       )
     `)
     .eq('businesses.omd_id', omd.id)
-    .eq('businesses.status', 'active')
-    .order('businesses.is_omd_member', { ascending: false, foreignTable: 'businesses', nullsFirst: false })
-    .order('businesses.rating', { ascending: false, foreignTable: 'businesses' });
+    .eq('businesses.status', 'active');
 
   // Filter by area if provided (before date filtering)
   if (searchParams.area) {
@@ -91,6 +91,9 @@ export default async function ExperiencesPage({ params, searchParams }: Experien
     const { data } = await experiencesQuery;
     filteredExperiences = data || [];
   }
+
+  // Sort experiences using featured ordering: featured first (1,2,3), then remaining members (random), then non-members (random)
+  filteredExperiences = sortBusinessesByFeaturedOrder(filteredExperiences);
 
   return (
     <div className="min-h-screen bg-gray-50">

@@ -158,7 +158,7 @@ export async function sendPostCheckoutEmail(reservationId: string): Promise<bool
     }
 
     const sender = new Sender(
-      process.env.MAILER_SEND_SENDER_EMAIL || 'test-z0vklo6pvy7l7qrx.mlsender.net',
+      process.env.MAILER_SEND_SENDER_EMAIL || 'no-reply@destexplore.eu',
       process.env.MAILER_SEND_SENDER_NAME || 'Echipa OMD'
     );
 

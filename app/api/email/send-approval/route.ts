@@ -22,8 +22,10 @@ export async function POST(request: NextRequest) {
       throw new Error('MAILER_SEND_API_KEY is not configured');
     }
 
+    // Use the same sender email as booking confirmation
+    const senderEmail = process.env.MAILER_SEND_FROM_EMAIL || 'no-reply@destexplore.eu';
     const sender = new Sender(
-      "test-z0vklo6pvy7l7qrx.mlsender.net",
+      senderEmail,
       "Your OMD Team"
     );
 

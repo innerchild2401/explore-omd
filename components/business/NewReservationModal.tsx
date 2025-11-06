@@ -184,7 +184,7 @@ export default function NewReservationModal({ hotelId, rooms, onClose, onSuccess
     const nights = Math.ceil((checkOut.getTime() - checkIn.getTime()) / (1000 * 60 * 60 * 24));
     
     const baseRate = selectedRoom.base_price * nights;
-    const taxes = baseRate * 0.1; // 10% tax
+    const taxes = 0; // All prices include taxes
     const fees = 0; // No additional fees for now
     const totalAmount = baseRate + taxes + fees;
 
@@ -784,7 +784,7 @@ export default function NewReservationModal({ hotelId, rooms, onClose, onSuccess
                         <span className="font-medium">{formatCurrency(pricingData.base_rate)}</span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-gray-600">Taxes (10%)</span>
+                        <span className="text-gray-600">Taxes (included)</span>
                         <span className="font-medium">{formatCurrency(pricingData.taxes)}</span>
                       </div>
                       <div className="flex justify-between">

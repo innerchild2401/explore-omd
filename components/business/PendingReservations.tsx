@@ -49,6 +49,8 @@ export default function PendingReservations({ hotelId, onClose }: PendingReserva
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [processingReservation, setProcessingReservation] = useState<string | null>(null);
+  const [rejectingReservation, setRejectingReservation] = useState<string | null>(null);
+  const [rejectionReason, setRejectionReason] = useState('');
 
   useEffect(() => {
     fetchPendingReservations();
@@ -112,7 +114,7 @@ export default function PendingReservations({ hotelId, onClose }: PendingReserva
       // Use base_rate from reservation (which is the nightly rate) or fall back to room base_price
       const nightlyRate = reservation.base_rate || reservation.rooms.base_price || 0;
       const baseRate = nightlyRate * nights;
-      const taxes = baseRate * 0.1; // 10% tax
+      const taxes = 0; // All prices include taxes
       const fees = 0;
       const totalAmount = baseRate + taxes + fees;
 
@@ -182,18 +184,33 @@ export default function PendingReservations({ hotelId, onClose }: PendingReserva
   };
 
   const handleRejectReservation = async (reservationId: string) => {
-    setProcessingReservation(reservationId);
+    // Open rejection modal
+    setRejectingReservation(reservationId);
+    setRejectionReason('');
+  };
+
+  const confirmRejection = async () => {
+    if (!rejectingReservation) return;
+    
+    if (!rejectionReason.trim()) {
+      setError('Please provide a reason for rejection');
+      return;
+    }
+
+    setProcessingReservation(rejectingReservation);
     try {
       const { error } = await supabase
         .from('reservations')
         .update({ 
           reservation_status: 'cancelled',
-          cancellation_reason: 'Rejected by hotel admin'
+          cancellation_reason: rejectionReason.trim()
         })
-        .eq('id', reservationId);
+        .eq('id', rejectingReservation);
 
       if (error) throw error;
       
+      setRejectingReservation(null);
+      setRejectionReason('');
       await fetchPendingReservations();
     } catch (err: any) {
       console.error('Error rejecting reservation:', err);
@@ -201,6 +218,12 @@ export default function PendingReservations({ hotelId, onClose }: PendingReserva
     } finally {
       setProcessingReservation(null);
     }
+  };
+
+  const cancelRejection = () => {
+    setRejectingReservation(null);
+    setRejectionReason('');
+    setError('');
   };
 
   const formatCurrency = (amount: number, currency: string = 'RON') => {
@@ -332,7 +355,7 @@ export default function PendingReservations({ hotelId, onClose }: PendingReserva
                       </button>
                       <button
                         onClick={() => handleRejectReservation(reservation.id)}
-                        disabled={processingReservation === reservation.id}
+                        disabled={processingReservation === reservation.id || rejectingReservation === reservation.id}
                         className="rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700 disabled:opacity-50"
                       >
                         ✗ Reject
@@ -345,6 +368,56 @@ export default function PendingReservations({ hotelId, onClose }: PendingReserva
           )}
         </div>
       </div>
+
+      {/* Rejection Reason Modal */}
+      {rejectingReservation && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4">
+          <div className="w-full max-w-md rounded-lg bg-white shadow-xl">
+            <div className="p-6">
+              <h3 className="mb-4 text-lg font-semibold text-gray-900">Reject Reservation</h3>
+              <p className="mb-4 text-sm text-gray-600">
+                Please provide a reason for rejecting this reservation. This reason will be visible to the OMD admin team.
+              </p>
+              
+              {error && (
+                <div className="mb-4 rounded-lg bg-red-50 p-3 text-sm text-red-600">{error}</div>
+              )}
+
+              <div className="mb-4">
+                <label htmlFor="rejectionReason" className="mb-2 block text-sm font-medium text-gray-700">
+                  Rejection Reason *
+                </label>
+                <textarea
+                  id="rejectionReason"
+                  value={rejectionReason}
+                  onChange={(e) => setRejectionReason(e.target.value)}
+                  rows={4}
+                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-red-500"
+                  placeholder="e.g., Room not available for requested dates, Guest requirements cannot be met..."
+                  required
+                />
+              </div>
+
+              <div className="flex justify-end gap-3">
+                <button
+                  onClick={cancelRejection}
+                  disabled={processingReservation === rejectingReservation}
+                  className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={confirmRejection}
+                  disabled={processingReservation === rejectingReservation || !rejectionReason.trim()}
+                  className="rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700 disabled:opacity-50"
+                >
+                  {processingReservation === rejectingReservation ? 'Rejecting...' : 'Confirm Rejection'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

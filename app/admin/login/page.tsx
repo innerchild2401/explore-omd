@@ -36,8 +36,8 @@ export default function AdminLogin() {
           .eq('id', data.user.id)
           .maybeSingle();
 
-        // If no profile, redirect to onboarding
-        if (!profile) {
+        // If no profile or still default visitor role, redirect to onboarding flow
+        if (!profile || profile.role === 'visitor') {
           router.push('/admin/onboarding');
           return;
         }

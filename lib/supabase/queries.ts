@@ -1,12 +1,16 @@
 import { createClient } from './server';
+import type { SupabaseClient } from '@supabase/supabase-js';
 import type { OMD, Section, Business } from '@/types';
 
 // ============================================
 // OMD QUERIES
 // ============================================
 
-export async function getOMDBySlug(slug: string): Promise<OMD | null> {
-  const supabase = await createClient();
+export async function getOMDBySlug(
+  slug: string,
+  supabaseClient?: SupabaseClient
+): Promise<OMD | null> {
+  const supabase = supabaseClient ?? await createClient();
   
   const { data, error } = await supabase
     .from('omds')
@@ -22,8 +26,8 @@ export async function getOMDBySlug(slug: string): Promise<OMD | null> {
   return data as OMD;
 }
 
-export async function getAllOMDs(): Promise<OMD[]> {
-  const supabase = await createClient();
+export async function getAllOMDs(supabaseClient?: SupabaseClient): Promise<OMD[]> {
+  const supabase = supabaseClient ?? await createClient();
   
   const { data, error } = await supabase
     .from('omds')
@@ -42,8 +46,12 @@ export async function getAllOMDs(): Promise<OMD[]> {
 // SECTION QUERIES
 // ============================================
 
-export async function getSectionsByOMD(omdId: string, includeHidden = false): Promise<Section[]> {
-  const supabase = await createClient();
+export async function getSectionsByOMD(
+  omdId: string,
+  includeHidden = false,
+  supabaseClient?: SupabaseClient
+): Promise<Section[]> {
+  const supabase = supabaseClient ?? await createClient();
   
   let query = supabase
     .from('sections')
@@ -65,8 +73,12 @@ export async function getSectionsByOMD(omdId: string, includeHidden = false): Pr
   return data as Section[];
 }
 
-export async function getSectionByType(omdId: string, type: string): Promise<Section | null> {
-  const supabase = await createClient();
+export async function getSectionByType(
+  omdId: string,
+  type: string,
+  supabaseClient?: SupabaseClient
+): Promise<Section | null> {
+  const supabase = supabaseClient ?? await createClient();
   
   const { data, error } = await supabase
     .from('sections')
@@ -103,9 +115,10 @@ function shuffleArray<T>(array: T[]): T[] {
 export async function getBusinessesByOMD(
   omdId: string,
   type?: 'hotel' | 'restaurant' | 'experience',
-  limit?: number
+  limit?: number,
+  supabaseClient?: SupabaseClient
 ): Promise<Business[]> {
-  const supabase = await createClient();
+  const supabase = supabaseClient ?? await createClient();
   
   let query = supabase
     .from('businesses')

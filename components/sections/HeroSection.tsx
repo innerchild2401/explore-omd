@@ -1,7 +1,8 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import Link from 'next/link';
+import { useEffect, useTransition } from 'react';
+import { useRouter } from 'next/navigation';
 import type { Section, OMD } from '@/types';
 import { getImageUrl } from '@/lib/utils';
 import OptimizedImage from '@/components/ui/OptimizedImage';
@@ -13,6 +14,30 @@ interface HeroSectionProps {
 
 export default function HeroSection({ section, omd }: HeroSectionProps) {
   const { title, subtitle, cta, backgroundImage } = section.content;
+  const router = useRouter();
+  const [isNavigating, startTransition] = useTransition();
+
+  useEffect(() => {
+    if (!cta) {
+      return;
+    }
+
+    try {
+      router.prefetch(`/${omd.slug}/explore`);
+    } catch {
+      // Prefetch can throw during server render; ignore
+    }
+  }, [cta, omd.slug, router]);
+
+  const handleExploreClick = () => {
+    if (!cta || isNavigating) {
+      return;
+    }
+
+    startTransition(() => {
+      router.push(`/${omd.slug}/explore`);
+    });
+  };
 
   return (
     <section className="relative h-screen w-full overflow-hidden">
@@ -90,16 +115,26 @@ export default function HeroSection({ section, omd }: HeroSectionProps) {
 
           {/* CTA Button */}
           {cta && (
-            <Link
-              href={`/${omd.slug}/explore`}
-              className="inline-block rounded-full px-8 py-4 text-lg font-semibold text-white transition-transform hover:scale-105 touch-manipulation"
-              style={{ 
+            <motion.button
+              type="button"
+              onClick={handleExploreClick}
+              whileTap={{ scale: 0.96 }}
+              disabled={isNavigating}
+              className="inline-flex items-center justify-center gap-2 rounded-full px-8 py-4 text-lg font-semibold text-white transition-transform hover:scale-105 disabled:cursor-not-allowed disabled:opacity-90 touch-manipulation"
+              style={{
                 backgroundColor: omd.colors.primary,
-                touchAction: 'manipulation'
+                touchAction: 'manipulation',
               }}
+              aria-busy={isNavigating}
             >
-              {cta}
-            </Link>
+              {isNavigating && (
+                <span
+                  className="h-4 w-4 animate-spin rounded-full border-2 border-white/70 border-t-transparent"
+                  aria-hidden="true"
+                />
+              )}
+              <span>{cta}</span>
+            </motion.button>
           )}
         </motion.div>
 

@@ -1,5 +1,5 @@
-import { createClient } from '@/lib/supabase/server';
 import { notFound } from 'next/navigation';
+import { createClient } from '@/lib/supabase/server';
 import { getOMDBySlug, getSectionsByOMD, getBusinessesByOMD } from '@/lib/supabase/queries';
 import BusinessCarousel from '@/components/sections/BusinessCarousel';
 import MapSection from '@/components/sections/MapSection';
@@ -14,21 +14,23 @@ interface ExplorePageProps {
 
 export default async function ExplorePage({ params }: ExplorePageProps) {
   const { omdSlug } = params;
-  
+
+  const supabase = await createClient();
+
   // Fetch OMD data
-  const omd = await getOMDBySlug(omdSlug);
-  
+  const omd = await getOMDBySlug(omdSlug, supabase);
+
   if (!omd) {
     notFound();
   }
 
-  // Fetch all visible sections
-  const sections = await getSectionsByOMD(omd.id);
-  
-  // Fetch businesses by type
-  const hotels = await getBusinessesByOMD(omd.id, 'hotel', 20);
-  const restaurants = await getBusinessesByOMD(omd.id, 'restaurant', 20);
-  const experiences = await getBusinessesByOMD(omd.id, 'experience', 20);
+  // Fetch all visible sections & businesses in parallel
+  const [sections, hotels, restaurants, experiences] = await Promise.all([
+    getSectionsByOMD(omd.id, false, supabase),
+    getBusinessesByOMD(omd.id, 'hotel', 20, supabase),
+    getBusinessesByOMD(omd.id, 'restaurant', 20, supabase),
+    getBusinessesByOMD(omd.id, 'experience', 20, supabase),
+  ]);
 
   // Find specific sections
   const exploreSection = sections.find(s => s.type === 'explore');

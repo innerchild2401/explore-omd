@@ -1,4 +1,5 @@
 import { notFound } from 'next/navigation';
+import { createClient } from '@/lib/supabase/server';
 import { getOMDBySlug, getSectionsByOMD } from '@/lib/supabase/queries';
 import HeroSection from '@/components/sections/HeroSection';
 import SearchBar from '@/components/sections/SearchBar';
@@ -14,16 +15,17 @@ interface PageProps {
 
 export default async function OMDHomePage({ params }: PageProps) {
   const { omdSlug } = params;
-  
+  const supabase = await createClient();
+
   // Fetch OMD data
-  const omd = await getOMDBySlug(omdSlug);
+  const omd = await getOMDBySlug(omdSlug, supabase);
   
   if (!omd) {
     notFound();
   }
 
   // Fetch all visible sections
-  const sections = await getSectionsByOMD(omd.id);
+  const sections = await getSectionsByOMD(omd.id, false, supabase);
 
   // Find specific sections
   const heroSection = sections.find(s => s.type === 'hero');
@@ -45,7 +47,8 @@ export default async function OMDHomePage({ params }: PageProps) {
 
 export async function generateMetadata({ params }: PageProps) {
   const { omdSlug } = params;
-  const omd = await getOMDBySlug(omdSlug);
+  const supabase = await createClient();
+  const omd = await getOMDBySlug(omdSlug, supabase);
 
   if (!omd) {
     return {

@@ -95,7 +95,7 @@ export default async function RestaurantsPage({ params, searchParams }: Restaura
       <main className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8 w-full min-w-0" style={{ maxWidth: '100%', boxSizing: 'border-box' }}>
         {/* Filters */}
         {sortedRestaurants && sortedRestaurants.length > 0 && areas && areas.length > 0 && (
-          <div className="mb-6 flex items-center justify-end">
+          <div className="mb-6 flex flex-wrap items-center gap-3">
             <AreaFilter areas={areas} />
           </div>
         )}

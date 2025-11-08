@@ -1,9 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { formatPrice } from '@/lib/utils';
 import RoomImageCarousel from './RoomImageCarousel';
 import BookingModal from './BookingModal';
+import AmenityIcon from '@/components/ui/AmenityIcon';
 
 interface RoomCardProps {
   room: any;
@@ -44,6 +45,57 @@ export default function RoomCard({ room, hotelSlug, omdSlug, hotelId, amenities 
     true;
   
   const canBook = isAvailable && meetsMinStay && availableQuantity > 0;
+
+  const amenityLookup = useMemo(() => {
+    const map = new Map<string, { id: string; name: string; icon?: string | null }>();
+    (amenities || []).forEach((amenity) => {
+      if (amenity?.id) {
+        map.set(amenity.id, { id: amenity.id, name: amenity.name, icon: amenity.icon });
+      }
+    });
+    return map;
+  }, [amenities]);
+
+  const normalizedRoomAmenities = useMemo(() => {
+    const list = (room.room_amenities || []) as Array<string | Record<string, any>>;
+
+    const toAmenity = (item: string | Record<string, any> | null | undefined) => {
+      if (!item) return null;
+
+      if (typeof item === 'string') {
+        const match = amenityLookup.get(item);
+        if (match) return match;
+        return { id: item, name: item.replace(/_/g, ' '), icon: undefined };
+      }
+
+      if (typeof item === 'object') {
+        const possibleId = item.id || item.amenity_id || item.key || item.slug;
+        const id = typeof possibleId === 'string' ? possibleId : JSON.stringify(item);
+        const match = typeof possibleId === 'string' ? amenityLookup.get(possibleId) : undefined;
+        const nameCandidate = item.name || item.label || match?.name || id;
+        return {
+          id,
+          name: typeof nameCandidate === 'string' ? nameCandidate : String(nameCandidate),
+          icon: item.icon || match?.icon,
+        };
+      }
+
+      return null;
+    };
+
+    return list
+      .map(toAmenity)
+      .filter((item): item is { id: string; name: string; icon?: string | null } => Boolean(item));
+  }, [amenityLookup, room.room_amenities]);
+
+  const formatAmenityName = (value: string) => {
+    if (!value) return 'Amenity';
+    const trimmed = value.trim();
+    if (/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(trimmed)) {
+      return 'Amenity';
+    }
+    return trimmed.replace(/_/g, ' ');
+  };
   
   return (
     <div className={`overflow-hidden rounded-2xl bg-white shadow-sm transition-shadow hover:shadow-md ${
@@ -94,24 +146,24 @@ export default function RoomCard({ room, hotelSlug, omdSlug, hotelId, amenities 
               </div>
 
               {/* Room Amenities */}
-              {room.room_amenities && room.room_amenities.length > 0 && (
+              {normalizedRoomAmenities.length > 0 && (
                 <div className="mb-4">
                   <div className="flex flex-wrap gap-2">
-                    {room.room_amenities.slice(0, 5).map((amenity: string, idx: number) => {
-                      const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(amenity);
-                      const name = isUuid ? (amenities.find(a => a.id === amenity)?.name || amenity) : amenity;
+                    {normalizedRoomAmenities.slice(0, 5).map((amenity, idx) => {
                       return (
                         <span
                           key={idx}
-                          className="rounded-full bg-blue-50 px-3 py-1 text-sm text-blue-700"
+                          className="inline-flex items-center gap-2 rounded-full border border-blue-100 bg-blue-50/90 px-3 py-1 text-xs font-medium text-blue-700"
+                          title={formatAmenityName(amenity.name)}
                         >
-                          {name}
+                          <AmenityIcon icon={amenity.icon} variant="xs" className="bg-white text-blue-600" />
+                          <span className="max-w-[160px] truncate">{formatAmenityName(amenity.name)}</span>
                         </span>
                       );
                     })}
-                    {room.room_amenities.length > 5 && (
+                    {normalizedRoomAmenities.length > 5 && (
                       <span className="rounded-full bg-gray-100 px-3 py-1 text-sm text-gray-700">
-                        +{room.room_amenities.length - 5} more
+                        +{normalizedRoomAmenities.length - 5} more
                       </span>
                     )}
                   </div>

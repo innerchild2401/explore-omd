@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
 
 interface TimeSlotManagerProps {
@@ -23,6 +23,7 @@ interface TimeSlot {
 }
 
 export default function TimeSlotManager({ experienceId, businessId, onUpdate }: TimeSlotManagerProps) {
+  const supabase = useMemo(() => createClient(), []);
   const [timeSlots, setTimeSlots] = useState<TimeSlot[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [showAddForm, setShowAddForm] = useState(false);
@@ -38,13 +39,8 @@ export default function TimeSlotManager({ experienceId, businessId, onUpdate }: 
     notes: '',
   });
 
-  useEffect(() => {
-    loadTimeSlots();
-  }, [experienceId]);
-
-  const loadTimeSlots = async () => {
+  const loadTimeSlots = useCallback(async () => {
     try {
-      const supabase = createClient();
       const { data, error } = await supabase
         .from('experience_time_slots')
         .select('*')
@@ -57,15 +53,17 @@ export default function TimeSlotManager({ experienceId, businessId, onUpdate }: 
     } catch (error) {
       console.error('Error loading time slots:', error);
     }
-  };
+  }, [experienceId, supabase]);
+
+  useEffect(() => {
+    void loadTimeSlots();
+  }, [loadTimeSlots]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
 
     try {
-      const supabase = createClient();
-
       const slotData = {
         experience_id: experienceId,
         start_date: formData.start_date,
@@ -138,7 +136,6 @@ export default function TimeSlotManager({ experienceId, businessId, onUpdate }: 
     if (!confirm('Are you sure you want to delete this time slot?')) return;
 
     try {
-      const supabase = createClient();
       const { error } = await supabase
         .from('experience_time_slots')
         .delete()
@@ -154,7 +151,6 @@ export default function TimeSlotManager({ experienceId, businessId, onUpdate }: 
 
   const toggleAvailability = async (id: string, currentStatus: boolean) => {
     try {
-      const supabase = createClient();
       const { error } = await supabase
         .from('experience_time_slots')
         .update({ is_available: !currentStatus })

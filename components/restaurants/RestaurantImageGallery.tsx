@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import OptimizedImage from '@/components/ui/OptimizedImage';
 
@@ -252,19 +253,22 @@ export default function RestaurantImageGallery({ images, restaurantName }: Resta
                     </div>
                   </div>
                 ) : (
-                  <img
-                    src={normalizedImages[selectedImage].url}
-                    alt={`${restaurantName} - ${selectedImage + 1}`}
-                    className="max-h-[90vh] max-w-[90vw] w-auto h-auto object-contain rounded-lg shadow-2xl"
-                    onClick={(e) => e?.stopPropagation()}
-                    style={{ maxHeight: '90vh', maxWidth: '90vw', width: 'auto', height: 'auto' }}
-                    onError={() => setImageError(selectedImage)}
-                    onLoad={() => {
-                      if (imageError === selectedImage) {
-                        setImageError(null);
-                      }
-                    }}
-                  />
+                  <div className="relative max-h-[90vh] max-w-[90vw]">
+                    <Image
+                      src={normalizedImages[selectedImage].url}
+                      alt={`${restaurantName} - ${selectedImage + 1}`}
+                      fill
+                      className="object-contain rounded-lg shadow-2xl"
+                      sizes="(max-width: 1440px) 90vw, 1296px"
+                      onClick={(e) => e?.stopPropagation()}
+                      onError={() => setImageError(selectedImage)}
+                      onLoadingComplete={() => {
+                        if (imageError === selectedImage) {
+                          setImageError(null);
+                        }
+                      }}
+                    />
+                  </div>
                 )}
               </motion.div>
               

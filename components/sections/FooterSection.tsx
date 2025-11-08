@@ -1,3 +1,4 @@
+import Image from 'next/image';
 import type { Section, OMD } from '@/types';
 import { getImageUrl } from '@/lib/utils';
 
@@ -16,10 +17,12 @@ export default function FooterSection({ section, omd }: FooterSectionProps) {
           {/* Logo & Description */}
           <div>
             {omd.logo && (
-              <img
+              <Image
                 src={getImageUrl(omd.logo)}
                 alt={omd.name}
-                className="mb-4 h-12 w-auto brightness-0 invert"
+                width={160}
+                height={48}
+                className="mb-4 h-12 w-auto brightness-0 invert object-contain"
               />
             )}
             <h3 className="mb-2 text-2xl font-bold">{omd.name}</h3>

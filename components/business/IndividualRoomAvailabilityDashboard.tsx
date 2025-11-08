@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
@@ -54,7 +54,7 @@ type BlockedSpan = { startIdx: number; endIdx: number; blockIds: string[] };
 
 export default function IndividualRoomAvailabilityDashboard({ hotelId, onClose }: { hotelId: string; onClose: () => void }) {
   const router = useRouter();
-  const supabase = createClient();
+  const supabase = useMemo(() => createClient(), []);
   
   const [viewMode, setViewMode] = useState<'week' | 'month'>('week');
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -82,11 +82,6 @@ export default function IndividualRoomAvailabilityDashboard({ hotelId, onClose }
   
   const alertsDropdownRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    fetchData();
-    fetchArrivalAlerts();
-  }, [currentDate, viewMode, filterCheckIn, filterCheckOut]);
-
   // Handle filter date changes - update currentDate to show filtered period
   useEffect(() => {
     if (filterCheckIn && filterCheckOut) {
@@ -98,7 +93,7 @@ export default function IndividualRoomAvailabilityDashboard({ hotelId, onClose }
         setViewMode('month');
       }
     }
-  }, [filterCheckIn, filterCheckOut]);
+  }, [filterCheckIn, filterCheckOut, viewMode]);
 
 
   const handleDateCellClick = (date: Date, individualRoomId: string, roomTypeId: string) => {
@@ -216,30 +211,30 @@ export default function IndividualRoomAvailabilityDashboard({ hotelId, onClose }
     }
   }, [showAlertsDropdown]);
 
-  const getDateRange = () => {
+  const getDateRange = useCallback(() => {
     const start = new Date(currentDate);
     if (viewMode === 'week') {
       start.setDate(start.getDate() - start.getDay()); // Start of week
       return { start, days: 7 };
-    } else {
-      start.setDate(1); // First day of month
-      const lastDay = new Date(start.getFullYear(), start.getMonth() + 1, 0);
-      return { start, days: lastDay.getDate() };
     }
-  };
 
-  const getDates = () => {
+    start.setDate(1); // First day of month
+    const lastDay = new Date(start.getFullYear(), start.getMonth() + 1, 0);
+    return { start, days: lastDay.getDate() };
+  }, [currentDate, viewMode]);
+
+  const getDates = useCallback(() => {
     const { start, days } = getDateRange();
-    const dates = [];
+    const generatedDates: Date[] = [];
     for (let i = 0; i < days; i++) {
       const date = new Date(start);
       date.setDate(start.getDate() + i);
-      dates.push(date);
+      generatedDates.push(date);
     }
-    return dates;
-  };
+    return generatedDates;
+  }, [getDateRange]);
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     try {
       setLoading(true);
       
@@ -339,9 +334,9 @@ export default function IndividualRoomAvailabilityDashboard({ hotelId, onClose }
     } finally {
       setLoading(false);
     }
-  };
+  }, [filterCheckIn, filterCheckOut, getDateRange, hotelId, supabase]);
 
-  const fetchArrivalAlerts = async () => {
+  const fetchArrivalAlerts = useCallback(async () => {
     try {
       const today = new Date().toISOString().split('T')[0];
       
@@ -397,7 +392,12 @@ export default function IndividualRoomAvailabilityDashboard({ hotelId, onClose }
     } catch (err) {
       console.error('Error fetching arrivals:', err);
     }
-  };
+  }, [hotelId, supabase]);
+
+  useEffect(() => {
+    void fetchData();
+    void fetchArrivalAlerts();
+  }, [fetchArrivalAlerts, fetchData]);
 
   // Calculate reservation spans for a room
   const getReservationSpans = (roomId: string, dates: Date[]): ReservationSpan[] => {

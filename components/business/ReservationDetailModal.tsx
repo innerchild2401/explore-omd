@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import { formatPrice } from '@/lib/utils';
@@ -55,7 +55,7 @@ export default function ReservationDetailModal({
   onClose, 
   onUpdate
 }: ReservationDetailModalProps) {
-  const supabase = createClient();
+  const supabase = useMemo(() => createClient(), []);
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -68,46 +68,7 @@ export default function ReservationDetailModal({
   const [individualRooms, setIndividualRooms] = useState<any[]>([]);
   const [changingRoom, setChangingRoom] = useState(false);
 
-  useEffect(() => {
-    fetchReservationDetails();
-  }, [reservationId]);
-
-  const fetchReservationDetails = async () => {
-    try {
-      setLoading(true);
-      const { data, error: fetchError } = await supabase
-        .from('reservations')
-        .select(`
-          *,
-          guest_profiles(first_name, last_name, email, phone),
-          rooms(id, name, room_type),
-          individual_rooms(id, room_number, floor_number),
-          booking_channels(display_name)
-        `)
-        .eq('id', reservationId)
-        .single();
-
-      if (fetchError) throw fetchError;
-
-      if (data) {
-        setReservation(data as any);
-        setReservationStatus(data.reservation_status);
-        setPaymentStatus(data.payment_status);
-        
-        // Fetch individual rooms for this room type if room_id exists
-        if ((data as any).room_id) {
-          fetchIndividualRooms((data as any).room_id, data.check_in_date, data.check_out_date, reservationId);
-        }
-      }
-    } catch (err: any) {
-      console.error('Error fetching reservation:', err);
-      setError(err.message || 'Failed to load reservation details');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const fetchIndividualRooms = async (roomTypeId: string, checkInDate: string, checkOutDate: string, currentReservationId: string) => {
+  const fetchIndividualRooms = useCallback(async (roomTypeId: string, checkInDate: string, checkOutDate: string, currentReservationId: string) => {
     try {
       // Fetch all individual rooms for this room type
       const { data: rooms, error } = await supabase
@@ -154,7 +115,46 @@ export default function ReservationDetailModal({
     } catch (err: any) {
       console.error('Error fetching individual rooms:', err);
     }
-  };
+  }, [hotelId, supabase]);
+
+  const fetchReservationDetails = useCallback(async () => {
+    try {
+      setLoading(true);
+      const { data, error: fetchError } = await supabase
+        .from('reservations')
+        .select(`
+          *,
+          guest_profiles(first_name, last_name, email, phone),
+          rooms(id, name, room_type),
+          individual_rooms(id, room_number, floor_number),
+          booking_channels(display_name)
+        `)
+        .eq('id', reservationId)
+        .single();
+
+      if (fetchError) throw fetchError;
+
+      if (data) {
+        setReservation(data as any);
+        setReservationStatus(data.reservation_status);
+        setPaymentStatus(data.payment_status);
+        
+        // Fetch individual rooms for this room type if room_id exists
+        if ((data as any).room_id) {
+          fetchIndividualRooms((data as any).room_id, data.check_in_date, data.check_out_date, reservationId);
+        }
+      }
+    } catch (err: any) {
+      console.error('Error fetching reservation:', err);
+      setError(err.message || 'Failed to load reservation details');
+    } finally {
+      setLoading(false);
+    }
+  }, [fetchIndividualRooms, reservationId, supabase]);
+
+  useEffect(() => {
+    void fetchReservationDetails();
+  }, [fetchReservationDetails]);
 
   const handleRoomChange = async (newIndividualRoomId: string) => {
     if (!reservation) return;

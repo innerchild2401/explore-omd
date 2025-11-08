@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Image from 'next/image';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import ImageUpload from '@/components/admin/ImageUpload';
@@ -280,7 +281,15 @@ export default function RoomModal({ hotelId, room, amenities, onClose }: RoomMod
                 <div key={idx} className="rounded-lg border border-gray-200 bg-gray-50 p-3">
                   <div className="mb-2 flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                      <img src={img.url} alt={`Room ${idx + 1}`} className="h-20 w-32 rounded object-cover" />
+                      <div className="relative h-20 w-32 overflow-hidden rounded">
+                        <Image
+                          src={img.url}
+                          alt={`Room ${idx + 1}`}
+                          fill
+                          sizes="128px"
+                          className="object-cover"
+                        />
+                      </div>
                       <span className="text-sm font-medium text-gray-700">
                         {idx === 0 ? 'Main Photo' : `Photo ${idx + 1}`}
                       </span>

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
 
 interface IndividualRoom {
@@ -28,7 +28,7 @@ interface IndividualRoomsManagerProps {
 }
 
 export default function IndividualRoomsManager({ roomTypeId, roomTypeName, roomTypeQuantity, hotelId, onClose }: IndividualRoomsManagerProps) {
-  const supabase = createClient();
+  const supabase = useMemo(() => createClient(), []);
   const [individualRooms, setIndividualRooms] = useState<IndividualRoom[]>([]);
   const [existingRoomNumbers, setExistingRoomNumbers] = useState<Array<{room_number: string; room_type_name: string; floor_number: number | null}>>([]);
   const [nextAvailableNumber, setNextAvailableNumber] = useState<number | null>(null);
@@ -58,7 +58,7 @@ export default function IndividualRoomsManager({ roomTypeId, roomTypeName, roomT
   }, {} as Record<number, IndividualRoom[]>);
 
   // Fetch individual rooms for this room type and existing room numbers
-  const fetchIndividualRooms = async () => {
+  const fetchIndividualRooms = useCallback(async () => {
     setLoading(true);
     try {
       const { data, error } = await supabase
@@ -86,10 +86,10 @@ export default function IndividualRoomsManager({ roomTypeId, roomTypeName, roomT
     } finally {
       setLoading(false);
     }
-  };
+  }, [floorNumber, hotelId, prefix, roomTypeId, supabase]);
 
   // Fetch next available room number when prefix/floor changes
-  const fetchNextAvailableNumber = async () => {
+  const fetchNextAvailableNumber = useCallback(async () => {
     if (!prefix && floorNumber === null) {
       setNextAvailableNumber(null);
       return;
@@ -114,7 +114,7 @@ export default function IndividualRoomsManager({ roomTypeId, roomTypeName, roomT
     } catch (error) {
       console.error('Failed to fetch next available number:', error);
     }
-  };
+  }, [floorNumber, hotelId, prefix, startNumber, supabase]);
 
   // Auto-generate rooms
   const handleGenerateRooms = async () => {
@@ -226,16 +226,16 @@ export default function IndividualRoomsManager({ roomTypeId, roomTypeName, roomT
 
   // Initialize on mount
   useEffect(() => {
-    fetchIndividualRooms();
-  }, [roomTypeId]);
+    void fetchIndividualRooms();
+  }, [fetchIndividualRooms]);
 
   // Fetch next available number when prefix or floor changes
   useEffect(() => {
     if (showGenerator) {
-      fetchNextAvailableNumber();
-      fetchIndividualRooms();
+      void fetchNextAvailableNumber();
+      void fetchIndividualRooms();
     }
-  }, [prefix, floorNumber, showGenerator]);
+  }, [fetchIndividualRooms, fetchNextAvailableNumber, showGenerator]);
 
   const getStatusColor = (status: string) => {
     const colors = {

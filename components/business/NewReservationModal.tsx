@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 
@@ -39,7 +39,7 @@ interface GuestProfile {
 
 export default function NewReservationModal({ hotelId, rooms, onClose, onSuccess, prefillDates }: NewReservationModalProps) {
   const router = useRouter();
-  const supabase = createClient();
+  const supabase = useMemo(() => createClient(), []);
   
   const [currentStep, setCurrentStep] = useState(prefillDates ? 1 : 1); // Start at step 1, but if prefill, could skip to step 2
   const [loading, setLoading] = useState(false);
@@ -93,31 +93,7 @@ export default function NewReservationModal({ hotelId, rooms, onClose, onSuccess
   ];
 
   // Check room availability when dates change
-  useEffect(() => {
-    if (bookingData.check_in_date && bookingData.check_out_date) {
-      checkRoomAvailability();
-    }
-  }, [bookingData.check_in_date, bookingData.check_out_date]);
-
-  // Pre-select room if provided in prefillDates
-  useEffect(() => {
-    if (prefillDates?.roomId && !selectedRoom) {
-      const room = rooms.find(r => r.id === prefillDates.roomId);
-      if (room) {
-        setSelectedRoom(room);
-        setBookingData(prev => ({ ...prev, room_id: prefillDates.roomId! }));
-      }
-    }
-  }, [prefillDates?.roomId, rooms]);
-
-  // Calculate pricing when room is selected
-  useEffect(() => {
-    if (selectedRoom && bookingData.check_in_date && bookingData.check_out_date) {
-      calculatePricing();
-    }
-  }, [selectedRoom, bookingData.check_in_date, bookingData.check_out_date]);
-
-  const checkRoomAvailability = async () => {
+  const checkRoomAvailability = useCallback(async () => {
     try {
       if (!bookingData.check_in_date || !bookingData.check_out_date) {
         setAvailableRooms([]);
@@ -174,9 +150,27 @@ export default function NewReservationModal({ hotelId, rooms, onClose, onSuccess
       // Fallback: show all active rooms
       setAvailableRooms(rooms.filter(room => room.is_active));
     }
-  };
+  }, [bookingData.check_in_date, bookingData.check_out_date, rooms, supabase]);
 
-  const calculatePricing = () => {
+  useEffect(() => {
+    if (bookingData.check_in_date && bookingData.check_out_date) {
+      void checkRoomAvailability();
+    }
+  }, [bookingData.check_in_date, bookingData.check_out_date, checkRoomAvailability]);
+
+  // Pre-select room if provided in prefillDates
+  useEffect(() => {
+    if (prefillDates?.roomId && !selectedRoom) {
+      const room = rooms.find(r => r.id === prefillDates.roomId);
+      if (room) {
+        setSelectedRoom(room);
+        setBookingData(prev => ({ ...prev, room_id: prefillDates.roomId! }));
+      }
+    }
+  }, [prefillDates?.roomId, rooms, selectedRoom]);
+
+  // Calculate pricing when room is selected
+  const calculatePricing = useCallback(() => {
     if (!selectedRoom || !bookingData.check_in_date || !bookingData.check_out_date) return;
 
     const checkIn = new Date(bookingData.check_in_date);
@@ -195,7 +189,13 @@ export default function NewReservationModal({ hotelId, rooms, onClose, onSuccess
       total_amount: totalAmount,
       currency: 'RON'
     });
-  };
+  }, [bookingData.check_in_date, bookingData.check_out_date, selectedRoom]);
+
+  useEffect(() => {
+    if (selectedRoom && bookingData.check_in_date && bookingData.check_out_date) {
+      calculatePricing();
+    }
+  }, [bookingData.check_in_date, bookingData.check_out_date, calculatePricing, selectedRoom]);
 
   const generateConfirmationNumber = () => {
     const today = new Date();

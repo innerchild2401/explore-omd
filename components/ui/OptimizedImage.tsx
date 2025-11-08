@@ -59,7 +59,6 @@ export default function OptimizedImage({
 
   const imageProps = {
     src,
-    alt,
     className: `${className} ${isLoading ? 'opacity-0' : 'opacity-100'} transition-opacity duration-150`,
     priority,
     quality,
@@ -77,6 +76,7 @@ export default function OptimizedImage({
     return (
       <Image
         {...imageProps}
+        alt={alt}
         fill
         sizes={sizes || '(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw'}
       />
@@ -86,6 +86,7 @@ export default function OptimizedImage({
   return (
     <Image
       {...imageProps}
+      alt={alt}
       width={width || 400}
       height={height || 300}
       sizes={sizes || '(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw'}

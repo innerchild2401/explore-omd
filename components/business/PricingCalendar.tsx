@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import { formatPrice as formatPriceUtil } from '@/lib/utils';
@@ -37,7 +37,7 @@ interface PricingTemplate {
 
 export default function PricingCalendar({ room, onClose }: PricingCalendarProps) {
   const router = useRouter();
-  const supabase = createClient();
+  const supabase = useMemo(() => createClient(), []);
   
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [pricingRules, setPricingRules] = useState<PricingRule[]>([]);
@@ -68,11 +68,7 @@ export default function PricingCalendar({ room, onClose }: PricingCalendarProps)
 
   const calendarRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    fetchData();
-  }, []);
-
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     try {
       setLoading(true);
       
@@ -133,7 +129,11 @@ export default function PricingCalendar({ room, onClose }: PricingCalendarProps)
     } finally {
       setLoading(false);
     }
-  };
+  }, [room.hotel_id, room.id, supabase]);
+
+  useEffect(() => {
+    void fetchData();
+  }, [fetchData]);
 
   const getDaysInMonth = (date: Date) => {
     const year = date.getFullYear();

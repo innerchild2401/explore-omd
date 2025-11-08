@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
 
 interface ReservationsListProps {
@@ -8,16 +8,12 @@ interface ReservationsListProps {
 }
 
 export default function ReservationsList({ hotelId }: ReservationsListProps) {
-  const supabase = createClient();
+  const supabase = useMemo(() => createClient(), []);
   const [reservations, setReservations] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<'all' | 'upcoming' | 'current' | 'past' | 'cancelled'>('upcoming');
 
-  useEffect(() => {
-    fetchReservations();
-  }, [filter]);
-
-  const fetchReservations = async () => {
+  const fetchReservations = useCallback(async () => {
     setLoading(true);
     try {
       let query = supabase
@@ -59,7 +55,11 @@ export default function ReservationsList({ hotelId }: ReservationsListProps) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [filter, hotelId, supabase]);
+
+  useEffect(() => {
+    void fetchReservations();
+  }, [fetchReservations]);
 
   const handleUpdateStatus = async (reservationId: string, newStatus: string) => {
     try {

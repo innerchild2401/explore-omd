@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
 
 interface OctorateConnectionProps {
@@ -16,13 +16,9 @@ export default function OctorateConnection({ hotelId, businessId, onConnected }:
   const [accommodations, setAccommodations] = useState<any[]>([]);
   const [selectedAccommodation, setSelectedAccommodation] = useState<string>('');
   const [error, setError] = useState<string>('');
-  const supabase = createClient();
+  const supabase = useMemo(() => createClient(), []);
 
-  useEffect(() => {
-    checkConnection();
-  }, [hotelId]);
-
-  const checkConnection = async () => {
+  const checkConnection = useCallback(async () => {
     try {
       const { data } = await supabase
         .from('octorate_hotel_connections')
@@ -38,7 +34,11 @@ export default function OctorateConnection({ hotelId, businessId, onConnected }:
     } catch (error) {
       // No connection found
     }
-  };
+  }, [hotelId, supabase]);
+
+  useEffect(() => {
+    void checkConnection();
+  }, [checkConnection]);
 
   const handleConnect = async () => {
     setConnecting(true);

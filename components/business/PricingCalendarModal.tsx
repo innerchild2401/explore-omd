@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 
@@ -11,7 +11,7 @@ interface PricingCalendarModalProps {
 
 export default function PricingCalendarModal({ room, onClose }: PricingCalendarModalProps) {
   const router = useRouter();
-  const supabase = createClient();
+  const supabase = useMemo(() => createClient(), []);
   
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [pricingRules, setPricingRules] = useState<any[]>([]);
@@ -25,11 +25,7 @@ export default function PricingCalendarModal({ room, onClose }: PricingCalendarM
   const [pricePerNight, setPricePerNight] = useState('');
   const [minStay, setMinStay] = useState('1');
 
-  useEffect(() => {
-    fetchPricingRules();
-  }, []);
-
-  const fetchPricingRules = async () => {
+  const fetchPricingRules = useCallback(async () => {
     try {
       const { data, error } = await supabase
         .from('room_pricing')
@@ -45,7 +41,11 @@ export default function PricingCalendarModal({ room, onClose }: PricingCalendarM
     } finally {
       setLoading(false);
     }
-  };
+  }, [room.id, supabase]);
+
+  useEffect(() => {
+    void fetchPricingRules();
+  }, [fetchPricingRules]);
 
   const handleAddPricingRule = async () => {
     if (!startDate || !endDate || !pricePerNight) {

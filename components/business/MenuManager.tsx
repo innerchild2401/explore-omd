@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
 
 interface MenuItem {
@@ -23,6 +23,7 @@ interface MenuManagerProps {
 }
 
 export default function MenuManager({ restaurantId, businessId, onUpdate }: MenuManagerProps) {
+  const supabase = useMemo(() => createClient(), []);
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isAddingItem, setIsAddingItem] = useState(false);
@@ -46,13 +47,8 @@ export default function MenuManager({ restaurantId, businessId, onUpdate }: Menu
     'Soups', 'Sides', 'Specials', 'Kids Menu'
   ];
 
-  useEffect(() => {
-    fetchMenuItems();
-  }, [restaurantId]);
-
-  const fetchMenuItems = async () => {
+  const fetchMenuItems = useCallback(async () => {
     try {
-      const supabase = await createClient();
       const { data, error } = await supabase
         .from('menu_items')
         .select('*')
@@ -67,15 +63,17 @@ export default function MenuManager({ restaurantId, businessId, onUpdate }: Menu
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [businessId, supabase]);
+
+  useEffect(() => {
+    void fetchMenuItems();
+  }, [fetchMenuItems, restaurantId]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
 
     try {
-      const supabase = await createClient();
-
       const menuItemData = {
         restaurant_id: businessId,
         category: formData.category,
@@ -115,7 +113,6 @@ export default function MenuManager({ restaurantId, businessId, onUpdate }: Menu
     if (!confirm('Are you sure you want to delete this menu item?')) return;
 
     try {
-      const supabase = await createClient();
       const { error } = await supabase
         .from('menu_items')
         .delete()

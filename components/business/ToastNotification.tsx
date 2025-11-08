@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
 
 interface ToastNotificationProps {
@@ -8,32 +8,11 @@ interface ToastNotificationProps {
 }
 
 export default function ToastNotification({ hotelId }: ToastNotificationProps) {
-  const supabase = createClient();
+  const supabase = useMemo(() => createClient(), []);
   const [pendingCount, setPendingCount] = useState(0);
   const [showToast, setShowToast] = useState(false);
 
-  useEffect(() => {
-    fetchPendingCount();
-    
-    // Set up real-time subscription
-    const channel = supabase
-      .channel('pending-reservations')
-      .on('postgres_changes', {
-        event: '*',
-        schema: 'public',
-        table: 'reservations',
-        filter: `hotel_id=eq.${hotelId}`
-      }, () => {
-        fetchPendingCount();
-      })
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [hotelId]);
-
-  const fetchPendingCount = async () => {
+  const fetchPendingCount = useCallback(async () => {
     try {
       const { count, error } = await supabase
         .from('reservations')
@@ -55,7 +34,28 @@ export default function ToastNotification({ hotelId }: ToastNotificationProps) {
     } catch (err) {
       console.error('Error fetching pending count:', err);
     }
-  };
+  }, [hotelId, supabase]);
+
+  useEffect(() => {
+    void fetchPendingCount();
+    
+    // Set up real-time subscription
+    const channel = supabase
+      .channel('pending-reservations')
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'reservations',
+        filter: `hotel_id=eq.${hotelId}`
+      }, () => {
+        fetchPendingCount();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [fetchPendingCount, hotelId, supabase]);
 
   if (!showToast || pendingCount === 0) return null;
 

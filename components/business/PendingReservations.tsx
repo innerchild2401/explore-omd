@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
 
 interface PendingReservationsProps {
@@ -44,7 +44,7 @@ interface PendingReservation {
 }
 
 export default function PendingReservations({ hotelId, onClose }: PendingReservationsProps) {
-  const supabase = createClient();
+  const supabase = useMemo(() => createClient(), []);
   const [reservations, setReservations] = useState<PendingReservation[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -52,11 +52,7 @@ export default function PendingReservations({ hotelId, onClose }: PendingReserva
   const [rejectingReservation, setRejectingReservation] = useState<string | null>(null);
   const [rejectionReason, setRejectionReason] = useState('');
 
-  useEffect(() => {
-    fetchPendingReservations();
-  }, [hotelId]);
-
-  const fetchPendingReservations = async () => {
+  const fetchPendingReservations = useCallback(async () => {
     try {
       setLoading(true);
       const { data, error } = await supabase
@@ -93,7 +89,11 @@ export default function PendingReservations({ hotelId, onClose }: PendingReserva
     } finally {
       setLoading(false);
     }
-  };
+  }, [hotelId, supabase]);
+
+  useEffect(() => {
+    void fetchPendingReservations();
+  }, [fetchPendingReservations]);
 
   const handleApproveReservation = async (reservationId: string) => {
     setProcessingReservation(reservationId);

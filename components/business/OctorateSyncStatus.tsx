@@ -1,7 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { createClient } from '@/lib/supabase/client';
+import { useState, useEffect, useCallback } from 'react';
 
 interface OctorateSyncStatusProps {
   hotelId: string;
@@ -11,15 +10,8 @@ export default function OctorateSyncStatus({ hotelId }: OctorateSyncStatusProps)
   const [status, setStatus] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState<string | null>(null);
-  const supabase = createClient();
 
-  useEffect(() => {
-    fetchStatus();
-    const interval = setInterval(fetchStatus, 30000); // Refresh every 30 seconds
-    return () => clearInterval(interval);
-  }, [hotelId]);
-
-  const fetchStatus = async () => {
+  const fetchStatus = useCallback(async () => {
     try {
       const response = await fetch(`/api/octorate/sync/status?hotel_id=${hotelId}`);
       const data = await response.json();
@@ -29,7 +21,13 @@ export default function OctorateSyncStatus({ hotelId }: OctorateSyncStatusProps)
     } finally {
       setLoading(false);
     }
-  };
+  }, [hotelId]);
+
+  useEffect(() => {
+    void fetchStatus();
+    const interval = setInterval(fetchStatus, 30000); // Refresh every 30 seconds
+    return () => clearInterval(interval);
+  }, [fetchStatus]);
 
   const handleSync = async (type: 'inventory' | 'availability' | 'rates') => {
     setSyncing(type);

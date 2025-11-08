@@ -88,13 +88,18 @@ export default function RoomCard({ room, hotelSlug, omdSlug, hotelId, amenities 
       .filter((item): item is { id: string; name: string; icon?: string | null } => Boolean(item));
   }, [amenityLookup, room.room_amenities]);
 
-  const formatAmenityName = (value: string) => {
-    if (!value) return 'Amenity';
-    const trimmed = value.trim();
-    if (/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(trimmed)) {
-      return 'Amenity';
-    }
-    return trimmed.replace(/_/g, ' ');
+  const formatAmenityName = (amenity: { id: string; name: string }) => {
+    const candidates = [
+      amenity.name,
+      amenityLookup.get(amenity.id)?.name,
+      amenity.id,
+    ].filter((val): val is string => Boolean(val));
+
+    const cleaned = candidates
+      .map((val) => val.trim())
+      .find((val) => !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(val));
+
+    return (cleaned || 'Amenity').replace(/_/g, ' ');
   };
   
   return (
@@ -154,10 +159,10 @@ export default function RoomCard({ room, hotelSlug, omdSlug, hotelId, amenities 
                         <span
                           key={idx}
                           className="inline-flex items-center gap-2 rounded-full border border-blue-100 bg-blue-50/90 px-3 py-1 text-xs font-medium text-blue-700"
-                          title={formatAmenityName(amenity.name)}
+                          title={formatAmenityName(amenity)}
                         >
                           <AmenityIcon icon={amenity.icon} variant="xs" className="bg-white text-blue-600" />
-                          <span className="max-w-[160px] truncate">{formatAmenityName(amenity.name)}</span>
+                          <span className="max-w-[160px] truncate">{formatAmenityName(amenity)}</span>
                         </span>
                       );
                     })}

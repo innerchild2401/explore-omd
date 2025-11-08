@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import { slugify } from '@/lib/utils';
@@ -12,13 +12,9 @@ export default function AdminOnboarding() {
   const [error, setError] = useState('');
   const [checkingAuth, setCheckingAuth] = useState(true);
   const router = useRouter();
-  const supabase = createClient();
+  const supabase = useMemo(() => createClient(), []);
 
-  useEffect(() => {
-    checkUser();
-  }, []);
-
-  const checkUser = async () => {
+  const checkUser = useCallback(async () => {
     const { data: { user } } = await supabase.auth.getUser();
     
     if (!user) {
@@ -44,7 +40,11 @@ export default function AdminOnboarding() {
     }
 
     setCheckingAuth(false);
-  };
+  }, [router, supabase]);
+
+  useEffect(() => {
+    void checkUser();
+  }, [checkUser]);
 
   const handleDestinationNameChange = (value: string) => {
     setDestinationName(value);

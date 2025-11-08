@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import NewReservationModal from './NewReservationModal';
@@ -64,7 +64,7 @@ interface BookingStats {
 
 export default function BookingManagement({ hotelId, rooms, onClose }: BookingManagementProps) {
   const router = useRouter();
-  const supabase = createClient();
+  const supabase = useMemo(() => createClient(), []);
   
   const [reservations, setReservations] = useState<Reservation[]>([]);
   const [individualRooms, setIndividualRooms] = useState<Record<string, any[]>>({});
@@ -80,11 +80,7 @@ export default function BookingManagement({ hotelId, rooms, onClose }: BookingMa
   const [searchTerm, setSearchTerm] = useState('');
   const [showNewReservationModal, setShowNewReservationModal] = useState(false);
 
-  useEffect(() => {
-    fetchReservations();
-  }, []);
-
-  const fetchReservations = async () => {
+  const fetchReservations = useCallback(async () => {
     try {
       setLoading(true);
       
@@ -172,7 +168,11 @@ export default function BookingManagement({ hotelId, rooms, onClose }: BookingMa
     } finally {
       setLoading(false);
     }
-  };
+  }, [hotelId, rooms, supabase]);
+
+  useEffect(() => {
+    void fetchReservations();
+  }, [fetchReservations]);
 
   const handleAssignRoom = async (reservationId: string, individualRoomId: string) => {
     console.log('handleAssignRoom called with:', { reservationId, individualRoomId });

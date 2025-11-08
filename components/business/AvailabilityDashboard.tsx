@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
@@ -57,7 +57,7 @@ interface ReservationSpan {
 
 export default function AvailabilityDashboard({ hotelId, onClose }: AvailabilityDashboardProps) {
   const router = useRouter();
-  const supabase = createClient();
+  const supabase = useMemo(() => createClient(), []);
   const maximizeButtonRef = useRef<HTMLDivElement>(null);
   
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -108,9 +108,49 @@ export default function AvailabilityDashboard({ hotelId, onClose }: Availability
 
   const calendarRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    fetchData();
-  }, [currentDate, viewMode, filterCheckIn, filterCheckOut]);
+  const getStartDate = useCallback(() => {
+    const date = new Date(currentDate);
+    switch (viewMode) {
+      case 'day':
+        return date;
+      case 'week': {
+        const dayOfWeek = date.getDay();
+        date.setDate(date.getDate() - dayOfWeek);
+        return date;
+      }
+      case 'month':
+        return new Date(date.getFullYear(), date.getMonth(), 1);
+      default:
+        return date;
+    }
+  }, [currentDate, viewMode]);
+
+  const getEndDate = useCallback(() => {
+    const date = new Date(currentDate);
+    switch (viewMode) {
+      case 'day':
+        return date;
+      case 'week':
+        date.setDate(date.getDate() + (6 - date.getDay()));
+        return date;
+      case 'month':
+        return new Date(date.getFullYear(), date.getMonth() + 1, 0);
+      default:
+        return date;
+    }
+  }, [currentDate, viewMode]);
+
+  const getDatesInRange = useCallback(() => {
+    const start = getStartDate();
+    const end = getEndDate();
+    const datesList = [];
+
+    for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+      datesList.push(new Date(d));
+    }
+
+    return datesList;
+  }, [getEndDate, getStartDate]);
 
   // Handle filter date changes - update currentDate to show filtered period
   useEffect(() => {
@@ -123,7 +163,7 @@ export default function AvailabilityDashboard({ hotelId, onClose }: Availability
         setViewMode('month');
       }
     }
-  }, [filterCheckIn, filterCheckOut]);
+  }, [filterCheckIn, filterCheckOut, viewMode]);
 
 
   const handleDateCellClick = (date: Date, roomId: string) => {
@@ -185,7 +225,7 @@ export default function AvailabilityDashboard({ hotelId, onClose }: Availability
     }
   };
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     try {
       setLoading(true);
       
@@ -270,50 +310,11 @@ export default function AvailabilityDashboard({ hotelId, onClose }: Availability
     } finally {
       setLoading(false);
     }
-  };
+  }, [filterCheckIn, filterCheckOut, getEndDate, getStartDate, hotelId, supabase]);
 
-  const getStartDate = () => {
-    const date = new Date(currentDate);
-    switch (viewMode) {
-      case 'day':
-        return date;
-      case 'week':
-        const dayOfWeek = date.getDay();
-        date.setDate(date.getDate() - dayOfWeek);
-        return date;
-      case 'month':
-        return new Date(date.getFullYear(), date.getMonth(), 1);
-      default:
-        return date;
-    }
-  };
-
-  const getEndDate = () => {
-    const date = new Date(currentDate);
-    switch (viewMode) {
-      case 'day':
-        return date;
-      case 'week':
-        date.setDate(date.getDate() + (6 - date.getDay()));
-        return date;
-      case 'month':
-        return new Date(date.getFullYear(), date.getMonth() + 1, 0);
-      default:
-        return date;
-    }
-  };
-
-  const getDatesInRange = () => {
-    const start = getStartDate();
-    const end = getEndDate();
-    const dates = [];
-    
-    for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
-      dates.push(new Date(d));
-    }
-    
-    return dates;
-  };
+  useEffect(() => {
+    void fetchData();
+  }, [fetchData]);
 
   const getAvailabilityForRoomAndDate = (roomId: string, date: string) => {
     return availability.find(avail => 

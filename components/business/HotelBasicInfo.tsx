@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Image from 'next/image';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import ImageUpload from '@/components/admin/ImageUpload';
@@ -249,9 +250,11 @@ export default function HotelBasicInfo({ business, hotel, amenities }: HotelBasi
                 <div key={idx} className="relative">
                   <div className="flex items-start gap-3 rounded-lg border border-gray-200 bg-gray-50 p-3">
                     {/* Thumbnail */}
-                    <img 
+                    <Image 
                       src={img.url} 
                       alt={`Hotel ${idx + 1}`} 
+                      width={128}
+                      height={80}
                       className="h-20 w-32 flex-shrink-0 rounded object-cover"
                     />
                     

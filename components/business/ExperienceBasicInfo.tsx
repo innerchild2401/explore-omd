@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Image from 'next/image';
 import { createClient } from '@/lib/supabase/client';
 import ImageUpload from '@/components/admin/ImageUpload';
 
@@ -728,11 +729,13 @@ export default function ExperienceBasicInfo({
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
               {images.map((img, idx) => (
                 <div key={idx} className="relative group">
-                  <div className="aspect-square rounded-lg overflow-hidden bg-gray-100">
-                    <img
+                  <div className="aspect-square rounded-lg overflow-hidden bg-gray-100 relative">
+                    <Image
                       src={img.url}
                       alt={`Experience image ${idx + 1}`}
-                      className="w-full h-full object-cover"
+                      fill
+                      className="object-cover"
+                      sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                     />
                   </div>
                   

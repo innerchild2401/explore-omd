@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 
@@ -13,7 +13,7 @@ interface PageProps {
 export default function BusinessOnboardingPage({ params }: PageProps) {
   const { omdSlug } = params;
   const router = useRouter();
-  const supabase = createClient();
+  const supabase = useMemo(() => createClient(), []);
 
   const [user, setUser] = useState<any>(null);
   const [omdId, setOmdId] = useState<string>('');
@@ -28,11 +28,7 @@ export default function BusinessOnboardingPage({ params }: PageProps) {
   const [contactName, setContactName] = useState('');
   const [phone, setPhone] = useState('');
 
-  useEffect(() => {
-    checkUser();
-  }, []);
-
-  const checkUser = async () => {
+  const checkUser = useCallback(async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       
@@ -76,7 +72,11 @@ export default function BusinessOnboardingPage({ params }: PageProps) {
       console.error('Error checking user:', err);
       setLoading(false);
     }
-  };
+  }, [omdSlug, router, supabase]);
+
+  useEffect(() => {
+    void checkUser();
+  }, [checkUser]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

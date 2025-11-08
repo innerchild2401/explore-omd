@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { LineChart, Line, AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 
@@ -39,7 +39,7 @@ interface TopBusiness {
 }
 
 export default function AnalyticsDashboard({ omdId }: AnalyticsDashboardProps) {
-  const supabase = createClient();
+  const supabase = useMemo(() => createClient(), []);
   const [loading, setLoading] = useState(true);
   const [metrics, setMetrics] = useState<Metrics>({
     totalVisitors: 0,
@@ -56,11 +56,7 @@ export default function AnalyticsDashboard({ omdId }: AnalyticsDashboardProps) {
   const [timeSeriesData, setTimeSeriesData] = useState<TimeSeriesData[]>([]);
   const [topBusinesses, setTopBusinesses] = useState<TopBusiness[]>([]);
 
-  useEffect(() => {
-    fetchData();
-  }, [selectedBusiness, selectedType, dateRange]);
-
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     setLoading(true);
     try {
       // Get all businesses for this OMD
@@ -70,7 +66,8 @@ export default function AnalyticsDashboard({ omdId }: AnalyticsDashboardProps) {
         .eq('omd_id', omdId)
         .eq('status', 'active');
 
-      setBusinesses(businessesData || []);
+      const normalizedBusinesses = businessesData || [];
+      setBusinesses(normalizedBusinesses);
 
       // Calculate date range
       const daysBack = parseInt(dateRange);
@@ -89,7 +86,7 @@ export default function AnalyticsDashboard({ omdId }: AnalyticsDashboardProps) {
 
       if (selectedType !== 'all') {
         // Filter by business type
-        const businessIds = businessesData
+        const businessIds = normalizedBusinesses
           ?.filter((b) => b.type === selectedType)
           .map((b) => b.id) || [];
         if (businessIds.length > 0) {
@@ -144,7 +141,7 @@ export default function AnalyticsDashboard({ omdId }: AnalyticsDashboardProps) {
 
       // Calculate time series data
       const dailyData = new Map<string, { visitors: number; views: number; contacts: number; bookings: number; revenue: number }>();
-      const businessesMap = new Map(businesses.map(b => [b.id, b]));
+      const businessesMap = new Map(normalizedBusinesses.map(b => [b.id, b]));
 
       analyticsData?.forEach(event => {
         const date = new Date(event.created_at).toISOString().split('T')[0];
@@ -200,7 +197,11 @@ export default function AnalyticsDashboard({ omdId }: AnalyticsDashboardProps) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [dateRange, omdId, selectedBusiness, selectedType, supabase]);
+
+  useEffect(() => {
+    void fetchData();
+  }, [fetchData]);
 
   const filteredBusinesses =
     selectedType === 'all'

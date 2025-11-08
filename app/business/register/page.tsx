@@ -1,13 +1,13 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
 export default function BusinessRegisterPage() {
   const router = useRouter();
-  const supabase = createClient();
+  const supabase = useMemo(() => createClient(), []);
 
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -23,11 +23,7 @@ export default function BusinessRegisterPage() {
   const [contactName, setContactName] = useState('');
   const [phone, setPhone] = useState('');
 
-  useEffect(() => {
-    checkUser();
-  }, []);
-
-  const checkUser = async () => {
+  const checkUser = useCallback(async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       
@@ -75,7 +71,11 @@ export default function BusinessRegisterPage() {
       console.error('Error checking user:', err);
       setLoading(false);
     }
-  };
+  }, [router, supabase]);
+
+  useEffect(() => {
+    void checkUser();
+  }, [checkUser]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

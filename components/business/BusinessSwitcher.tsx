@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 
@@ -21,13 +21,9 @@ export default function BusinessSwitcher({ currentBusinessSlug, omdSlug }: Busin
   const [businesses, setBusinesses] = useState<Business[]>([]);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
-  const supabase = createClient();
+  const supabase = useMemo(() => createClient(), []);
 
-  useEffect(() => {
-    fetchBusinesses();
-  }, []);
-
-  const fetchBusinesses = async () => {
+  const fetchBusinesses = useCallback(async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
@@ -55,7 +51,11 @@ export default function BusinessSwitcher({ currentBusinessSlug, omdSlug }: Busin
     } finally {
       setLoading(false);
     }
-  };
+  }, [omdSlug, supabase]);
+
+  useEffect(() => {
+    void fetchBusinesses();
+  }, [fetchBusinesses]);
 
   const handleBusinessChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const newSlug = e.target.value;

@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation';
 import ImageUpload from '@/components/admin/ImageUpload';
 import OctorateConnection from './OctorateConnection';
 import OctorateSyncStatus from './OctorateSyncStatus';
+import AmenityIcon from '@/components/ui/AmenityIcon';
 
 interface HotelBasicInfoProps {
   business: any;
@@ -464,7 +465,7 @@ export default function HotelBasicInfo({ business, hotel, amenities }: HotelBasi
               {groupedAmenities[category].map((amenity) => (
                 <label
                   key={amenity.id}
-                  className="flex items-center gap-2 rounded-lg border border-gray-200 p-3 hover:bg-gray-50"
+                  className="flex items-center gap-3 rounded-lg border border-gray-200 p-3 hover:bg-gray-50"
                 >
                   <input
                     type="checkbox"
@@ -472,8 +473,8 @@ export default function HotelBasicInfo({ business, hotel, amenities }: HotelBasi
                     onChange={() => toggleAmenity(amenity.id)}
                     className="h-4 w-4 text-blue-600"
                   />
-                  {amenity.icon && <span>{amenity.icon}</span>}
-                  <span className="text-sm text-gray-900">{amenity.name}</span>
+                  <AmenityIcon icon={amenity.icon} variant="sm" className="bg-blue-50 text-blue-600" />
+                  <span className="text-sm text-gray-900 leading-snug break-words">{amenity.name}</span>
                 </label>
               ))}
             </div>

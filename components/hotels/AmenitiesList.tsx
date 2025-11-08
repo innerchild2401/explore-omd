@@ -1,3 +1,5 @@
+import AmenityIcon from '@/components/ui/AmenityIcon';
+
 interface AmenitiesListProps {
   amenities: Array<{
     id: string;
@@ -6,15 +8,6 @@ interface AmenitiesListProps {
     category?: string;
   }>;
 }
-
-const getAmenityIcon = (iconName?: string) => {
-  // Default checkmark icon
-  return (
-    <svg className="h-5 w-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-    </svg>
-  );
-};
 
 export default function AmenitiesList({ amenities }: AmenitiesListProps) {
   // Group amenities by category
@@ -34,9 +27,14 @@ export default function AmenitiesList({ amenities }: AmenitiesListProps) {
           <h3 className="mb-3 font-semibold text-gray-900 capitalize">{category}</h3>
           <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
             {items.map((amenity) => (
-              <div key={amenity.id} className="flex items-center gap-3 rounded-lg bg-gray-50 p-3">
-                {getAmenityIcon(amenity.icon)}
-                <span className="text-gray-700">{amenity.name}</span>
+              <div
+                key={amenity.id}
+                className="flex items-center gap-3 rounded-xl border border-gray-100 bg-white/70 p-3 shadow-sm transition hover:border-blue-100 hover:bg-blue-50/60"
+              >
+                <AmenityIcon icon={amenity.icon} variant="sm" />
+                <span className="flex-1 min-w-0 text-sm font-medium text-gray-800 leading-snug break-words">
+                  {amenity.name}
+                </span>
               </div>
             ))}
           </div>

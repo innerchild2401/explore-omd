@@ -5,6 +5,7 @@ import Image from 'next/image';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import ImageUpload from '@/components/admin/ImageUpload';
+import AmenityIcon from '@/components/ui/AmenityIcon';
 
 interface RoomModalProps {
   hotelId: string;
@@ -254,18 +255,18 @@ export default function RoomModal({ hotelId, room, amenities, onClose }: RoomMod
               <label className="mb-2 block text-sm font-medium text-gray-700">Room Amenities</label>
               <div className="grid gap-2 md:grid-cols-3">
                 {roomAmenities.map((amenity) => (
-                  <label
-                    key={amenity.id}
-                    className="flex items-center gap-2 rounded-lg border border-gray-200 p-3 hover:bg-gray-50"
-                  >
+                <label
+                  key={amenity.id}
+                  className="flex items-center gap-3 rounded-lg border border-gray-200 p-3 hover:bg-gray-50"
+                >
                     <input
                       type="checkbox"
                       checked={selectedAmenities.includes(amenity.id)}
                       onChange={() => toggleAmenity(amenity.id)}
                       className="h-4 w-4 text-blue-600"
                     />
-                    {amenity.icon && <span>{amenity.icon}</span>}
-                    <span className="text-sm text-gray-900">{amenity.name}</span>
+                  <AmenityIcon icon={amenity.icon} variant="sm" className="bg-blue-50 text-blue-600" />
+                  <span className="text-sm text-gray-900 leading-snug break-words">{amenity.name}</span>
                   </label>
                 ))}
               </div>

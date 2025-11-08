@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
+import AmenityIcon from '@/components/ui/AmenityIcon';
 
 interface Amenity {
   id: string;
@@ -254,8 +255,8 @@ export default function AmenitiesManager({ amenities, omdId }: AmenitiesManagerP
                   ) : (
                     <div className="flex items-center justify-between rounded-lg border border-gray-200 bg-gray-50 p-3">
                       <div className="flex items-center gap-3">
-                        {amenity.icon && <span className="text-xl">{amenity.icon}</span>}
-                        <span className="font-medium text-gray-900">{amenity.name}</span>
+                        <AmenityIcon icon={amenity.icon} variant="sm" className="bg-white text-blue-600 border border-blue-100" />
+                        <span className="font-medium text-gray-900 leading-snug">{amenity.name}</span>
                         <span className={`rounded-full px-2 py-1 text-xs font-medium ${getCategoryColor(amenity.category)}`}>
                           {amenity.category}
                         </span>

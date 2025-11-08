@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import OptimizedImage from '@/components/ui/OptimizedImage';
 import AreaFilter from '@/components/hotels/AreaFilter';
+import SortSelect from '@/components/hotels/SortSelect';
 import OmdMemberBadge from '@/components/ui/OmdMemberBadge';
 import { sortBusinessesByFeaturedOrder } from '@/lib/utils/business-sorting';
 
@@ -14,6 +15,7 @@ interface HotelsPageProps {
     adults?: string;
     children?: string;
     area?: string;
+    sort?: string;
   };
 }
 
@@ -64,6 +66,9 @@ export default async function HotelsPage({ params, searchParams }: HotelsPagePro
           id,
           name
         )
+      ),
+      rooms(
+        base_price
       )
     `)
     .eq('businesses.omd_id', omd.id);
@@ -144,8 +149,43 @@ export default async function HotelsPage({ params, searchParams }: HotelsPagePro
     }
   }
 
-  // Sort hotels using featured ordering: featured first (1,2,3), then remaining members (random), then non-members (random)
-  filteredHotels = sortBusinessesByFeaturedOrder(filteredHotels);
+  const getHotelStartingPrice = (hotel: any) => {
+    const roomPrices = (hotel.rooms || [])
+      .map((room: any) => Number(room.base_price))
+      .filter((price: number) => Number.isFinite(price));
+
+    if (roomPrices.length > 0) {
+      return Math.min(...roomPrices);
+    }
+
+    const businessPrice = Number((hotel.businesses as any)?.starting_price);
+    if (Number.isFinite(businessPrice)) {
+      return businessPrice;
+    }
+
+    return Number.POSITIVE_INFINITY;
+  };
+
+  const sortKey = searchParams.sort || 'featured';
+
+  const sortedHotels = (() => {
+    const list = [...filteredHotels];
+
+    switch (sortKey) {
+      case 'price':
+        return list.sort((a, b) => getHotelStartingPrice(a) - getHotelStartingPrice(b));
+      case 'rating':
+        return list.sort((a, b) => (b.star_rating || 0) - (a.star_rating || 0));
+      case 'name':
+        return list.sort((a, b) => {
+          const nameA = (a.businesses?.name || '').toString().toLowerCase();
+          const nameB = (b.businesses?.name || '').toString().toLowerCase();
+          return nameA.localeCompare(nameB);
+        });
+      default:
+        return sortBusinessesByFeaturedOrder(list);
+    }
+  })();
 
   const hasSearchParams = searchParams.checkIn || searchParams.checkOut;
   
@@ -256,7 +296,7 @@ export default async function HotelsPage({ params, searchParams }: HotelsPagePro
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
           <div>
             <h2 className="text-2xl font-bold text-gray-900">
-              {filteredHotels.length} {filteredHotels.length === 1 ? 'Hotel' : 'Hotels'} Found
+              {sortedHotels.length} {sortedHotels.length === 1 ? 'Hotel' : 'Hotels'} Found
             </h2>
             {hasSearchParams && (
               <p className="text-gray-600 mt-1">
@@ -267,23 +307,13 @@ export default async function HotelsPage({ params, searchParams }: HotelsPagePro
           
           {/* Filters and Sort */}
           <div className="flex flex-wrap items-center gap-3">
-            {/* Area Filter */}
             <AreaFilter areas={areas || []} />
-            
-            {/* Sort Options */}
-            <div className="flex items-center space-x-2">
-              <span className="text-sm text-gray-600">Sort:</span>
-              <select className="rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none">
-                <option value="price">Price (Low to High)</option>
-                <option value="rating">Rating (High to Low)</option>
-                <option value="name">Name (A to Z)</option>
-              </select>
-            </div>
+            <SortSelect />
           </div>
         </div>
 
         {/* Hotels Grid */}
-        {filteredHotels.length === 0 ? (
+        {sortedHotels.length === 0 ? (
           <div className="text-center py-16">
             <div className="mx-auto w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mb-6">
               <svg className="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -313,7 +343,7 @@ export default async function HotelsPage({ params, searchParams }: HotelsPagePro
           </div>
         ) : (
           <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
-            {filteredHotels.map((hotel) => {
+            {sortedHotels.map((hotel) => {
               const business = hotel.businesses;
               const mainImage = business.images?.[0];
               

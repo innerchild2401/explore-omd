@@ -150,7 +150,7 @@ export default function SectionEditor({ section, onClose, onSave }: SectionEdito
               <VideoUpload
                 value={content.backgroundVideo || ''}
                 onChange={(url) => updateField('backgroundVideo', url)}
-                bucket="media"
+                bucket="images"
                 folder={`hero/${section.omd_id}`}
                 maxSizeMB={80}
               />

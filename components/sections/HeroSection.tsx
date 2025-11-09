@@ -83,7 +83,11 @@ export default function HeroSection({ section, omd, template }: HeroSectionProps
                   ? backgroundVideo
                   : getImageUrl(backgroundVideo)
               }
-              type="video/mp4"
+              type={
+                backgroundVideo.toLowerCase().endsWith('.webm')
+                  ? 'video/webm'
+                  : 'video/mp4'
+              }
             />
           </video>
         ) : backgroundImage ? (

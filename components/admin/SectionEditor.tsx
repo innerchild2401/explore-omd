@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import type { Section } from '@/types';
 import ImageUpload from './ImageUpload';
+import VideoUpload from './VideoUpload';
 import { createClient } from '@/lib/supabase/client';
 
 interface SectionEditorProps {
@@ -146,15 +147,15 @@ export default function SectionEditor({ section, onClose, onSave }: SectionEdito
               <label className="mb-2 block text-sm font-medium text-gray-700">
                 Background Video (optional)
               </label>
-              <input
-                type="url"
+              <VideoUpload
                 value={content.backgroundVideo || ''}
-                onChange={(e) => updateField('backgroundVideo', e.target.value)}
-                placeholder="https://your-bucket.supabase.co/storage/v1/object/public/hero/my-video.mp4"
-                className="w-full rounded-lg border border-gray-300 px-4 py-2 text-gray-900 placeholder:text-gray-400 focus:border-blue-500 focus:outline-none"
+                onChange={(url) => updateField('backgroundVideo', url)}
+                bucket="media"
+                folder={`hero/${section.omd_id}`}
+                maxSizeMB={80}
               />
               <p className="mt-1 text-xs text-gray-500">
-                Provide a public MP4/WebM URL (muted autoplay). Poster image falls back to the background image above.
+                Upload an MP4/WebM (muted autoplay). Still image falls back to the background image above.
               </p>
             </div>
           </>

@@ -373,22 +373,20 @@ export default function NewReservationModal({ hotelId, rooms, onClose, onSuccess
 
       console.log('✅ Reservation created successfully:', reservation.id);
 
-      // Schedule email sequence (fire-and-forget) - only for confirmed bookings
-      if (confirmationData.reservation_status === 'confirmed') {
-        (async () => {
-          try {
-            await fetch('/api/email/sequence/schedule', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({ reservationId: reservation.id }),
-            });
-          } catch (err) {
-            console.error('Failed to schedule email sequence:', err);
-          }
-        })();
-      }
+      // Schedule email sequence (fire-and-forget) for both confirmed and tentative bookings
+      (async () => {
+        try {
+          await fetch('/api/email/sequence/schedule', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ reservationId: reservation.id }),
+          });
+        } catch (err) {
+          console.error('Failed to schedule email sequence:', err);
+        }
+      })();
 
       // Push booking to channel manager (if applicable) - only for confirmed bookings
       // Tentative bookings will be pushed when approved

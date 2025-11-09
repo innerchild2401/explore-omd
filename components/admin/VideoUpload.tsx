@@ -17,7 +17,7 @@ const DEFAULT_TYPES = ['video/mp4', 'video/webm'];
 export default function VideoUpload({
   value,
   onChange,
-  bucket = 'images',
+  bucket = 'hero-media',
   folder = 'hero/videos',
   maxSizeMB = 60,
   acceptedTypes = DEFAULT_TYPES,

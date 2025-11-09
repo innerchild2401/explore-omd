@@ -13,6 +13,7 @@ interface SectionsListProps {
   omdName: string;
   initialTemplate: TemplateName;
   settings: Record<string, any>;
+  canEditTemplate: boolean;
 }
 
 const ALLOWED_SECTION_TYPES = new Set(['hero', 'stays', 'restaurants', 'experiences', 'footer']);
@@ -23,6 +24,7 @@ export default function SectionsList({
   omdName,
   initialTemplate,
   settings,
+  canEditTemplate,
 }: SectionsListProps) {
   const filteredInitialSections = useMemo(
     () => initialSections.filter((section) => ALLOWED_SECTION_TYPES.has(section.type)),
@@ -135,33 +137,35 @@ export default function SectionsList({
 
   return (
     <div>
-      <div className="mb-6 rounded-lg border border-blue-100 bg-blue-50 p-6">
-        <h2 className="text-xl font-semibold text-blue-900">Appearance Settings</h2>
-        <p className="mt-1 text-sm text-blue-800">
-          Choose how visitors experience <strong>{omdName}</strong>. Templates control hero layout, highlight cards, and explore page styling.
-        </p>
-        <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center">
-          <label htmlFor="template" className="text-sm font-medium text-blue-900">
-            Destination template
-          </label>
-          <select
-            id="template"
-            value={template}
-            onChange={(event) => handleTemplateChange(event.target.value as TemplateName)}
-            className="w-full max-w-sm rounded-lg border border-blue-200 bg-white px-4 py-2 text-sm font-semibold text-blue-900 shadow-sm focus:border-blue-400 focus:outline-none"
-            disabled={savingTemplate}
-          >
-            {TEMPLATE_OPTIONS.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label} — {option.description}
-              </option>
-            ))}
-          </select>
+      {canEditTemplate && (
+        <div className="mb-6 rounded-lg border border-blue-100 bg-blue-50 p-6">
+          <h2 className="text-xl font-semibold text-blue-900">Appearance Settings</h2>
+          <p className="mt-1 text-sm text-blue-800">
+            Choose how visitors experience <strong>{omdName}</strong>. Templates control hero layout, highlight cards, and explore page styling.
+          </p>
+          <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center">
+            <label htmlFor="template" className="text-sm font-medium text-blue-900">
+              Destination template
+            </label>
+            <select
+              id="template"
+              value={template}
+              onChange={(event) => handleTemplateChange(event.target.value as TemplateName)}
+              className="w-full max-w-sm rounded-lg border border-blue-200 bg-white px-4 py-2 text-sm font-semibold text-blue-900 shadow-sm focus:border-blue-400 focus:outline-none"
+              disabled={savingTemplate}
+            >
+              {TEMPLATE_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label} — {option.description}
+                </option>
+              ))}
+            </select>
+          </div>
+          {templateMessage && (
+            <p className="mt-3 text-sm text-blue-700">{templateMessage}</p>
+          )}
         </div>
-        {templateMessage && (
-          <p className="mt-3 text-sm text-blue-700">{templateMessage}</p>
-        )}
-      </div>
+      )}
 
       <div className="mb-6 rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
         Sections are currently limited to the fixed set <strong>Hero</strong>, <strong>Stay</strong>, <strong>Eat</strong>, <strong>Experience</strong>, and <strong>Footer</strong>. This prevents layout issues while templates evolve.

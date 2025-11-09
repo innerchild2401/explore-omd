@@ -20,6 +20,8 @@ export default async function AdminSectionsPage() {
     .eq('id', user.id)
     .single();
 
+  const isSuperAdmin = profile?.role === 'super_admin';
+
   if (!profile?.omd_id) {
     return (
       <div>
@@ -88,6 +90,7 @@ export default async function AdminSectionsPage() {
         omdName={omd?.name ?? ''}
         initialTemplate={template}
         settings={omd?.settings ?? {}}
+        canEditTemplate={isSuperAdmin}
       />
     </div>
   );

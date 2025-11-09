@@ -1,7 +1,19 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import Image from 'next/image';
+import { getImageUrl } from '@/lib/utils';
+
+type DemoDestination = {
+  id: string;
+  name: string;
+  slug: string;
+  logo: string | null;
+  colors: Record<string, string> | null;
+  settings?: Record<string, any> | null;
+  created_at?: string;
+};
 
 export default function HomePage() {
   const [formData, setFormData] = useState({
@@ -12,6 +24,67 @@ export default function HomePage() {
   const [formSubmitted, setFormSubmitted] = useState(false);
   const [formError, setFormError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [destinationsLoading, setDestinationsLoading] = useState(false);
+  const [destinationsError, setDestinationsError] = useState<string | null>(null);
+  const [demoDestinations, setDemoDestinations] = useState<DemoDestination[]>([]);
+  const carouselRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    let isMounted = true;
+    const controller = new AbortController();
+
+    const fetchDestinations = async () => {
+      setDestinationsLoading(true);
+      setDestinationsError(null);
+
+      try {
+        const response = await fetch('/api/omds', { signal: controller.signal });
+
+        if (!response.ok) {
+          throw new Error('Failed to load destinations');
+        }
+
+        const json = await response.json();
+        const destinations = Array.isArray(json.data) ? json.data : [];
+
+        if (isMounted) {
+          setDemoDestinations(destinations);
+        }
+      } catch (error: any) {
+        if (isMounted) {
+          if (error?.name !== 'AbortError') {
+            console.error('Error loading demo destinations:', error);
+            setDestinationsError('Nu am putut încărca destinațiile demonstrație.');
+          }
+        }
+      } finally {
+        if (isMounted) {
+          setDestinationsLoading(false);
+        }
+      }
+    };
+
+    void fetchDestinations();
+
+    return () => {
+      isMounted = false;
+      controller.abort();
+    };
+  }, []);
+
+  const handleCarouselScroll = (direction: 'left' | 'right') => {
+    const container = carouselRef.current;
+    if (!container) return;
+
+    const scrollAmount = container.clientWidth * 0.8;
+    container.scrollBy({
+      left: direction === 'left' ? -scrollAmount : scrollAmount,
+      behavior: 'smooth',
+    });
+  };
+
+  const hasDestinations = demoDestinations.length > 0;
+  const showCarouselControls = demoDestinations.length > 2;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -376,39 +449,120 @@ export default function HomePage() {
             </p>
           </motion.div>
 
-          <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
-            {/* Mangalia Pilot Destination */}
-            <motion.a
-              href="https://www.destexplore.eu/mangalia"
-              target="_blank"
-              rel="noopener noreferrer"
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6 }}
-              className="group rounded-xl bg-white p-8 shadow-md transition-all hover:shadow-xl"
-            >
-              <div className="mb-4 flex items-center justify-center">
-                <div className="rounded-full bg-blue-100 p-4 text-blue-600">
-                  <svg className="h-8 w-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+          <div className="relative">
+            {showCarouselControls && (
+              <>
+                <button
+                  type="button"
+                  aria-label="Destinația precedentă"
+                  onClick={() => handleCarouselScroll('left')}
+                  className="absolute left-0 top-1/2 z-10 hidden -translate-y-1/2 rounded-full bg-white/90 p-3 text-blue-600 shadow-lg transition hover:bg-white hover:text-blue-700 lg:block"
+                >
+                  <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                   </svg>
+                </button>
+                <button
+                  type="button"
+                  aria-label="Destinația următoare"
+                  onClick={() => handleCarouselScroll('right')}
+                  className="absolute right-0 top-1/2 z-10 hidden -translate-y-1/2 rounded-full bg-white/90 p-3 text-blue-600 shadow-lg transition hover:bg-white hover:text-blue-700 lg:block"
+                >
+                  <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </button>
+              </>
+            )}
+
+            <div
+              ref={carouselRef}
+              className="flex gap-6 overflow-x-auto pb-4 scrollbar-thin scrollbar-track-transparent scrollbar-thumb-blue-200"
+            >
+              {destinationsLoading && (
+                <div className="flex w-full items-stretch gap-6">
+                  {Array.from({ length: 3 }).map((_, index) => (
+                    <div
+                      key={`dest-skeleton-${index}`}
+                      className="min-w-[260px] flex-1 animate-pulse rounded-2xl bg-white p-8 shadow-md"
+                    >
+                      <div className="mb-6 h-20 w-20 rounded-full bg-blue-100" />
+                      <div className="mb-3 h-6 w-1/2 rounded-full bg-gray-200" />
+                      <div className="h-4 w-3/4 rounded-full bg-gray-200" />
+                      <div className="mt-6 h-5 w-1/3 rounded-full bg-blue-100" />
+                    </div>
+                  ))}
                 </div>
-              </div>
-              <h3 className="mb-2 text-2xl font-bold text-gray-900">
-                Mangalia
-              </h3>
-              <p className="mb-4 text-gray-600">
-                Destinația de top a Marii Negre
-              </p>
-              <div className="flex items-center text-blue-600 transition-colors group-hover:text-blue-700">
-                <span className="mr-2 font-semibold">Explorează destinația</span>
-                <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                </svg>
-              </div>
-            </motion.a>
+              )}
+
+              {!destinationsLoading && destinationsError && (
+                <div className="flex min-h-[200px] w-full items-center justify-center rounded-2xl bg-white p-8 text-center text-red-600 shadow-md">
+                  {destinationsError}
+                </div>
+              )}
+
+              {!destinationsLoading && !destinationsError && !hasDestinations && (
+                <div className="flex min-h-[200px] w-full items-center justify-center rounded-2xl bg-white p-8 text-center text-gray-500 shadow-md">
+                  Nu avem încă destinații demonstrative de afișat.
+                </div>
+              )}
+
+              {!destinationsLoading &&
+                !destinationsError &&
+                demoDestinations.map((destination) => {
+                  const logoUrl = getImageUrl(destination.logo);
+                  const primaryColor = destination.colors?.primary ?? '#2563eb';
+                  const secondaryColor = destination.colors?.secondary ?? '#1d4ed8';
+                  const tagline =
+                    typeof destination.settings?.tagline === 'string' && destination.settings.tagline.trim().length > 0
+                      ? destination.settings.tagline
+                      : `Descoperă ${destination.name}`;
+
+                  return (
+                    <motion.a
+                      key={destination.id}
+                      href={`https://www.destexplore.eu/${destination.slug}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      initial={{ opacity: 0, y: 20 }}
+                      whileInView={{ opacity: 1, y: 0 }}
+                      viewport={{ once: true }}
+                      transition={{ duration: 0.6 }}
+                      className="group relative min-w-[260px] max-w-xs flex-1 rounded-2xl bg-white p-8 shadow-md transition-all hover:-translate-y-1 hover:shadow-xl"
+                      style={{
+                        borderTop: `4px solid ${primaryColor}`,
+                      }}
+                    >
+                      <div className="mb-6 flex justify-center">
+                        <div
+                          className="flex h-20 w-20 items-center justify-center rounded-full"
+                          style={{ backgroundColor: `${primaryColor}1A` }}
+                        >
+                          <Image
+                            src={logoUrl}
+                            alt={destination.name}
+                            width={64}
+                            height={64}
+                            className="h-12 w-12 object-contain"
+                          />
+                        </div>
+                      </div>
+                      <h3 className="mb-2 text-2xl font-bold text-gray-900 text-center">{destination.name}</h3>
+                      <p className="mb-6 text-center text-gray-600">{tagline}</p>
+                      <div className="flex items-center justify-center text-blue-600 transition-colors group-hover:text-blue-700">
+                        <span className="mr-2 font-semibold">Explorează destinația</span>
+                        <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                        </svg>
+                      </div>
+                      <div
+                        className="absolute inset-x-0 bottom-0 h-1 rounded-b-2xl transition-transform group-hover:scale-y-125"
+                        style={{ background: `linear-gradient(90deg, ${primaryColor}, ${secondaryColor})` }}
+                      />
+                    </motion.a>
+                  );
+                })}
+            </div>
           </div>
         </div>
       </section>

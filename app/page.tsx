@@ -484,12 +484,14 @@ export default function HomePage() {
                   {Array.from({ length: 3 }).map((_, index) => (
                     <div
                       key={`dest-skeleton-${index}`}
-                      className="min-w-[260px] flex-1 animate-pulse rounded-2xl bg-white p-8 shadow-md"
+                      className="min-w-[280px] flex-1 animate-pulse overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-md"
                     >
-                      <div className="mb-6 h-20 w-20 rounded-full bg-blue-100" />
-                      <div className="mb-3 h-6 w-1/2 rounded-full bg-gray-200" />
-                      <div className="h-4 w-3/4 rounded-full bg-gray-200" />
-                      <div className="mt-6 h-5 w-1/3 rounded-full bg-blue-100" />
+                      <div className="h-48 w-full bg-slate-100" />
+                      <div className="p-6">
+                        <div className="mb-3 h-6 w-1/2 rounded-full bg-gray-200" />
+                        <div className="h-4 w-3/4 rounded-full bg-gray-200" />
+                        <div className="mt-6 h-5 w-1/3 rounded-full bg-blue-100" />
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -510,12 +512,24 @@ export default function HomePage() {
               {!destinationsLoading &&
                 !destinationsError &&
                 demoDestinations.map((destination) => {
-                  const logoUrl = getImageUrl(destination.logo);
-                  const primaryColor = destination.colors?.primary ?? '#2563eb';
-                  const secondaryColor = destination.colors?.secondary ?? '#1d4ed8';
+                  const settings = (destination.settings ?? {}) as Record<string, any>;
+                  const primaryColor = destination.colors?.primary ?? '#1d4ed8';
+                  const secondaryColor = destination.colors?.secondary ?? '#2563eb';
+                  const gradientBackground = `linear-gradient(135deg, ${primaryColor} 0%, ${secondaryColor} 100%)`;
+                  const coverImagePath =
+                    typeof settings.hero_image === 'string' && settings.hero_image.trim().length > 0
+                      ? settings.hero_image
+                      : typeof settings.cover_image === 'string' && settings.cover_image.trim().length > 0
+                      ? settings.cover_image
+                      : destination.logo;
+                  const coverImageUrl = coverImagePath ? getImageUrl(coverImagePath) : null;
+                  const logoUrl =
+                    destination.logo && (!coverImageUrl || coverImageUrl !== getImageUrl(destination.logo))
+                      ? getImageUrl(destination.logo)
+                      : null;
                   const tagline =
-                    typeof destination.settings?.tagline === 'string' && destination.settings.tagline.trim().length > 0
-                      ? destination.settings.tagline
+                    typeof settings.tagline === 'string' && settings.tagline.trim().length > 0
+                      ? settings.tagline
                       : `Descoperă ${destination.name}`;
 
                   return (
@@ -528,37 +542,49 @@ export default function HomePage() {
                       whileInView={{ opacity: 1, y: 0 }}
                       viewport={{ once: true }}
                       transition={{ duration: 0.6 }}
-                      className="group relative min-w-[260px] max-w-xs flex-1 rounded-2xl bg-white p-8 shadow-md transition-all hover:-translate-y-1 hover:shadow-xl"
-                      style={{
-                        borderTop: `4px solid ${primaryColor}`,
-                      }}
+                      className="min-w-[280px] max-w-sm flex-1"
                     >
-                      <div className="mb-6 flex justify-center">
-                        <div
-                          className="flex h-20 w-20 items-center justify-center rounded-full"
-                          style={{ backgroundColor: `${primaryColor}1A` }}
-                        >
-                          <Image
-                            src={logoUrl}
-                            alt={destination.name}
-                            width={64}
-                            height={64}
-                            className="h-12 w-12 object-contain"
-                          />
+                      <div className="group flex h-full flex-col overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-md transition-transform hover:-translate-y-1 hover:shadow-xl">
+                        <div className="relative aspect-[4/3] w-full overflow-hidden">
+                          {coverImageUrl ? (
+                            <Image
+                              src={coverImageUrl}
+                              alt={destination.name}
+                              fill
+                              sizes="(max-width: 640px) 90vw, (max-width: 1024px) 45vw, 320px"
+                              className="object-cover"
+                              priority={false}
+                            />
+                          ) : (
+                            <div className="h-full w-full" style={{ background: gradientBackground }} />
+                          )}
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/15 to-transparent" />
+                          <div className="absolute bottom-4 left-4 right-4">
+                            <span className="text-xs uppercase tracking-wide text-white/70">Destinație demonstrativă</span>
+                            <h3 className="mt-1 text-2xl font-semibold text-white">{destination.name}</h3>
+                          </div>
+                          {logoUrl && (
+                            <div className="absolute right-4 top-4 flex h-12 w-12 items-center justify-center rounded-full bg-white/90 p-2 shadow-md backdrop-blur">
+                              <Image
+                                src={logoUrl}
+                                alt={`${destination.name} logo`}
+                                width={32}
+                                height={32}
+                                className="h-8 w-8 object-contain"
+                              />
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex flex-1 flex-col justify-between p-6">
+                          <p className="mb-6 text-sm text-gray-600">{tagline}</p>
+                          <div className="flex items-center text-blue-600 transition-colors group-hover:text-blue-700">
+                            <span className="mr-2 font-semibold">Explorează destinația</span>
+                            <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                            </svg>
+                          </div>
                         </div>
                       </div>
-                      <h3 className="mb-2 text-2xl font-bold text-gray-900 text-center">{destination.name}</h3>
-                      <p className="mb-6 text-center text-gray-600">{tagline}</p>
-                      <div className="flex items-center justify-center text-blue-600 transition-colors group-hover:text-blue-700">
-                        <span className="mr-2 font-semibold">Explorează destinația</span>
-                        <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                        </svg>
-                      </div>
-                      <div
-                        className="absolute inset-x-0 bottom-0 h-1 rounded-b-2xl transition-transform group-hover:scale-y-125"
-                        style={{ background: `linear-gradient(90deg, ${primaryColor}, ${secondaryColor})` }}
-                      />
                     </motion.a>
                   );
                 })}

@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 import SectionsList from '@/components/admin/SectionsList';
+import { DEFAULT_TEMPLATE, TemplateName } from '@/lib/omdTemplates';
 
 export default async function AdminSectionsPage() {
   const supabase = await createClient();
@@ -35,7 +36,7 @@ export default async function AdminSectionsPage() {
   // Fetch OMD
   const { data: omd } = await supabase
     .from('omds')
-    .select('*')
+    .select('*, settings')
     .eq('id', profile.omd_id)
     .single();
 
@@ -46,18 +47,17 @@ export default async function AdminSectionsPage() {
     .eq('omd_id', profile.omd_id)
     .order('order_index');
 
+  const template = ((omd?.settings ?? {}).template as TemplateName) ?? DEFAULT_TEMPLATE;
+
   return (
     <div>
-      <div className="mb-6 flex items-center justify-between">
+      <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Manage Sections</h1>
           <p className="mt-2 text-gray-600">
             {omd?.name} - Edit, reorder, and toggle visibility of homepage sections
           </p>
         </div>
-        <button className="rounded-lg bg-blue-600 px-6 py-3 font-semibold text-white transition-colors hover:bg-blue-700 shadow-sm">
-          + Add Section
-        </button>
       </div>
 
       {/* Image Guidelines */}
@@ -82,7 +82,13 @@ export default async function AdminSectionsPage() {
         </div>
       </div>
 
-      <SectionsList sections={sections || []} omdId={profile.omd_id} />
+      <SectionsList
+        sections={sections || []}
+        omdId={profile.omd_id}
+        omdName={omd?.name ?? ''}
+        initialTemplate={template}
+        settings={omd?.settings ?? {}}
+      />
     </div>
   );
 }

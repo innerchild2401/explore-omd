@@ -5,6 +5,7 @@ import BusinessCarousel from '@/components/sections/BusinessCarousel';
 import MapSection from '@/components/sections/MapSection';
 import FooterSection from '@/components/sections/FooterSection';
 import Link from 'next/link';
+import { DEFAULT_TEMPLATE, TemplateName } from '@/lib/omdTemplates';
 
 export const revalidate = 60;
 
@@ -23,6 +24,8 @@ export default async function ExplorePage({ params }: ExplorePageProps) {
   if (!omd) {
     notFound();
   }
+
+  const template = ((omd.settings ?? {}).template as TemplateName) ?? DEFAULT_TEMPLATE;
 
   // Fetch all visible sections & businesses in parallel
   const [sections, hotels, restaurants, experiences] = await Promise.all([
@@ -99,6 +102,7 @@ export default async function ExplorePage({ params }: ExplorePageProps) {
           businesses={hotels}
           omdSlug={omdSlug}
           type="hotel"
+          template={template}
         />
       )}
 
@@ -109,6 +113,7 @@ export default async function ExplorePage({ params }: ExplorePageProps) {
           businesses={restaurants}
           omdSlug={omdSlug}
           type="restaurant"
+          template={template}
         />
       )}
 
@@ -119,6 +124,7 @@ export default async function ExplorePage({ params }: ExplorePageProps) {
           businesses={experiences}
           omdSlug={omdSlug}
           type="experience"
+          template={template}
         />
       )}
 

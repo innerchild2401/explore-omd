@@ -3,12 +3,14 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
+import type { TemplateName } from '@/lib/omdTemplates';
 
 interface SearchBarProps {
   omdSlug: string;
+  template: TemplateName;
 }
 
-export default function SearchBar({ omdSlug }: SearchBarProps) {
+export default function SearchBar({ omdSlug, template }: SearchBarProps) {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<'stay' | 'eat' | 'do'>('stay');
   
@@ -76,8 +78,38 @@ export default function SearchBar({ omdSlug }: SearchBarProps) {
     router.push(`/${omdSlug}/experiences?${params.toString()}`);
   };
 
+  const sectionBackground =
+    template === 'story'
+      ? 'bg-black/80 backdrop-blur text-white border-b border-white/10'
+      : template === 'map'
+      ? 'bg-white/95 backdrop-blur border-b border-slate-200'
+      : 'bg-white shadow-md';
+
+  const tabActiveClass =
+    template === 'story'
+      ? 'text-white'
+      : template === 'map'
+      ? 'text-blue-700'
+      : 'text-blue-600';
+
+  const tabInactiveClass =
+    template === 'story' ? 'text-white/70 hover:text-white' : 'text-gray-700 hover:text-gray-900';
+
+  const underlineColor =
+    template === 'story' ? 'bg-white' : template === 'map' ? 'bg-blue-600' : 'bg-blue-600';
+
+  const buttonClasses =
+    template === 'story'
+      ? 'rounded-lg bg-white/90 px-8 py-3 font-semibold text-black transition-colors hover:bg-white'
+      : 'rounded-lg bg-blue-600 px-8 py-3 font-semibold text-white transition-colors hover:bg-blue-700';
+
+  const inputClasses =
+    template === 'story'
+      ? 'w-full rounded-lg border-2 border-white/30 bg-white/10 px-4 py-3 text-white placeholder-white/60 outline-none transition-all focus:border-white'
+      : 'w-full rounded-lg border-2 border-gray-200 px-4 py-3 text-gray-900 outline-none transition-all focus:border-blue-600';
+
   return (
-    <section className="sticky top-0 z-40 bg-white shadow-md">
+    <section className={`sticky top-0 z-40 ${sectionBackground}`}>
       <div className="mx-auto max-w-6xl px-4 py-4">
         {/* Tabs */}
         <div className="mb-4 flex justify-center space-x-2 sm:space-x-4">
@@ -86,16 +118,14 @@ export default function SearchBar({ omdSlug }: SearchBarProps) {
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
               className={`relative flex items-center justify-center gap-2 px-4 py-2.5 text-base font-semibold transition-colors sm:px-6 sm:text-lg ${
-                activeTab === tab.id
-                  ? 'text-blue-600'
-                  : 'text-gray-700 hover:text-gray-900'
+                activeTab === tab.id ? tabActiveClass : tabInactiveClass
               }`}
             >
               <span className="flex-shrink-0">{tab.icon}</span>
               <span>{tab.label}</span>
               {activeTab === tab.id && (
                 <motion.div
-                  className="absolute bottom-0 left-0 right-0 h-1 bg-blue-600"
+                  className={`absolute bottom-0 left-0 right-0 h-1 ${underlineColor}`}
                   layoutId="activeTab"
                   transition={{ type: 'spring', stiffness: 500, damping: 30 }}
                 />
@@ -112,7 +142,11 @@ export default function SearchBar({ omdSlug }: SearchBarProps) {
             className="flex flex-col gap-3 md:flex-row md:items-center"
           >
             <div className="flex-1">
-              <label className="mb-1 block text-sm font-medium text-gray-600">
+              <label
+                className={`mb-1 block text-sm font-medium ${
+                  template === 'story' ? 'text-white/80' : 'text-gray-600'
+                }`}
+              >
                 Check-in
               </label>
               <input
@@ -120,11 +154,15 @@ export default function SearchBar({ omdSlug }: SearchBarProps) {
                 value={checkIn}
                 onChange={(e) => setCheckIn(e.target.value)}
                 min={new Date().toISOString().split('T')[0]}
-                className="w-full rounded-lg border-2 border-gray-200 px-4 py-3 text-gray-900 outline-none transition-all focus:border-blue-600"
+                className={inputClasses}
               />
             </div>
             <div className="flex-1">
-              <label className="mb-1 block text-sm font-medium text-gray-600">
+              <label
+                className={`mb-1 block text-sm font-medium ${
+                  template === 'story' ? 'text-white/80' : 'text-gray-600'
+                }`}
+              >
                 Check-out
               </label>
               <input
@@ -132,12 +170,12 @@ export default function SearchBar({ omdSlug }: SearchBarProps) {
                 value={checkOut}
                 onChange={(e) => setCheckOut(e.target.value)}
                 min={checkIn || new Date().toISOString().split('T')[0]}
-                className="w-full rounded-lg border-2 border-gray-200 px-4 py-3 text-gray-900 outline-none transition-all focus:border-blue-600"
+                className={inputClasses}
               />
             </div>
             <button
               onClick={handleStaySearch}
-              className="mt-auto rounded-lg bg-blue-600 px-8 py-3 font-semibold text-white transition-colors hover:bg-blue-700"
+              className={`mt-auto ${buttonClasses}`}
             >
               Explore Stays
             </button>
@@ -153,7 +191,7 @@ export default function SearchBar({ omdSlug }: SearchBarProps) {
           >
             <button
               onClick={() => router.push(`/${omdSlug}/restaurants`)}
-              className="rounded-lg bg-blue-600 px-8 py-3 font-semibold text-white transition-colors hover:bg-blue-700"
+              className={buttonClasses}
             >
               See All Restaurants
             </button>
@@ -168,7 +206,11 @@ export default function SearchBar({ omdSlug }: SearchBarProps) {
             className="flex flex-col gap-3 md:flex-row md:items-center"
           >
             <div className="flex-1">
-              <label className="mb-1 block text-sm font-medium text-gray-600">
+              <label
+                className={`mb-1 block text-sm font-medium ${
+                  template === 'story' ? 'text-white/80' : 'text-gray-600'
+                }`}
+              >
                 Date
               </label>
               <input
@@ -176,12 +218,12 @@ export default function SearchBar({ omdSlug }: SearchBarProps) {
                 value={experienceDate}
                 onChange={(e) => setExperienceDate(e.target.value)}
                 min={new Date().toISOString().split('T')[0]}
-                className="w-full rounded-lg border-2 border-gray-200 px-4 py-3 text-gray-900 outline-none transition-all focus:border-blue-600"
+                className={inputClasses}
               />
             </div>
             <button
               onClick={handleExperienceSearch}
-              className="mt-auto rounded-lg bg-blue-600 px-8 py-3 font-semibold text-white transition-colors hover:bg-blue-700 md:ml-auto"
+              className={`mt-auto md:ml-auto ${buttonClasses}`}
             >
               Explore Experiences
             </button>

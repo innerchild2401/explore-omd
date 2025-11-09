@@ -1,21 +1,45 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import { motion, Reorder } from 'framer-motion';
 import type { Section } from '@/types';
 import SectionEditor from './SectionEditor';
 import { createClient } from '@/lib/supabase/client';
+import { TEMPLATE_OPTIONS, TemplateName } from '@/lib/omdTemplates';
 
 interface SectionsListProps {
   sections: Section[];
   omdId: string;
+  omdName: string;
+  initialTemplate: TemplateName;
+  settings: Record<string, any>;
 }
 
-export default function SectionsList({ sections: initialSections, omdId }: SectionsListProps) {
-  const [sections, setSections] = useState(initialSections);
+const ALLOWED_SECTION_TYPES = new Set(['hero', 'stays', 'restaurants', 'experiences', 'footer']);
+
+export default function SectionsList({
+  sections: initialSections,
+  omdId,
+  omdName,
+  initialTemplate,
+  settings,
+}: SectionsListProps) {
+  const filteredInitialSections = useMemo(
+    () => initialSections.filter((section) => ALLOWED_SECTION_TYPES.has(section.type)),
+    [initialSections]
+  );
+
+  const [sections, setSections] = useState(filteredInitialSections);
   const [editingSection, setEditingSection] = useState<Section | null>(null);
   const [loading, setLoading] = useState(false);
+  const [template, setTemplate] = useState<TemplateName>(initialTemplate);
+  const [savingTemplate, setSavingTemplate] = useState(false);
+  const [templateMessage, setTemplateMessage] = useState<string | null>(null);
   const supabase = createClient();
+
+  useEffect(() => {
+    setSections(filteredInitialSections);
+  }, [filteredInitialSections]);
 
   // Re-fetch sections from database
   const refreshSections = async () => {
@@ -28,7 +52,9 @@ export default function SectionsList({ sections: initialSections, omdId }: Secti
         .order('order_index');
 
       if (error) throw error;
-      if (data) setSections(data);
+      if (data) {
+        setSections(data.filter((section) => ALLOWED_SECTION_TYPES.has(section.type)));
+      }
     } catch (error) {
       console.error('Failed to refresh sections:', error);
     } finally {
@@ -79,8 +105,68 @@ export default function SectionsList({ sections: initialSections, omdId }: Secti
     return section.content?.title || `${section.type.charAt(0).toUpperCase() + section.type.slice(1)} Section`;
   };
 
+  const handleTemplateChange = useCallback(
+    async (templateName: TemplateName) => {
+      setTemplate(templateName);
+      setTemplateMessage(null);
+      setSavingTemplate(true);
+      try {
+        const nextSettings = {
+          ...settings,
+          template: templateName,
+        };
+        const { error } = await supabase
+          .from('omds')
+          .update({ settings: nextSettings })
+          .eq('id', omdId);
+
+        if (error) throw error;
+
+        setTemplateMessage('Template updated successfully.');
+      } catch (error) {
+        console.error('Failed to update template:', error);
+        setTemplateMessage('Failed to update template. Please try again.');
+      } finally {
+        setSavingTemplate(false);
+      }
+    },
+    [omdId, settings, supabase]
+  );
+
   return (
     <div>
+      <div className="mb-6 rounded-lg border border-blue-100 bg-blue-50 p-6">
+        <h2 className="text-xl font-semibold text-blue-900">Appearance Settings</h2>
+        <p className="mt-1 text-sm text-blue-800">
+          Choose how visitors experience <strong>{omdName}</strong>. Templates control hero layout, highlight cards, and explore page styling.
+        </p>
+        <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center">
+          <label htmlFor="template" className="text-sm font-medium text-blue-900">
+            Destination template
+          </label>
+          <select
+            id="template"
+            value={template}
+            onChange={(event) => handleTemplateChange(event.target.value as TemplateName)}
+            className="w-full max-w-sm rounded-lg border border-blue-200 bg-white px-4 py-2 text-sm font-semibold text-blue-900 shadow-sm focus:border-blue-400 focus:outline-none"
+            disabled={savingTemplate}
+          >
+            {TEMPLATE_OPTIONS.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label} — {option.description}
+              </option>
+            ))}
+          </select>
+        </div>
+        {templateMessage && (
+          <p className="mt-3 text-sm text-blue-700">{templateMessage}</p>
+        )}
+      </div>
+
+      <div className="mb-6 rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
+        Sections are currently limited to the fixed set <strong>Hero</strong>, <strong>Stay</strong>, <strong>Eat</strong>, <strong>Experience</strong>, and <strong>Footer</strong>. This prevents layout issues while templates evolve.
+      </div>
+
       {editingSection ? (
         <SectionEditor
           section={editingSection}

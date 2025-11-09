@@ -4,15 +4,17 @@ import { motion } from 'framer-motion';
 import { useEffect, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import type { Section, OMD } from '@/types';
+import type { TemplateName } from '@/lib/omdTemplates';
 import { getImageUrl } from '@/lib/utils';
 import OptimizedImage from '@/components/ui/OptimizedImage';
 
 interface HeroSectionProps {
   section: Section;
   omd: OMD;
+  template: TemplateName;
 }
 
-export default function HeroSection({ section, omd }: HeroSectionProps) {
+export default function HeroSection({ section, omd, template }: HeroSectionProps) {
   const { title, subtitle, cta, backgroundImage } = section.content;
   const router = useRouter();
   const [isNavigating, startTransition] = useTransition();
@@ -39,8 +41,30 @@ export default function HeroSection({ section, omd }: HeroSectionProps) {
     });
   };
 
+  const getHeroClasses = () => {
+    switch (template) {
+      case 'story':
+        return 'relative min-h-screen w-full overflow-hidden bg-black text-left';
+      case 'map':
+        return 'relative min-h-[80vh] w-full overflow-hidden bg-slate-900';
+      default:
+        return 'relative h-screen w-full overflow-hidden';
+    }
+  };
+
+  const getContentAlignmentClasses = () => {
+    switch (template) {
+      case 'story':
+        return 'relative z-10 flex h-full flex-col justify-center px-4 text-left sm:px-8 md:px-16';
+      case 'map':
+        return 'relative z-10 flex h-full flex-col items-center justify-center px-4 text-center';
+      default:
+        return 'relative z-10 flex h-full flex-col items-center justify-center px-4 text-center';
+    }
+  };
+
   return (
-    <section className="relative h-screen w-full overflow-hidden">
+    <section className={getHeroClasses()}>
       {/* Background Image/Video */}
       <div className="absolute inset-0 z-0">
         {backgroundImage ? (
@@ -48,7 +72,7 @@ export default function HeroSection({ section, omd }: HeroSectionProps) {
             src={getImageUrl(backgroundImage)}
             alt={title || omd.name}
             fill
-            className="object-cover"
+            className={`object-cover ${template === 'story' ? 'opacity-95' : ''}`}
             priority
             sizes="100vw"
           />
@@ -61,19 +85,27 @@ export default function HeroSection({ section, omd }: HeroSectionProps) {
           />
         )}
         {/* Overlay */}
-        <div className="absolute inset-0 bg-black/40" />
+        <div
+          className={`absolute inset-0 ${
+            template === 'story'
+              ? 'bg-gradient-to-br from-black/80 via-black/40 to-transparent'
+              : template === 'map'
+              ? 'bg-black/50'
+              : 'bg-black/40'
+          }`}
+        />
       </div>
 
       {/* Content */}
-      <div className="relative z-10 flex h-full flex-col items-center justify-center px-4 text-center">
+      <div className={getContentAlignmentClasses()}>
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8 }}
-          className="max-w-4xl"
+          className={`w-full ${template === 'story' ? 'max-w-3xl text-white' : 'max-w-4xl'}`}
         >
           {/* Logo */}
-          {omd.logo && (
+          {omd.logo && template !== 'story' && (
             <motion.div
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
@@ -93,7 +125,9 @@ export default function HeroSection({ section, omd }: HeroSectionProps) {
 
           {/* Title */}
           <motion.h1
-            className="mb-4 text-5xl font-bold text-white md:text-7xl"
+            className={`mb-4 font-bold text-white ${
+              template === 'story' ? 'text-4xl sm:text-5xl md:text-6xl' : 'text-5xl md:text-7xl'
+            }`}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.2 }}
@@ -104,7 +138,9 @@ export default function HeroSection({ section, omd }: HeroSectionProps) {
           {/* Subtitle */}
           {subtitle && (
             <motion.p
-              className="mb-8 text-xl text-white/90 md:text-2xl"
+              className={`mb-8 text-white/90 ${
+                template === 'story' ? 'text-lg sm:text-xl md:text-2xl' : 'text-xl md:text-2xl'
+              }`}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, delay: 0.4 }}
@@ -120,7 +156,9 @@ export default function HeroSection({ section, omd }: HeroSectionProps) {
               onClick={handleExploreClick}
               whileTap={{ scale: 0.96 }}
               disabled={isNavigating}
-              className="inline-flex items-center justify-center gap-2 rounded-full px-8 py-4 text-lg font-semibold text-white transition-transform hover:scale-105 disabled:cursor-not-allowed disabled:opacity-90 touch-manipulation"
+              className={`inline-flex items-center justify-center gap-2 rounded-full px-8 py-4 text-lg font-semibold text-white transition-transform hover:scale-105 disabled:cursor-not-allowed disabled:opacity-90 touch-manipulation ${
+                template === 'story' ? 'shadow-lg shadow-black/30' : ''
+              }`}
               style={{
                 backgroundColor: omd.colors.primary,
                 touchAction: 'manipulation',

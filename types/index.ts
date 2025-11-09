@@ -6,6 +6,7 @@ export interface OMD {
   theme: Record<string, any>;
   logo: string | null;
   colors: Record<string, string>;
+  settings?: Record<string, any> | null;
   created_at: string;
   updated_at: string;
 }

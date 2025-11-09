@@ -4,6 +4,7 @@ import { getOMDBySlug, getSectionsByOMD } from '@/lib/supabase/queries';
 import HeroSection from '@/components/sections/HeroSection';
 import SearchBar from '@/components/sections/SearchBar';
 import FooterSection from '@/components/sections/FooterSection';
+import { DEFAULT_TEMPLATE, TemplateName } from '@/lib/omdTemplates';
 
 export const revalidate = 60; // Revalidate every 60 seconds
 
@@ -27,6 +28,9 @@ export default async function OMDHomePage({ params }: PageProps) {
   // Fetch all visible sections
   const sections = await getSectionsByOMD(omd.id, false, supabase);
 
+  const themeSettings = omd.settings ?? {};
+  const template = (themeSettings.template as TemplateName) ?? DEFAULT_TEMPLATE;
+
   // Find specific sections
   const heroSection = sections.find(s => s.type === 'hero');
   const footerSection = sections.find(s => s.type === 'footer');
@@ -34,10 +38,10 @@ export default async function OMDHomePage({ params }: PageProps) {
   return (
     <main className="min-h-screen">
       {/* Hero Section */}
-      {heroSection && <HeroSection section={heroSection} omd={omd} />}
+      {heroSection && <HeroSection section={heroSection} omd={omd} template={template} />}
 
       {/* Search Bar */}
-      <SearchBar omdSlug={omdSlug} />
+      <SearchBar omdSlug={omdSlug} template={template} />
 
       {/* Footer */}
       {footerSection && <FooterSection section={footerSection} omd={omd} />}

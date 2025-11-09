@@ -6,12 +6,14 @@ import type { Section, Business } from '@/types';
 import { getImageUrl, formatPrice, getStarRating } from '@/lib/utils';
 import OptimizedImage from '@/components/ui/OptimizedImage';
 import OmdMemberBadge from '@/components/ui/OmdMemberBadge';
+import type { TemplateName } from '@/lib/omdTemplates';
 
 interface BusinessCarouselProps {
   section: Section;
   businesses: Business[];
   omdSlug: string;
   type: 'hotel' | 'restaurant' | 'experience';
+  template: TemplateName;
 }
 
 export default function BusinessCarousel({
@@ -19,6 +21,7 @@ export default function BusinessCarousel({
   businesses,
   omdSlug,
   type,
+  template,
 }: BusinessCarouselProps) {
   const { title, subtitle } = section.content;
 
@@ -45,8 +48,206 @@ export default function BusinessCarousel({
     }
   };
 
+  const isStoryLayout = template === 'story';
+  const isMapLayout = template === 'map';
+  const sectionBackground =
+    template === 'story'
+      ? 'bg-black'
+      : template === 'map'
+      ? 'bg-slate-50'
+      : 'bg-gray-50';
+
+  const sectionTextClass = template === 'story' ? 'text-white' : 'text-gray-900';
+  const subtitleTextClass = template === 'story' ? 'text-white/70' : 'text-gray-600';
+
+  const cardBaseClass = isStoryLayout
+    ? 'rounded-3xl overflow-hidden bg-white/10 border border-white/10 backdrop-blur shadow-2xl'
+    : 'rounded-2xl bg-white shadow-lg overflow-hidden';
+
+  const cardHoverClass = isStoryLayout ? 'hover:bg-white/20' : 'hover:shadow-xl';
+
+  const renderClassicCard = (business: Business, index: number) => {
+    const mainImage =
+      typeof business.images?.[0] === 'string'
+        ? business.images[0]
+        : (business.images?.[0] as any)?.url || '/placeholder.jpg';
+
+    return (
+      <motion.div
+        key={business.id}
+        initial={{ opacity: 0, x: 50 }}
+        whileInView={{ opacity: 1, x: 0 }}
+        viewport={{ once: true }}
+        transition={{ duration: 0.5, delay: index * 0.1 }}
+        className="flex-shrink-0"
+        style={{ pointerEvents: 'auto' }}
+      >
+        <Link
+          href={`/${omdSlug}/${type}s/${business.slug}`}
+          className="block touch-manipulation"
+          style={{ touchAction: 'manipulation' }}
+          prefetch={true}
+        >
+          <div className={`group ${cardBaseClass} ${cardHoverClass} w-80 transition-shadow`}>
+            {/* Image */}
+            <div className="relative h-48 overflow-hidden">
+              <OptimizedImage
+                src={getImageUrl(mainImage)}
+                alt={business.name}
+                fill
+                className="object-cover transition-transform duration-300 group-hover:scale-110 pointer-events-none"
+                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                priority={index < 3}
+              />
+              <div className="absolute right-2 top-2 flex flex-col items-end gap-2">
+                {business.is_omd_member && <OmdMemberBadge size="sm" />}
+                {business.rating > 0 && (
+                  <div className="rounded-full bg-white px-3 py-1 text-sm font-semibold shadow-md text-gray-900">
+                    {business.rating} ⭐
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Content */}
+            <div className="p-4">
+              <div className="mb-2">
+                <h3 className="text-xl font-bold text-gray-900 line-clamp-1">{business.name}</h3>
+                {business.area_id && business.areas && (
+                  <div className="mt-1.5 inline-flex items-center text-xs text-gray-500">
+                    <svg className="h-3 w-3 mr-1 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                    <span className="font-medium">{(business.areas as any).name || business.area_id}</span>
+                  </div>
+                )}
+              </div>
+              <p className="mb-3 text-sm text-gray-600 line-clamp-2">{business.description}</p>
+
+              {business.location?.address && (
+                <div className="mb-3 flex items-center text-sm text-gray-500">
+                  <svg className="mr-1 h-4 w-4" fill="none" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" stroke="currentColor">
+                    <path d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
+                    <path d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                  </svg>
+                  <span className="line-clamp-1">{business.location.address}</span>
+                </div>
+              )}
+
+              <div className="flex items-center justify-between">
+                <span className="text-lg font-bold text-blue-600">View Details</span>
+                <svg className="h-6 w-6 text-blue-600 transition-transform group-hover:translate-x-1" fill="none" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" stroke="currentColor">
+                  <path d="M9 5l7 7-7 7"></path>
+                </svg>
+              </div>
+            </div>
+          </div>
+        </Link>
+      </motion.div>
+    );
+  };
+
+  const renderStoryCard = (business: Business, index: number) => {
+    const mainImage =
+      typeof business.images?.[0] === 'string'
+        ? business.images[0]
+        : (business.images?.[0] as any)?.url || '/placeholder.jpg';
+
+    return (
+      <motion.div
+        key={business.id}
+        initial={{ opacity: 0, y: 30 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true }}
+        transition={{ duration: 0.5, delay: index * 0.1 }}
+      >
+        <Link href={`/${omdSlug}/${type}s/${business.slug}`} className="block" prefetch={true}>
+          <div className="relative overflow-hidden rounded-3xl border border-white/10 bg-white/5 p-4 sm:p-6 transition">
+            <div className="relative h-60 w-full overflow-hidden rounded-2xl sm:h-72">
+              <OptimizedImage src={getImageUrl(mainImage)} alt={business.name} fill className="object-cover" sizes="100vw" priority={index < 2} />
+              <div className="absolute inset-0 bg-gradient-to-t from-black to-transparent" />
+              <div className="absolute bottom-4 left-4 right-4 text-white">
+                <h3 className="text-2xl font-semibold">{business.name}</h3>
+                {business.description && (
+                  <p className="mt-2 line-clamp-2 text-sm text-white/80">{business.description}</p>
+                )}
+              </div>
+            </div>
+            <div className="mt-4 flex items-center justify-between text-sm text-white/70">
+              <span>{business.location?.address || omdSlug}</span>
+              <span className="inline-flex items-center gap-2 font-semibold text-white">
+                Discover
+                <svg className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                </svg>
+              </span>
+            </div>
+          </div>
+        </Link>
+      </motion.div>
+    );
+  };
+
+  const renderMapCard = (business: Business, index: number) => {
+    const mainImage =
+      typeof business.images?.[0] === 'string'
+        ? business.images[0]
+        : (business.images?.[0] as any)?.url || '/placeholder.jpg';
+
+    return (
+      <motion.div
+        key={business.id}
+        initial={{ opacity: 0, y: 20 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true }}
+        transition={{ duration: 0.5, delay: index * 0.1 }}
+        className="flex-shrink-0 w-72"
+      >
+        <Link href={`/${omdSlug}/${type}s/${business.slug}`} className="block" prefetch>
+          <div className="rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:shadow-md">
+            <div className="relative h-40 overflow-hidden rounded-t-2xl">
+              <OptimizedImage
+                src={getImageUrl(mainImage)}
+                alt={business.name}
+                fill
+                className="object-cover"
+                sizes="100vw"
+                priority={index < 3}
+              />
+              <div className="absolute right-3 top-3 rounded-full bg-white px-3 py-1 text-sm font-medium text-blue-700 shadow-sm">
+                View on Map
+              </div>
+            </div>
+            <div className="space-y-2 p-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-semibold text-slate-900 line-clamp-1">{business.name}</h3>
+                {business.rating > 0 && (
+                  <span className="flex items-center gap-1 text-sm text-amber-500">
+                    ★ {business.rating.toFixed(1)}
+                  </span>
+                )}
+              </div>
+              <p className="text-sm text-slate-600 line-clamp-2">{business.description}</p>
+              <div className="flex items-center justify-between text-sm">
+                <span className="inline-flex items-center gap-1 text-blue-600">
+                  <svg className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                  </svg>
+                  {business.location?.address ? 'Directions' : 'Discover'}
+                </span>
+                <span className="text-sm font-semibold text-slate-900">Details</span>
+              </div>
+            </div>
+          </div>
+        </Link>
+      </motion.div>
+    );
+  };
+
   return (
-    <section className="bg-gray-50 py-16">
+    <section className={`${sectionBackground} py-16`}>
       <div className="mx-auto max-w-7xl px-4">
         {/* Section Header */}
         <div className="mb-8 text-center">
@@ -56,130 +257,39 @@ export default function BusinessCarousel({
             viewport={{ once: true }}
             transition={{ duration: 0.6 }}
           >
-            <div className="mb-3 flex justify-center text-blue-600">{getTypeIcon()}</div>
-            <h2 className="mb-2 text-4xl font-bold text-gray-900">
+            <div className={`mb-3 flex justify-center ${template === 'story' ? 'text-white' : 'text-blue-600'}`}>
+              {getTypeIcon()}
+            </div>
+            <h2 className={`mb-2 text-3xl sm:text-4xl font-bold ${sectionTextClass}`}>
               {title || `Where to ${type === 'hotel' ? 'Stay' : type === 'restaurant' ? 'Eat' : 'Explore'}`}
             </h2>
-            {subtitle && <p className="text-lg text-gray-600">{subtitle}</p>}
+            {subtitle && <p className={`text-lg ${subtitleTextClass}`}>{subtitle}</p>}
           </motion.div>
         </div>
 
-        {/* Carousel */}
-        <div className="overflow-x-auto">
-          <div className="flex space-x-6 pb-4">
-            {businesses.map((business, index) => (
-              <motion.div
-                key={business.id}
-                initial={{ opacity: 0, x: 50 }}
-                whileInView={{ opacity: 1, x: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.5, delay: index * 0.1 }}
-                className="flex-shrink-0"
-                style={{ pointerEvents: 'auto' }}
-              >
-                <Link 
-                  href={`/${omdSlug}/${type}s/${business.slug}`}
-                  className="block touch-manipulation"
-                  style={{ touchAction: 'manipulation' }}
-                  prefetch={true}
-                >
-                  <div className="group w-80 overflow-hidden rounded-2xl bg-white shadow-lg transition-shadow hover:shadow-xl">
-                    {/* Image */}
-                    <div className="relative h-48 overflow-hidden">
-                      <OptimizedImage
-                        src={getImageUrl(
-                          typeof business.images[0] === 'string' 
-                            ? business.images[0] 
-                            : (business.images[0] as any)?.url
-                        )}
-                        alt={business.name}
-                        fill
-                        className="object-cover transition-transform duration-300 group-hover:scale-110 pointer-events-none"
-                        sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                        priority={index < 3} // Prioritize first 3 images
-                      />
-                      <div className="absolute right-2 top-2 flex flex-col items-end gap-2">
-                        {business.is_omd_member && (
-                          <OmdMemberBadge size="sm" />
-                        )}
-                        {business.rating > 0 && (
-                          <div className="rounded-full bg-white px-3 py-1 text-sm font-semibold shadow-md text-gray-900">
-                            {business.rating} ⭐
-                          </div>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Content */}
-                    <div className="p-4">
-                      <div className="mb-2">
-                        <h3 className="text-xl font-bold text-gray-900 line-clamp-1">
-                          {business.name}
-                        </h3>
-                        {/* Area Badge - Subtle */}
-                        {business.area_id && business.areas && (
-                          <div className="mt-1.5 inline-flex items-center text-xs text-gray-500">
-                            <svg className="h-3 w-3 mr-1 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                            </svg>
-                            <span className="font-medium">{(business.areas as any).name || business.area_id}</span>
-                          </div>
-                        )}
-                      </div>
-                      <p className="mb-3 text-sm text-gray-600 line-clamp-2">
-                        {business.description}
-                      </p>
-
-                      {/* Location */}
-                      {business.location?.address && (
-                        <div className="mb-3 flex items-center text-sm text-gray-500">
-                          <svg
-                            className="mr-1 h-4 w-4"
-                            fill="none"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth="2"
-                            viewBox="0 0 24 24"
-                            stroke="currentColor"
-                          >
-                            <path d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
-                            <path d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                          </svg>
-                          <span className="line-clamp-1">{business.location.address}</span>
-                        </div>
-                      )}
-
-                      {/* CTA */}
-                      <div className="flex items-center justify-between">
-                        <span className="text-lg font-bold text-blue-600">
-                          View Details
-                        </span>
-                        <svg
-                          className="h-6 w-6 text-blue-600 transition-transform group-hover:translate-x-1"
-                          fill="none"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth="2"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                        >
-                          <path d="M9 5l7 7-7 7"></path>
-                        </svg>
-                      </div>
-                    </div>
-                  </div>
-                </Link>
-              </motion.div>
-            ))}
+        {isStoryLayout ? (
+          <div className="space-y-6">
+            {businesses.map((business, index) => renderStoryCard(business, index))}
           </div>
-        </div>
+        ) : isMapLayout ? (
+          <div className="flex space-x-4 overflow-x-auto pb-4">
+            {businesses.map((business, index) => renderMapCard(business, index))}
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <div className="flex space-x-6 pb-4">
+              {businesses.map((business, index) => renderClassicCard(business, index))}
+            </div>
+          </div>
+        )}
 
         {/* View All Link */}
         <div className="mt-8 text-center">
           <Link
             href={`/${omdSlug}/${type}s`}
-            className="inline-flex items-center text-lg font-semibold text-blue-600 hover:underline touch-manipulation"
+            className={`inline-flex items-center text-lg font-semibold ${
+              template === 'story' ? 'text-white' : 'text-blue-600'
+            } hover:underline touch-manipulation`}
             style={{ touchAction: 'manipulation' }}
           >
             View All {type === 'hotel' ? 'Hotels' : type === 'restaurant' ? 'Restaurants' : 'Experiences'}

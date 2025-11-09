@@ -14,7 +14,7 @@ export async function getOMDBySlug(
   
   const { data, error } = await supabase
     .from('omds')
-    .select('*')
+    .select('*, settings')
     .eq('slug', slug)
     .maybeSingle();
 

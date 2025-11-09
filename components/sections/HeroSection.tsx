@@ -15,7 +15,7 @@ interface HeroSectionProps {
 }
 
 export default function HeroSection({ section, omd, template }: HeroSectionProps) {
-  const { title, subtitle, cta, backgroundImage } = section.content;
+  const { title, subtitle, cta, backgroundImage, backgroundVideo } = section.content;
   const router = useRouter();
   const [isNavigating, startTransition] = useTransition();
 
@@ -67,7 +67,26 @@ export default function HeroSection({ section, omd, template }: HeroSectionProps
     <section className={getHeroClasses()}>
       {/* Background Image/Video */}
       <div className="absolute inset-0 z-0">
-        {backgroundImage ? (
+        {backgroundVideo ? (
+          <video
+            key={backgroundVideo}
+            className="h-full w-full object-cover"
+            autoPlay
+            loop
+            muted
+            playsInline
+            poster={backgroundImage ? getImageUrl(backgroundImage) : undefined}
+          >
+            <source
+              src={
+                backgroundVideo.startsWith('http')
+                  ? backgroundVideo
+                  : getImageUrl(backgroundVideo)
+              }
+              type="video/mp4"
+            />
+          </video>
+        ) : backgroundImage ? (
           <OptimizedImage
             src={getImageUrl(backgroundImage)}
             alt={title || omd.name}

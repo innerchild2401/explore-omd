@@ -122,24 +122,42 @@ export default function SectionEditor({ section, onClose, onSave }: SectionEdito
           </div>
         )}
 
-        {/* Background Image */}
+        {/* Background Media */}
         {section.type === 'hero' && (
-          <div>
-            <label className="mb-2 block text-sm font-medium text-gray-700">
-              Background Image
-            </label>
-            <ImageUpload
-              value={content.backgroundImage || ''}
-              onChange={(url) => updateField('backgroundImage', url)}
-              bucket="images"
-              folder="hero"
-              maxSizeMB={10}
-              recommendedSize="1920×1080px (16:9 landscape)"
-            />
-            <p className="mt-2 text-xs text-gray-500">
-              💡 <strong>Tips:</strong> Landscape orientation works best • High-quality images recommended
-            </p>
-          </div>
+          <>
+            <div>
+              <label className="mb-2 block text-sm font-medium text-gray-700">
+                Background Image
+              </label>
+              <ImageUpload
+                value={content.backgroundImage || ''}
+                onChange={(url) => updateField('backgroundImage', url)}
+                bucket="images"
+                folder="hero"
+                maxSizeMB={10}
+                recommendedSize="1920×1080px (16:9 landscape)"
+              />
+              <p className="mt-2 text-xs text-gray-500">
+                💡 <strong>Tips:</strong> Landscape orientation works best • High-quality images recommended
+              </p>
+            </div>
+
+            <div>
+              <label className="mb-2 block text-sm font-medium text-gray-700">
+                Background Video (optional)
+              </label>
+              <input
+                type="url"
+                value={content.backgroundVideo || ''}
+                onChange={(e) => updateField('backgroundVideo', e.target.value)}
+                placeholder="https://your-bucket.supabase.co/storage/v1/object/public/hero/my-video.mp4"
+                className="w-full rounded-lg border border-gray-300 px-4 py-2 text-gray-900 placeholder:text-gray-400 focus:border-blue-500 focus:outline-none"
+              />
+              <p className="mt-1 text-xs text-gray-500">
+                Provide a public MP4/WebM URL (muted autoplay). Poster image falls back to the background image above.
+              </p>
+            </div>
+          </>
         )}
 
         {/* Explore Section Fields */}

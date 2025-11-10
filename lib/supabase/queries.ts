@@ -8,15 +8,21 @@ import type { OMD, Section, Business } from '@/types';
 
 export async function getOMDBySlug(
   slug: string,
-  supabaseClient?: SupabaseClient
+  supabaseClient?: SupabaseClient,
+  includeInactive = false
 ): Promise<OMD | null> {
   const supabase = supabaseClient ?? await createClient();
   
-  const { data, error } = await supabase
+  let query = supabase
     .from('omds')
     .select('*, settings')
-    .eq('slug', slug)
-    .maybeSingle();
+    .eq('slug', slug);
+
+  if (!includeInactive) {
+    query = query.eq('status', 'active');
+  }
+  
+  const { data, error } = await query.maybeSingle();
 
   if (error) {
     console.error('Error fetching OMD:', error);
@@ -26,13 +32,19 @@ export async function getOMDBySlug(
   return data as OMD;
 }
 
-export async function getAllOMDs(supabaseClient?: SupabaseClient): Promise<OMD[]> {
+export async function getAllOMDs(supabaseClient?: SupabaseClient, includeInactive = false): Promise<OMD[]> {
   const supabase = supabaseClient ?? await createClient();
   
-  const { data, error } = await supabase
+  let query = supabase
     .from('omds')
     .select('*')
     .order('name');
+
+  if (!includeInactive) {
+    query = query.eq('status', 'active');
+  }
+
+  const { data, error } = await query;
 
   if (error) {
     console.error('Error fetching OMDs:', error);

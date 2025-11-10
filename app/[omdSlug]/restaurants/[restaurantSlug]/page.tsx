@@ -21,11 +21,11 @@ export default async function RestaurantPage({ params }: RestaurantPageProps) {
   // Get OMD
   const { data: omd } = await supabase
     .from('omds')
-    .select('*')
+    .select('id, name, slug, status')
     .eq('slug', omdSlug)
     .single();
 
-  if (!omd) {
+  if (!omd || omd.status !== 'active') {
     notFound();
   }
 

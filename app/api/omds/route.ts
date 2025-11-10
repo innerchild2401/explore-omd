@@ -11,7 +11,7 @@ export async function GET() {
 
     const { data, error } = await supabase
       .from('omds')
-      .select('id, name, slug, logo, colors, settings, created_at')
+      .select('id, name, slug, logo, colors, settings, created_at, status')
       .order('name');
 
     if (error) {
@@ -21,6 +21,10 @@ export async function GET() {
 
     const activeOmds =
       data?.filter((omd) => {
+        if (omd.status !== 'active') {
+          return false;
+        }
+
         const settings = (omd?.settings as Record<string, any> | null) ?? {};
 
         if ('is_active' in settings) {

@@ -17,11 +17,11 @@ export default async function ExperienceDetailPage({ params, searchParams }: Pag
   // Get OMD
   const { data: omd } = await supabase
     .from('omds')
-    .select('id, name, slug')
+    .select('id, name, slug, status')
     .eq('slug', omdSlug)
     .single();
 
-  if (!omd) {
+  if (!omd || omd.status !== 'active') {
     notFound();
   }
 

@@ -29,11 +29,11 @@ export default async function HotelsPage({ params, searchParams }: HotelsPagePro
   // Get OMD
   const { data: omd } = await supabase
     .from('omds')
-    .select('*')
+    .select('id, name, slug, status')
     .eq('slug', params.omdSlug)
     .single();
 
-  if (!omd) {
+  if (!omd || omd.status !== 'active') {
     notFound();
   }
 
@@ -71,7 +71,8 @@ export default async function HotelsPage({ params, searchParams }: HotelsPagePro
         base_price
       )
     `)
-    .eq('businesses.omd_id', omd.id);
+    .eq('businesses.omd_id', omd.id)
+    .eq('businesses.status', 'active');
 
   const { data: hotels, error: hotelsError } = await hotelsQuery;
   
@@ -453,11 +454,11 @@ export async function generateMetadata({ params }: HotelsPageProps) {
 
   const { data: omd } = await supabase
     .from('omds')
-    .select('name')
+    .select('name, status')
     .eq('slug', omdSlug)
     .single();
 
-  if (!omd) {
+  if (!omd || omd.status !== 'active') {
     return {
       title: 'Hotels Not Found',
     };

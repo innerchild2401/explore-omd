@@ -34,11 +34,11 @@ export default async function HotelDetailPage({ params, searchParams }: HotelPag
   // Get OMD
   const { data: omd } = await supabase
     .from('omds')
-    .select('id, name, slug')
+    .select('id, name, slug, status')
     .eq('slug', omdSlug)
     .single();
 
-  if (!omd) {
+  if (!omd || omd.status !== 'active') {
     notFound();
   }
 

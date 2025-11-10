@@ -20,11 +20,11 @@ export default async function RestaurantsPage({ params, searchParams }: Restaura
   // Get OMD
   const { data: omd } = await supabase
     .from('omds')
-    .select('*')
+    .select('id, name, status')
     .eq('slug', omdSlug)
     .maybeSingle();
 
-  if (!omd) {
+  if (!omd || omd.status !== 'active') {
     notFound();
   }
 

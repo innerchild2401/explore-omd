@@ -17,11 +17,11 @@ export default async function ExperiencesPage({ params, searchParams }: Experien
   // Get OMD
   const { data: omd } = await supabase
     .from('omds')
-    .select('*')
+    .select('id, name, status')
     .eq('slug', params.omdSlug)
     .single();
 
-  if (!omd) {
+  if (!omd || omd.status !== 'active') {
     notFound();
   }
 

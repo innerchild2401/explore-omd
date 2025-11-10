@@ -67,6 +67,8 @@ export default async function BusinessesAdminPage() {
     .eq('status', 'active')
     .order('created_at', { ascending: false });
 
+  const publishedBusinesses = (approvedBusinesses || []).filter((business: any) => business.is_published);
+
   return (
     <div className="space-y-8">
       <div>
@@ -77,9 +79,9 @@ export default async function BusinessesAdminPage() {
       </div>
 
       {/* Featured Business Ordering */}
-      {approvedBusinesses && approvedBusinesses.length > 0 && (
+      {publishedBusinesses.length > 0 && (
         <FeaturedBusinessOrder
-          businesses={approvedBusinesses.map((b: any) => ({
+          businesses={publishedBusinesses.map((b: any) => ({
             id: b.id,
             name: b.name,
             type: b.type,

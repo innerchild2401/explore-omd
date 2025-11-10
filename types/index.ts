@@ -59,6 +59,7 @@ export interface Business {
   };
   rating: number;
   status: 'active' | 'inactive' | 'pending';
+  is_published: boolean;
   owner_id: string;
   area_id?: string | null;
   is_omd_member?: boolean;

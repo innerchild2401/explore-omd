@@ -53,6 +53,7 @@ export default async function RestaurantsPage({ params, searchParams }: Restaura
         rating,
         is_omd_member,
         featured_order,
+        is_published,
         areas(
           id,
           name
@@ -60,6 +61,7 @@ export default async function RestaurantsPage({ params, searchParams }: Restaura
       )
     `)
     .eq('businesses.omd_id', omd.id)
+    .eq('businesses.is_published', true)
     .eq('businesses.status', 'active');
 
   // Filter by area if provided

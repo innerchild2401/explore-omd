@@ -128,7 +128,8 @@ export async function getBusinessesByOMD(
   omdId: string,
   type?: 'hotel' | 'restaurant' | 'experience',
   limit?: number,
-  supabaseClient?: SupabaseClient
+  supabaseClient?: SupabaseClient,
+  includeUnpublished = false
 ): Promise<Business[]> {
   const supabase = supabaseClient ?? await createClient();
   
@@ -137,6 +138,10 @@ export async function getBusinessesByOMD(
     .select('*')
     .eq('omd_id', omdId)
     .eq('status', 'active');
+
+  if (!includeUnpublished) {
+    query = query.eq('is_published', true);
+  }
 
   if (type) {
     query = query.eq('type', type);
@@ -192,16 +197,25 @@ export async function getBusinessesByOMD(
   return sorted as Business[];
 }
 
-export async function getBusinessBySlug(omdId: string, slug: string): Promise<Business | null> {
+export async function getBusinessBySlug(
+  omdId: string,
+  slug: string,
+  includeUnpublished = false
+): Promise<Business | null> {
   const supabase = await createClient();
   
-  const { data, error } = await supabase
+  let query = supabase
     .from('businesses')
     .select('*')
     .eq('omd_id', omdId)
     .eq('slug', slug)
-    .eq('status', 'active')
-    .single();
+    .eq('status', 'active');
+
+  if (!includeUnpublished) {
+    query = query.eq('is_published', true);
+  }
+
+  const { data, error } = await query.single();
 
   if (error) {
     console.error('Error fetching business:', error);

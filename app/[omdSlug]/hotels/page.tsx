@@ -62,6 +62,7 @@ export default async function HotelsPage({ params, searchParams }: HotelsPagePro
         area_id,
         is_omd_member,
         featured_order,
+        is_published,
         areas(
           id,
           name
@@ -72,6 +73,7 @@ export default async function HotelsPage({ params, searchParams }: HotelsPagePro
       )
     `)
     .eq('businesses.omd_id', omd.id)
+    .eq('businesses.is_published', true)
     .eq('businesses.status', 'active');
 
   const { data: hotels, error: hotelsError } = await hotelsQuery;

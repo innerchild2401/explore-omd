@@ -23,6 +23,7 @@ interface Business {
   contact: any;
   location: any;
   omd_id: string;
+  is_published: boolean;
 }
 
 interface Hotel {
@@ -85,10 +86,41 @@ export default function HotelDashboard({
   const supabase = createClient();
   const [activeTab, setActiveTab] = useState<'info' | 'rooms' | 'availability' | 'bookings' | 'reservations' | 'analytics'>('info');
   const [showAddModal, setShowAddModal] = useState(false);
+  const [isPublished, setIsPublished] = useState<boolean>(business.is_published ?? false);
+  const [publishLoading, setPublishLoading] = useState(false);
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
     router.push(`/${omd.slug}/business/login`);
+  };
+
+  const handleTogglePublish = async () => {
+    setPublishLoading(true);
+    try {
+      const nextValue = !isPublished;
+      const updates: Record<string, any> = {
+        is_published: nextValue,
+      };
+
+      if (!nextValue) {
+        updates.featured_order = null;
+      }
+
+      const { error } = await supabase
+        .from('businesses')
+        .update(updates)
+        .eq('id', business.id);
+
+      if (error) throw error;
+
+      setIsPublished(nextValue);
+      router.refresh();
+    } catch (error) {
+      console.error('Failed to update publish status:', error);
+      alert('Could not update visibility. Please try again.');
+    } finally {
+      setPublishLoading(false);
+    }
   };
 
   return (
@@ -105,13 +137,19 @@ export default function HotelDashboard({
                 <p className="text-sm text-gray-600">Hotel Management Dashboard</p>
               </div>
               <div className="flex items-center gap-4">
-                <Link
-                  href={`/${omd.slug}/hotels/${business.slug}`}
-                  className="text-sm text-blue-600 hover:text-blue-700"
-                  target="_blank"
-                >
-                  View Public Page →
-                </Link>
+                {isPublished ? (
+                  <Link
+                    href={`/${omd.slug}/hotels/${business.slug}`}
+                    className="text-sm text-blue-600 hover:text-blue-700"
+                    target="_blank"
+                  >
+                    View Public Page →
+                  </Link>
+                ) : (
+                  <span className="rounded-lg border border-gray-300 px-4 py-2 text-sm text-gray-500">
+                    Public page hidden
+                  </span>
+                )}
                 <button
                   onClick={handleSignOut}
                   className="rounded-lg bg-gray-200 px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-300"
@@ -130,6 +168,34 @@ export default function HotelDashboard({
                 <span>+</span>
                 Add New Business
               </button>
+            </div>
+
+            <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <p className="text-sm font-semibold text-gray-900">Visibility</p>
+                  <p className="text-sm text-gray-600">
+                    {isPublished
+                      ? 'Your hotel is currently visible to visitors.'
+                      : 'Finish setting up your profile, then publish when you are ready to go live.'}
+                  </p>
+                </div>
+                <button
+                  onClick={handleTogglePublish}
+                  disabled={publishLoading}
+                  className={`rounded-lg px-4 py-2 text-sm font-semibold transition-colors ${
+                    isPublished
+                      ? 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200'
+                      : 'bg-blue-600 text-white hover:bg-blue-700'
+                  } disabled:opacity-60 disabled:cursor-not-allowed`}
+                >
+                  {publishLoading
+                    ? 'Updating...'
+                    : isPublished
+                    ? 'Hide from Visitors'
+                    : 'Publish Now'}
+                </button>
+              </div>
             </div>
           </div>
         </div>

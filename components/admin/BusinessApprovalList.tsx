@@ -13,6 +13,8 @@ interface Business {
   created_at: string;
   owner_id: string;
   is_omd_member?: boolean;
+  is_published?: boolean;
+  featured_order?: number | null;
   contact?: {
     name?: string;
     phone?: string;
@@ -167,6 +169,34 @@ export default function BusinessApprovalList({
     } catch (error) {
       console.error('Error toggling OMD member status:', error);
       alert('Failed to update OMD member status');
+    } finally {
+      setLoading(null);
+    }
+  };
+
+  const handleTogglePublish = async (businessId: string, currentStatus: boolean, featuredOrder?: number | null) => {
+    setLoading(businessId);
+
+    try {
+      const updates: Record<string, any> = {
+        is_published: !currentStatus,
+      };
+
+      if (currentStatus && featuredOrder !== null && featuredOrder !== undefined) {
+        updates.featured_order = null;
+      }
+
+      const { error } = await supabase
+        .from('businesses')
+        .update(updates)
+        .eq('id', businessId);
+
+      if (error) throw error;
+
+      router.refresh();
+    } catch (error) {
+      console.error('Error toggling publish status:', error);
+      alert('Failed to update publish status');
     } finally {
       setLoading(null);
     }
@@ -343,9 +373,15 @@ export default function BusinessApprovalList({
                       <span className="text-xs text-gray-600">{getTypeName(business.type)}</span>
                     </div>
                   </div>
-                  <span className="rounded-full bg-green-100 px-2 py-1 text-xs font-semibold text-green-800">
-                    Active
-                  </span>
+                  {business.is_published ? (
+                    <span className="rounded-full bg-green-100 px-2 py-1 text-xs font-semibold text-green-800">
+                      Published
+                    </span>
+                  ) : (
+                    <span className="rounded-full bg-yellow-100 px-2 py-1 text-xs font-semibold text-yellow-800">
+                      Hidden
+                    </span>
+                  )}
                 </div>
 
                 <div className="space-y-1 text-xs text-gray-600">
@@ -355,6 +391,11 @@ export default function BusinessApprovalList({
                   <p className="text-gray-400">
                     Approved: {new Date(business.created_at).toLocaleDateString()}
                   </p>
+                  {!business.is_published && (
+                    <p className="text-xs text-yellow-700">
+                      This business is hidden from visitors until it is published.
+                    </p>
+                  )}
                 </div>
 
                 <div className="mt-4 space-y-2">
@@ -367,6 +408,30 @@ export default function BusinessApprovalList({
                       type="checkbox"
                       checked={business.is_omd_member || false}
                       onChange={() => handleToggleOmdMember(business.id, business.is_omd_member || false)}
+                      disabled={loading === business.id}
+                      className="h-5 w-5 cursor-pointer rounded border-gray-300 text-blue-600 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:cursor-not-allowed"
+                    />
+                  </label>
+
+                  <label className="flex cursor-pointer items-center justify-between rounded-lg border border-gray-300 bg-gray-50 p-3 hover:bg-gray-100">
+                    <div>
+                      <p className="text-sm font-medium text-gray-700">Visible to visitors</p>
+                      <p className="text-xs text-gray-500">
+                        {business.is_published
+                          ? 'The public page is live.'
+                          : 'Keep hidden until the profile is complete.'}
+                      </p>
+                    </div>
+                    <input
+                      type="checkbox"
+                      checked={business.is_published || false}
+                      onChange={() =>
+                        handleTogglePublish(
+                          business.id,
+                          business.is_published || false,
+                          business.featured_order ?? null
+                        )
+                      }
                       disabled={loading === business.id}
                       className="h-5 w-5 cursor-pointer rounded border-gray-300 text-blue-600 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:cursor-not-allowed"
                     />

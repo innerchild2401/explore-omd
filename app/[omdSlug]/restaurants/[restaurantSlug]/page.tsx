@@ -46,6 +46,7 @@ export default async function RestaurantPage({ params }: RestaurantPageProps) {
     `)
     .eq('businesses.slug', restaurantSlug)
     .eq('businesses.omd_id', omd.id)
+    .eq('businesses.is_published', true)
     .eq('businesses.status', 'active')
     .single();
 

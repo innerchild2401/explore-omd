@@ -50,6 +50,7 @@ export default async function HotelDetailPage({ params, searchParams }: HotelPag
     .eq('omd_id', omd.id)
     .eq('type', 'hotel')
     .eq('status', 'active')
+    .eq('is_published', true)
     .single();
 
   if (!business) {

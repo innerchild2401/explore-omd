@@ -33,6 +33,7 @@ export default async function ExperienceDetailPage({ params, searchParams }: Pag
     .eq('omd_id', omd.id)
     .eq('type', 'experience')
     .eq('status', 'active')
+    .eq('is_published', true)
     .single();
 
   if (!business) {

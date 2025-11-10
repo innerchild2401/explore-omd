@@ -39,6 +39,22 @@ export default function OMDPendingApprovals({ pendingOMDs, activeOMDs }: OMDPend
 
       if (error) throw error;
 
+      try {
+        const emailResponse = await fetch('/api/email/omd-approved', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ omdId }),
+        });
+
+        if (!emailResponse.ok) {
+          console.error('Failed to send OMD approval email:', await emailResponse.json());
+        }
+      } catch (emailError) {
+        console.error('Error triggering OMD approval email:', emailError);
+      }
+
       router.refresh();
     } catch (error) {
       console.error('Approval error:', error);

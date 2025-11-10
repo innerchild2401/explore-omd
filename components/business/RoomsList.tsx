@@ -5,6 +5,7 @@ import Link from 'next/link';
 import RoomModal from './RoomModal';
 import PricingCalendar from './PricingCalendar';
 import IndividualRoomsManager from './IndividualRoomsManager';
+import { formatPrice } from '@/lib/utils';
 
 interface RoomsListProps {
   hotelId: string;
@@ -89,7 +90,7 @@ export default function RoomsList({ hotelId, rooms, amenities }: RoomsListProps)
 
               <div className="mb-4 space-y-2 text-sm text-gray-600">
                 <p>👥 Max Occupancy: {room.max_occupancy}</p>
-                <p>💰 Base Price: ${room.base_price}/night</p>
+                <p>💰 Base Price: {formatPrice(room.base_price, 'RON')}/night</p>
                 {room.size_sqm && <p>📐 Size: {room.size_sqm} sqm</p>}
                 <p>🏠 Quantity: {room.quantity} room(s)</p>
               </div>

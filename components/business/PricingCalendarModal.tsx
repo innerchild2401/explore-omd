@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
+import { formatPrice } from '@/lib/utils';
 
 interface PricingCalendarModalProps {
   room: any;
@@ -129,7 +130,7 @@ export default function PricingCalendarModal({ room, onClose }: PricingCalendarM
           <div>
             <h2 className="text-2xl font-bold text-gray-900">Pricing Calendar</h2>
             <p className="text-sm text-gray-600">
-              {room.name} • Base Price: ${room.base_price}/night
+              {room.name} • Base Price: {formatPrice(room.base_price, 'RON')}/night
             </p>
           </div>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
@@ -183,7 +184,7 @@ export default function PricingCalendarModal({ room, onClose }: PricingCalendarM
                     step="0.01"
                     value={pricePerNight}
                     onChange={(e) => setPricePerNight(e.target.value)}
-                    placeholder={`Default: $${room.base_price}`}
+                    placeholder={`Default: ${formatPrice(room.base_price, 'RON')}`}
                     className="w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 focus:border-blue-500 focus:outline-none"
                   />
                 </div>
@@ -237,7 +238,7 @@ export default function PricingCalendarModal({ room, onClose }: PricingCalendarM
               <div className="py-8 text-center">
                 <p className="text-gray-500">No custom pricing rules yet</p>
                 <p className="mt-2 text-sm text-gray-400">
-                  Base price of ${room.base_price} applies to all dates
+                  Base price of {formatPrice(room.base_price, 'RON')} applies to all dates
                 </p>
               </div>
             ) : (
@@ -259,7 +260,7 @@ export default function PricingCalendarModal({ room, onClose }: PricingCalendarM
                         )}
                       </div>
                       <div className="text-lg font-bold text-blue-600">
-                        ${rule.price_per_night}/night
+                        {formatPrice(rule.price_per_night, 'RON')}/night
                       </div>
                     </div>
                     <button

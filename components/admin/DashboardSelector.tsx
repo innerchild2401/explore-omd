@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useRouter, usePathname } from 'next/navigation';
+import { useState, useEffect, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 
 interface OMD {
   id: string;
@@ -15,41 +15,80 @@ interface DashboardSelectorProps {
 }
 
 export default function DashboardSelector({ omds, currentOMDId }: DashboardSelectorProps) {
-  const [selectedOMD, setSelectedOMD] = useState<string>(currentOMDId || '');
+  const [selectedOMD, setSelectedOMD] = useState<string>(currentOMDId ?? 'all');
+  const [isUpdating, setIsUpdating] = useState(false);
   const router = useRouter();
-  const pathname = usePathname();
 
   useEffect(() => {
-    setSelectedOMD(currentOMDId || '');
+    setSelectedOMD(currentOMDId ?? 'all');
   }, [currentOMDId]);
 
-  const handleOMDChange = (omdId: string) => {
-    if (omdId === 'all') {
-      // Switch to super admin global view
-      router.push('/admin');
-    } else {
-      // Switch to specific OMD view
-      const omd = omds.find(o => o.id === omdId);
-      if (omd) {
-        // Navigate to a OMD-specific admin view
-        // For now, just show businesses for that OMD
-        router.push(`/admin?omd=${omd.slug}`);
+  const updateSelection = useCallback(
+    async (omdId: string) => {
+      if (isUpdating) {
+        return;
       }
-    }
-    setSelectedOMD(omdId);
+
+      setIsUpdating(true);
+      try {
+        if (omdId === 'all') {
+          const response = await fetch('/api/admin/active-omd', {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' },
+          });
+
+          if (!response.ok) {
+            throw new Error('Failed to reset view');
+          }
+
+          setSelectedOMD('all');
+          // Always go back to the global dashboard
+          router.push('/admin');
+        } else {
+          const response = await fetch('/api/admin/active-omd', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ omdId }),
+          });
+
+          if (!response.ok) {
+            throw new Error('Failed to switch OMD');
+          }
+
+          setSelectedOMD(omdId);
+
+          router.refresh();
+        }
+      } catch (error) {
+        console.error('Failed to switch admin view:', error);
+      } finally {
+        setIsUpdating(false);
+      }
+    },
+    [isUpdating, router]
+  );
+
+  const handleOMDChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
+    const omdId = event.target.value;
+    void updateSelection(omdId);
   };
 
-  const isGlobalView = pathname === '/admin' || pathname.startsWith('/admin/omd-approvals') || pathname.startsWith('/admin/contact-inquiries') || pathname.startsWith('/admin/users');
+  const handleReset = () => {
+    void updateSelection('all');
+  };
+
+  const isGlobalView = selectedOMD === 'all';
 
   return (
-    <div className="mb-6 flex items-center gap-4">
+    <div className="mb-6 flex flex-wrap items-center gap-4">
       <div className="flex items-center gap-2">
         <span className="text-sm font-medium text-gray-700">View:</span>
         <div className="relative">
           <select
             value={selectedOMD}
-            onChange={(e) => handleOMDChange(e.target.value)}
-            className="appearance-none rounded-lg border border-gray-300 bg-white px-4 py-2 pr-10 text-sm font-medium text-gray-900 focus:border-blue-500 focus:outline-none"
+            onChange={handleOMDChange}
+            disabled={isUpdating}
+            className="appearance-none rounded-lg border border-gray-300 bg-white px-4 py-2 pr-10 text-sm font-medium text-gray-900 focus:border-blue-500 focus:outline-none disabled:cursor-not-allowed disabled:bg-gray-100"
           >
             <option value="all">All OMDs (Global View)</option>
             {omds.map((omd) => (
@@ -65,11 +104,20 @@ export default function DashboardSelector({ omds, currentOMDId }: DashboardSelec
           </div>
         </div>
       </div>
-      
-      {isGlobalView && (
+
+      {isGlobalView ? (
         <span className="rounded-full bg-blue-100 px-3 py-1 text-xs font-semibold text-blue-800">
           Super Admin View
         </span>
+      ) : (
+        <button
+          type="button"
+          onClick={handleReset}
+          disabled={isUpdating}
+          className="inline-flex items-center rounded-full border border-gray-300 px-3 py-1 text-xs font-semibold text-gray-600 transition-colors hover:border-gray-400 hover:text-gray-900 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          ← Back to Super Admin View
+        </button>
       )}
     </div>
   );

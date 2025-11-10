@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 import AdminReservationsList from '@/components/admin/AdminReservationsList';
+import { getActiveOmdId } from '@/lib/admin/getActiveOmdId';
 
 export default async function AdminReservationsPage() {
   const supabase = await createClient();
@@ -20,6 +21,16 @@ export default async function AdminReservationsPage() {
 
   if (!profile || (profile.role !== 'super_admin' && profile.role !== 'omd_admin')) {
     redirect('/admin');
+  }
+
+  const activeOmdId = await getActiveOmdId(profile);
+
+  if (!activeOmdId) {
+    return (
+      <div className="rounded-lg bg-yellow-50 p-6 text-yellow-800">
+        Select a destination to view reservations.
+      </div>
+    );
   }
 
   // Get all reservations with related data
@@ -60,12 +71,10 @@ export default async function AdminReservationsPage() {
     .limit(1000);
 
   // Filter by OMD if not super admin (client-side filtering to ensure all statuses are included)
-  const reservations = profile.role === 'super_admin'
-    ? allReservations
-    : allReservations?.filter((reservation: any) => {
-        const omdId = reservation.hotels?.businesses?.omd_id;
-        return omdId === profile.omd_id;
-      }) || [];
+  const reservations = (allReservations || []).filter((reservation: any) => {
+    const omdId = reservation.hotels?.businesses?.omd_id;
+    return omdId === activeOmdId;
+  });
 
   if (reservationsError) {
     console.error('Error fetching reservations:', reservationsError);

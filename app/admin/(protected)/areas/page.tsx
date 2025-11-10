@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 import AreasManager from '@/components/admin/AreasManager';
+import { getActiveOmdId } from '@/lib/admin/getActiveOmdId';
 
 export default async function AreasPage() {
   const supabase = await createClient();
@@ -23,15 +24,21 @@ export default async function AreasPage() {
     redirect('/admin/login?message=You do not have admin access');
   }
 
-  if (!profile.omd_id) {
-    redirect('/admin?message=No OMD assigned');
+  const activeOmdId = await getActiveOmdId(profile);
+
+  if (!activeOmdId) {
+    return (
+      <div className="rounded-lg bg-yellow-50 p-6 text-yellow-800">
+        Select a destination to manage its areas.
+      </div>
+    );
   }
 
   // Get areas for this OMD
   const { data: areas } = await supabase
     .from('areas')
     .select('*')
-    .eq('omd_id', profile.omd_id)
+    .eq('omd_id', activeOmdId)
     .order('order_index', { ascending: true })
     .order('name', { ascending: true });
 
@@ -44,7 +51,7 @@ export default async function AreasPage() {
         </p>
       </div>
 
-      <AreasManager areas={areas || []} omdId={profile.omd_id} />
+      <AreasManager areas={areas || []} omdId={activeOmdId} />
     </div>
   );
 }

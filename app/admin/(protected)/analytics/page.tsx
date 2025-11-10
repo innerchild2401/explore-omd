@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 import AnalyticsDashboard from '@/components/admin/AnalyticsDashboard';
+import { getActiveOmdId } from '@/lib/admin/getActiveOmdId';
 
 export default async function AnalyticsPage() {
   const supabase = await createClient();
@@ -25,6 +26,16 @@ export default async function AnalyticsPage() {
     redirect('/admin/login?message=You do not have admin access');
   }
 
+  const activeOmdId = await getActiveOmdId(profile);
+
+  if (!activeOmdId) {
+    return (
+      <div className="rounded-lg bg-yellow-50 p-6 text-yellow-800">
+        Select a destination to view analytics.
+      </div>
+    );
+  }
+
   return (
     <div className="text-gray-900">
       <div className="mb-6">
@@ -34,7 +45,7 @@ export default async function AnalyticsPage() {
         </p>
       </div>
 
-      <AnalyticsDashboard omdId={profile.omd_id} />
+      <AnalyticsDashboard omdId={activeOmdId} />
     </div>
   );
 }

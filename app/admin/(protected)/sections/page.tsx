@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 import SectionsList from '@/components/admin/SectionsList';
 import { DEFAULT_TEMPLATE, TemplateName } from '@/lib/omdTemplates';
+import { getActiveOmdId } from '@/lib/admin/getActiveOmdId';
 
 export default async function AdminSectionsPage() {
   const supabase = await createClient();
@@ -21,14 +22,17 @@ export default async function AdminSectionsPage() {
     .single();
 
   const isSuperAdmin = profile?.role === 'super_admin';
+  const activeOmdId = await getActiveOmdId(profile);
 
-  if (!profile?.omd_id) {
+  if (!activeOmdId) {
     return (
       <div>
         <h1 className="mb-6 text-3xl font-bold">Manage Sections</h1>
         <div className="rounded-lg bg-yellow-50 p-6">
           <p className="text-yellow-800">
-            Please select an OMD to manage sections.
+            {isSuperAdmin
+              ? 'Select a destination from the dropdown to manage its sections.'
+              : 'Please select an OMD to manage sections.'}
           </p>
         </div>
       </div>
@@ -39,14 +43,14 @@ export default async function AdminSectionsPage() {
   const { data: omd } = await supabase
     .from('omds')
     .select('*, settings')
-    .eq('id', profile.omd_id)
+    .eq('id', activeOmdId)
     .single();
 
   // Fetch all sections (including hidden)
   const { data: sections } = await supabase
     .from('sections')
     .select('*')
-    .eq('omd_id', profile.omd_id)
+    .eq('omd_id', activeOmdId)
     .order('order_index');
 
   const template = ((omd?.settings ?? {}).template as TemplateName) ?? DEFAULT_TEMPLATE;
@@ -86,7 +90,7 @@ export default async function AdminSectionsPage() {
 
       <SectionsList
         sections={sections || []}
-        omdId={profile.omd_id}
+        omdId={activeOmdId}
         omdName={omd?.name ?? ''}
         initialTemplate={template}
         settings={omd?.settings ?? {}}

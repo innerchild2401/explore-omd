@@ -7,9 +7,10 @@ import { useRouter } from 'next/navigation';
 interface AdminHeaderProps {
   user: any;
   profile: any;
+  activeOmdId: string | null;
 }
 
-export default function AdminHeader({ user, profile }: AdminHeaderProps) {
+export default function AdminHeader({ user, profile, activeOmdId }: AdminHeaderProps) {
   const [showDropdown, setShowDropdown] = useState(false);
   const router = useRouter();
   const supabase = createClient();
@@ -37,7 +38,11 @@ export default function AdminHeader({ user, profile }: AdminHeaderProps) {
             <div className="text-left">
               <div className="text-sm font-medium text-gray-900">{user.email}</div>
               <div className="text-xs text-gray-500">
-                {profile.role === 'super_admin' ? 'Super Admin' : 'OMD Admin'}
+                {profile.role === 'super_admin'
+                  ? activeOmdId
+                    ? 'Super Admin · Destination mode'
+                    : 'Super Admin · Global view'
+                  : 'OMD Admin'}
               </div>
             </div>
             <svg

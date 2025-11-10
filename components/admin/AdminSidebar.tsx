@@ -6,13 +6,22 @@ import { cn } from '@/lib/utils';
 
 interface AdminSidebarProps {
   userRole: string;
-  omdId: string | null;
+  activeOmdId: string | null;
 }
 
-export default function AdminSidebar({ userRole, omdId }: AdminSidebarProps) {
+export default function AdminSidebar({ userRole, activeOmdId }: AdminSidebarProps) {
   const pathname = usePathname();
+  const isSuperAdmin = userRole === 'super_admin';
+  const isGlobalView = isSuperAdmin && !activeOmdId;
 
-  const menuItems = [
+  interface MenuItem {
+    label: string;
+    href: string;
+    icon: string;
+    adminOnly?: boolean;
+  }
+
+  const destinationMenuItems: MenuItem[] = [
     {
       label: 'Dashboard',
       href: '/admin',
@@ -73,19 +82,66 @@ export default function AdminSidebar({ userRole, omdId }: AdminSidebarProps) {
     },
   ];
 
+  const platformMenuItems: MenuItem[] = [
+    {
+      label: 'Dashboard',
+      href: '/admin',
+      icon: '🧭',
+    },
+    {
+      label: 'OMD Approvals',
+      href: '/admin/omd-approvals',
+      icon: '🏛️',
+    },
+    {
+      label: 'Contact Inquiries',
+      href: '/admin/contact-inquiries',
+      icon: '📧',
+    },
+    {
+      label: 'Booking Issues',
+      href: '/admin/booking-issues',
+      icon: '🚨',
+    },
+    {
+      label: 'Ratings & Feedback',
+      href: '/admin/ratings',
+      icon: '⭐',
+    },
+    {
+      label: 'Users',
+      href: '/admin/users',
+      icon: '👥',
+    },
+  ];
+
+  const menuToRender = isGlobalView ? platformMenuItems : destinationMenuItems;
+
   return (
     <aside className="w-64 bg-gray-900 text-white">
       <div className="p-6">
-        <h2 className="text-2xl font-bold">OMD Admin</h2>
+        <h2 className="text-2xl font-bold">
+          {isGlobalView ? 'Super Admin' : 'OMD Admin'}
+        </h2>
         <p className="mt-1 text-sm text-gray-400">
-          {userRole === 'super_admin' ? 'Super Admin' : 'OMD Admin'}
+          {isGlobalView
+            ? 'Global platform oversight'
+            : userRole === 'super_admin'
+            ? 'Super Admin • Destination mode'
+            : 'OMD Admin'}
         </p>
       </div>
 
+      {isSuperAdmin && !isGlobalView && (
+        <div className="px-6 text-xs uppercase tracking-wide text-gray-500">
+          Destination Tools
+        </div>
+      )}
+
       <nav className="mt-6">
-        {menuItems.map((item) => {
+        {menuToRender.map((item) => {
           // Skip admin-only items for non-super admins
-          if (item.adminOnly && userRole !== 'super_admin') {
+          if (item.adminOnly && !isSuperAdmin) {
             return null;
           }
 
@@ -108,6 +164,14 @@ export default function AdminSidebar({ userRole, omdId }: AdminSidebarProps) {
           );
         })}
       </nav>
+
+      {isSuperAdmin && !isGlobalView && (
+        <div className="mt-8 px-6">
+          <div className="rounded-lg border border-blue-400 bg-blue-500/10 p-4 text-xs text-blue-100">
+            Viewing destination-specific tools. Use the selector above to switch or return to the global view.
+          </div>
+        </div>
+      )}
 
       <div className="absolute bottom-0 w-64 border-t border-gray-800 p-6">
         <Link

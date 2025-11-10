@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 import BookingIssuesList from '@/components/admin/BookingIssuesList';
+import { getActiveOmdId } from '@/lib/admin/getActiveOmdId';
 
 export default async function BookingIssuesPage() {
   const supabase = await createClient();
@@ -24,8 +25,18 @@ export default async function BookingIssuesPage() {
     redirect('/admin');
   }
 
+  const activeOmdId = await getActiveOmdId(profile);
+
+  if (!activeOmdId) {
+    return (
+      <div className="rounded-lg bg-yellow-50 p-6 text-yellow-800">
+        Select a destination to review booking issues.
+      </div>
+    );
+  }
+
   // Fetch booking issue reports
-  let query = supabase
+  const { data: allIssues } = await supabase
     .from('booking_issue_reports')
     .select(`
       *,
@@ -43,15 +54,12 @@ export default async function BookingIssuesPage() {
     `)
     .order('created_at', { ascending: false });
 
-  const { data: allIssues } = await query;
-
-  // Filter by OMD if not super admin (client-side filtering for nested data)
-  const issues = profile.role === 'super_admin' 
-    ? allIssues 
-    : allIssues?.filter((issue: any) => {
-        const omdId = issue.reservations?.hotels?.businesses?.omd_id;
-        return omdId === profile.omd_id;
-      }) || [];
+  // Filter by selected OMD (client-side filtering for nested data)
+  const issues =
+    allIssues?.filter((issue: any) => {
+      const omdId = issue.reservations?.hotels?.businesses?.omd_id;
+      return omdId === activeOmdId;
+    }) || [];
 
   return (
     <div>

@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 import RatingsList from '@/components/admin/RatingsList';
+import { getActiveOmdId } from '@/lib/admin/getActiveOmdId';
 
 export default async function RatingsPage() {
   const supabase = await createClient();
@@ -24,6 +25,8 @@ export default async function RatingsPage() {
     redirect('/admin');
   }
 
+  const activeOmdId = await getActiveOmdId(profile);
+
   // Fetch reservation staff ratings
   const { data: allReservationRatings } = await supabase
     .from('reservation_staff_ratings')
@@ -42,12 +45,22 @@ export default async function RatingsPage() {
     .order('created_at', { ascending: false });
 
   // Filter by OMD if not super admin (client-side filtering for nested data)
-  const reservationRatings = profile.role === 'super_admin'
-    ? allReservationRatings
-    : allReservationRatings?.filter((rating: any) => {
+  let reservationRatings = allReservationRatings || [];
+  if (profile.role === 'super_admin') {
+    if (activeOmdId) {
+      reservationRatings =
+        reservationRatings.filter((rating: any) => {
+          const omdId = rating.reservations?.hotels?.businesses?.omd_id;
+          return omdId === activeOmdId;
+        }) || [];
+    }
+  } else if (profile.omd_id) {
+    reservationRatings =
+      reservationRatings.filter((rating: any) => {
         const omdId = rating.reservations?.hotels?.businesses?.omd_id;
         return omdId === profile.omd_id;
       }) || [];
+  }
 
   // Fetch destination ratings
   let destinationRatingsQuery = supabase
@@ -56,7 +69,11 @@ export default async function RatingsPage() {
     .order('created_at', { ascending: false });
 
   // If not super admin, filter by OMD
-  if (profile.role !== 'super_admin' && profile.omd_id) {
+  if (profile.role === 'super_admin') {
+    if (activeOmdId) {
+      destinationRatingsQuery = destinationRatingsQuery.eq('omd_id', activeOmdId);
+    }
+  } else if (profile.omd_id) {
     destinationRatingsQuery = destinationRatingsQuery.eq('omd_id', profile.omd_id);
   }
 

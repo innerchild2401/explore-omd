@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 import DashboardSelector from '@/components/admin/DashboardSelector';
+import { getActiveOmdId } from '@/lib/admin/getActiveOmdId';
 
 export default async function AdminDashboard() {
   const supabase = await createClient();
@@ -19,13 +20,15 @@ export default async function AdminDashboard() {
     .eq('id', user.id)
     .single();
 
-  // Get OMD info if user is omd_admin
+  const activeOmdId = await getActiveOmdId(profile);
+
+  // Get OMD info when an OMD context is active
   let omd = null;
-  if (profile?.omd_id) {
+  if (activeOmdId) {
     const { data } = await supabase
       .from('omds')
       .select('*')
-      .eq('id', profile.omd_id)
+      .eq('id', activeOmdId)
       .single();
     omd = data;
   }
@@ -49,25 +52,25 @@ export default async function AdminDashboard() {
     newInquiries: 0,
   };
 
-  if (profile?.omd_id) {
+  if (activeOmdId) {
     // Count businesses for OMD admin
     const { count: businessCount } = await supabase
       .from('businesses')
       .select('*', { count: 'exact', head: true })
-      .eq('omd_id', profile.omd_id);
+      .eq('omd_id', activeOmdId);
     stats.totalBusinesses = businessCount || 0;
 
     // Count pending businesses
     const { count: pendingCount } = await supabase
       .from('businesses')
       .select('*', { count: 'exact', head: true })
-      .eq('omd_id', profile.omd_id)
+      .eq('omd_id', activeOmdId)
       .eq('status', 'pending');
     stats.pendingBusinesses = pendingCount || 0;
   }
 
   // Get super admin specific stats
-  if (profile?.role === 'super_admin') {
+  if (profile?.role === 'super_admin' && !activeOmdId) {
     const { count: pendingOMDCount } = await supabase
       .from('omds')
       .select('*', { count: 'exact', head: true })
@@ -82,6 +85,7 @@ export default async function AdminDashboard() {
   }
 
   const isSuperAdmin = profile?.role === 'super_admin';
+  const isGlobalView = isSuperAdmin && !activeOmdId;
 
   return (
     <div>
@@ -106,7 +110,7 @@ export default async function AdminDashboard() {
 
       {/* Dashboard Selector for Super Admin */}
       {isSuperAdmin && (
-        <DashboardSelector omds={allOMDs} currentOMDId={profile.omd_id} />
+        <DashboardSelector omds={allOMDs} currentOMDId={activeOmdId} />
       )}
 
       {/* Welcome Message */}
@@ -115,7 +119,7 @@ export default async function AdminDashboard() {
           Welcome back, {user.email}!
         </h2>
         <p className="text-gray-600">
-          {isSuperAdmin
+          {isGlobalView
             ? 'You have access to all OMDs'
             : `Managing: ${omd?.name || 'OMD'}`}
         </p>
@@ -123,7 +127,7 @@ export default async function AdminDashboard() {
 
       {/* Stats Grid */}
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-        {isSuperAdmin ? (
+        {isGlobalView ? (
           <>
             <div className="rounded-lg bg-white p-6 shadow border border-gray-200">
               <div className="mb-2 text-sm font-medium text-gray-600">
@@ -202,7 +206,7 @@ export default async function AdminDashboard() {
       <div className="mt-8">
         <h3 className="mb-4 text-xl font-semibold text-gray-900">Quick Actions</h3>
         <div className="grid gap-4 md:grid-cols-3">
-          {isSuperAdmin ? (
+          {isGlobalView ? (
             <>
               <a
                 href="/admin/omd-approvals"

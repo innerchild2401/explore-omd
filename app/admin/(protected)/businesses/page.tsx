@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 import BusinessApprovalList from '@/components/admin/BusinessApprovalList';
 import FeaturedBusinessOrder from '@/components/admin/FeaturedBusinessOrder';
+import { getActiveOmdId } from '@/lib/admin/getActiveOmdId';
 
 export default async function BusinessesAdminPage() {
   const supabase = await createClient();
@@ -26,6 +27,16 @@ export default async function BusinessesAdminPage() {
     redirect('/admin/login?message=You do not have admin access');
   }
 
+  const activeOmdId = await getActiveOmdId(profile);
+
+  if (!activeOmdId) {
+    return (
+      <div className="rounded-lg bg-yellow-50 p-6 text-yellow-800">
+        Select a destination from the dropdown to review its businesses.
+      </div>
+    );
+  }
+
   // Get pending businesses for this OMD
   const { data: pendingBusinesses, error: pendingError } = await supabase
     .from('businesses')
@@ -35,16 +46,12 @@ export default async function BusinessesAdminPage() {
         profile
       )
     `)
-    .eq('omd_id', profile.omd_id)
+    .eq('omd_id', activeOmdId)
     .eq('status', 'pending')
     .order('created_at', { ascending: false });
 
-  // Debug logging
-  console.log('Fetching pending businesses for OMD:', profile.omd_id);
-  console.log('Pending businesses count:', pendingBusinesses?.length || 0);
-  console.log('Pending businesses error:', pendingError);
-  if (pendingBusinesses && pendingBusinesses.length > 0) {
-    console.log('First pending business:', pendingBusinesses[0]);
+  if (pendingError) {
+    console.error('Failed to fetch pending businesses:', pendingError);
   }
 
   // Get approved businesses for this OMD
@@ -56,7 +63,7 @@ export default async function BusinessesAdminPage() {
         profile
       )
     `)
-    .eq('omd_id', profile.omd_id)
+    .eq('omd_id', activeOmdId)
     .eq('status', 'active')
     .order('created_at', { ascending: false });
 
@@ -79,14 +86,14 @@ export default async function BusinessesAdminPage() {
             is_omd_member: b.is_omd_member,
             featured_order: b.featured_order,
           }))}
-          omdId={profile.omd_id}
+          omdId={activeOmdId}
         />
       )}
 
       <BusinessApprovalList
         pendingBusinesses={pendingBusinesses || []}
         approvedBusinesses={approvedBusinesses || []}
-        omdId={profile.omd_id}
+        omdId={activeOmdId}
       />
     </div>
   );

@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 import ContactInquiriesList from '@/components/admin/ContactInquiriesList';
+import { getActiveOmdId } from '@/lib/admin/getActiveOmdId';
 
 export default async function ContactInquiriesPage() {
   const supabase = await createClient();
@@ -24,14 +25,19 @@ export default async function ContactInquiriesPage() {
     redirect('/admin');
   }
 
-  // Fetch contact inquiries - filter by OMD if not super admin
+  const activeOmdId = await getActiveOmdId(profile);
+
+  // Fetch contact inquiries - filter depending on context
   let query = supabase
     .from('contact_inquiries')
     .select('*, omds!left(name, slug)')
     .order('created_at', { ascending: false });
 
-  // If not super admin, filter by OMD
-  if (profile.role !== 'super_admin' && profile.omd_id) {
+  if (profile.role === 'super_admin') {
+    if (activeOmdId) {
+      query = query.eq('omd_id', activeOmdId);
+    }
+  } else if (profile.omd_id) {
     query = query.eq('omd_id', profile.omd_id);
   }
 

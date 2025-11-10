@@ -1,4 +1,5 @@
 import { redirect } from 'next/navigation';
+import { cookies } from 'next/headers';
 import { createClient } from '@/lib/supabase/server';
 import AdminSidebar from '@/components/admin/AdminSidebar';
 import AdminHeader from '@/components/admin/AdminHeader';
@@ -49,14 +50,20 @@ export default async function ProtectedAdminLayout({
     }
   }
 
+  const cookieStore = cookies();
+  const isSuperAdmin = profile.role === 'super_admin';
+  const activeOmdId = isSuperAdmin
+    ? cookieStore.get('admin-active-omd')?.value ?? null
+    : profile.omd_id;
+
   return (
     <div className="flex h-screen bg-gray-100">
       {/* Sidebar */}
-      <AdminSidebar userRole={profile.role} omdId={profile.omd_id} />
+      <AdminSidebar userRole={profile.role} activeOmdId={activeOmdId} />
 
       {/* Main Content */}
       <div className="flex flex-1 flex-col overflow-hidden">
-        <AdminHeader user={user} profile={profile} />
+        <AdminHeader user={user} profile={profile} activeOmdId={activeOmdId} />
         
         <main className="flex-1 overflow-y-auto p-6">
           {children}

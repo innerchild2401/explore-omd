@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 import AmenitiesManager from '@/components/admin/AmenitiesManager';
+import { getActiveOmdId } from '@/lib/admin/getActiveOmdId';
 
 export default async function AmenitiesPage() {
   const supabase = await createClient();
@@ -23,11 +24,21 @@ export default async function AmenitiesPage() {
     redirect('/admin/login?message=You do not have admin access');
   }
 
+  const activeOmdId = await getActiveOmdId(profile);
+
+  if (!activeOmdId) {
+    return (
+      <div className="rounded-lg bg-yellow-50 p-6 text-yellow-800">
+        Select a destination to manage its amenities.
+      </div>
+    );
+  }
+
   // Get amenities for this OMD
   const { data: amenities } = await supabase
     .from('omd_amenities')
     .select('*')
-    .eq('omd_id', profile.omd_id)
+    .eq('omd_id', activeOmdId)
     .order('category', { ascending: true })
     .order('name', { ascending: true });
 
@@ -40,7 +51,7 @@ export default async function AmenitiesPage() {
         </p>
       </div>
 
-      <AmenitiesManager amenities={amenities || []} omdId={profile.omd_id} />
+      <AmenitiesManager amenities={amenities || []} omdId={activeOmdId} />
     </div>
   );
 }

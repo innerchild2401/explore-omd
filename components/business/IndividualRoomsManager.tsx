@@ -3,6 +3,8 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
 
+const sanitizeNumericInput = (value: string) => value.replace(/[^0-9]/g, '');
+
 interface IndividualRoom {
   id: string;
   room_id: string;
@@ -38,16 +40,37 @@ export default function IndividualRoomsManager({ roomTypeId, roomTypeName, roomT
   const [showGenerator, setShowGenerator] = useState(false);
   const [maxQuantity, setMaxQuantity] = useState(roomTypeQuantity || 0);
   const [selectedRooms, setSelectedRooms] = useState<string[]>([]);
+  const [existingLoading, setExistingLoading] = useState(false);
 
   // Generator settings
   const [prefix, setPrefix] = useState('');
-  const [startNumber, setStartNumber] = useState(1);
-  const [count, setCount] = useState(1);
-  const [floorNumber, setFloorNumber] = useState<number | null>(null);
+  const [startNumberInput, setStartNumberInput] = useState('1');
+  const [countInput, setCountInput] = useState('1');
+  const [floorNumberInput, setFloorNumberInput] = useState('');
 
   // Calculate available slots
   const availableSlots = maxQuantity - individualRooms.length;
   const canCreateMore = availableSlots > 0;
+
+  const parsedStartNumber = (() => {
+    const sanitized = sanitizeNumericInput(startNumberInput);
+    if (!sanitized) return null;
+    return Math.max(1, parseInt(sanitized, 10));
+  })();
+
+  const parsedCount = (() => {
+    const sanitized = sanitizeNumericInput(countInput);
+    if (!sanitized) return null;
+    return Math.max(1, parseInt(sanitized, 10));
+  })();
+
+  const parsedCountValue = parsedCount ?? 0;
+
+  const parsedFloorNumber = (() => {
+    const sanitized = floorNumberInput === '' ? '' : sanitizeNumericInput(floorNumberInput);
+    if (!sanitized) return null;
+    return parseInt(sanitized, 10);
+  })();
 
   // Group rooms by floor for better visualization
   const roomsByFloor = individualRooms.reduce((acc, room) => {
@@ -69,12 +92,21 @@ export default function IndividualRoomsManager({ roomTypeId, roomTypeName, roomT
 
       if (error) throw error;
       setIndividualRooms(data || []);
+    } catch (error) {
+      console.error('Failed to fetch individual rooms:', error);
+    } finally {
+      setLoading(false);
+    }
+  }, [roomTypeId, supabase]);
 
-      // Fetch existing room numbers for the entire hotel using the new function
+  const fetchExistingRoomNumbers = useCallback(async () => {
+    if (!showGenerator) return;
+    setExistingLoading(true);
+    try {
       const { data: existingRooms, error: existingError } = await supabase
         .rpc('get_existing_room_numbers', {
           p_hotel_id: hotelId,
-          p_floor_number: floorNumber,
+          p_floor_number: parsedFloorNumber,
           p_prefix: prefix
         });
 
@@ -82,15 +114,16 @@ export default function IndividualRoomsManager({ roomTypeId, roomTypeName, roomT
         setExistingRoomNumbers(existingRooms || []);
       }
     } catch (error) {
-      console.error('Failed to fetch individual rooms:', error);
+      console.error('Failed to fetch existing room numbers:', error);
     } finally {
-      setLoading(false);
+      setExistingLoading(false);
     }
-  }, [floorNumber, hotelId, prefix, roomTypeId, supabase]);
+  }, [hotelId, parsedFloorNumber, prefix, showGenerator, supabase]);
 
   // Fetch next available room number when prefix/floor changes
   const fetchNextAvailableNumber = useCallback(async () => {
-    if (!prefix && floorNumber === null) {
+    if (!showGenerator) return;
+    if (!prefix && parsedFloorNumber === null) {
       setNextAvailableNumber(null);
       return;
     }
@@ -100,25 +133,26 @@ export default function IndividualRoomsManager({ roomTypeId, roomTypeName, roomT
         .rpc('get_next_available_room_number', {
           p_hotel_id: hotelId,
           p_prefix: prefix || '',
-          p_floor_number: floorNumber,
-          p_start_from: startNumber || 1
+          p_floor_number: parsedFloorNumber,
+          p_start_from: parsedStartNumber || 1
         });
 
       if (!error && data !== null) {
         setNextAvailableNumber(data);
-        // Auto-update start number if user hasn't manually set it
-        if (startNumber === 1 && data > 1) {
-          setStartNumber(data);
+        if ((!startNumberInput || parsedStartNumber === 1) && data > 1) {
+          setStartNumberInput(String(data));
         }
       }
     } catch (error) {
       console.error('Failed to fetch next available number:', error);
     }
-  }, [floorNumber, hotelId, prefix, startNumber, supabase]);
+  }, [hotelId, parsedFloorNumber, parsedStartNumber, prefix, showGenerator, startNumberInput, supabase]);
 
   // Auto-generate rooms
   const handleGenerateRooms = async () => {
-    // Validate count doesn't exceed available slots
+    const count = parsedCount || 0;
+    const startNumber = parsedStartNumber || 1;
+
     if (count > availableSlots) {
       alert(`Cannot create ${count} rooms. Only ${availableSlots} slot(s) available out of ${maxQuantity} total.`);
       return;
@@ -134,7 +168,7 @@ export default function IndividualRoomsManager({ roomTypeId, roomTypeName, roomT
     const overlappingRooms: string[] = [];
     
     for (let i = 0; i < count; i++) {
-      const roomNumber = prefix + (startNumber + i < 10 ? '0' + (startNumber + i).toString() : (startNumber + i).toString());
+      const roomNumber = prefix + ((startNumber + i) < 10 ? `0${startNumber + i}` : (startNumber + i).toString());
       if (existingNumbers.includes(roomNumber)) {
         overlappingRooms.push(roomNumber);
       }
@@ -161,9 +195,9 @@ export default function IndividualRoomsManager({ roomTypeId, roomTypeName, roomT
         p_start_number: startNumber,
         p_count: count
       };
-      
-      if (floorNumber !== null) {
-        params.p_floor_number = floorNumber;
+
+      if (parsedFloorNumber !== null) {
+        params.p_floor_number = parsedFloorNumber;
       }
       
       const { data, error } = await supabase.rpc('generate_individual_rooms', params);
@@ -172,13 +206,14 @@ export default function IndividualRoomsManager({ roomTypeId, roomTypeName, roomT
       
       // Refresh the list
       await fetchIndividualRooms();
+      await fetchExistingRoomNumbers();
       await fetchNextAvailableNumber();
       setShowGenerator(false);
       // Reset form
       setPrefix('');
-      setStartNumber(1);
-      setCount(1);
-      setFloorNumber(null);
+      setStartNumberInput('1');
+      setCountInput('1');
+      setFloorNumberInput('');
       setNextAvailableNumber(null);
     } catch (error: any) {
       console.error('Failed to generate rooms:', error);
@@ -232,10 +267,10 @@ export default function IndividualRoomsManager({ roomTypeId, roomTypeName, roomT
   // Fetch next available number when prefix or floor changes
   useEffect(() => {
     if (showGenerator) {
+      void fetchExistingRoomNumbers();
       void fetchNextAvailableNumber();
-      void fetchIndividualRooms();
     }
-  }, [fetchIndividualRooms, fetchNextAvailableNumber, showGenerator]);
+  }, [fetchExistingRoomNumbers, fetchNextAvailableNumber, showGenerator]);
 
   const getStatusColor = (status: string) => {
     const colors = {
@@ -339,7 +374,11 @@ export default function IndividualRoomsManager({ roomTypeId, roomTypeName, roomT
               </h3>
               
               {/* Existing Room Numbers Info */}
-              {existingRoomNumbers.length > 0 && (
+              {existingLoading ? (
+                <div className="mb-4 rounded-lg border border-blue-200 bg-blue-50 p-4 text-sm text-blue-700">
+                  Loading existing room numbers...
+                </div>
+              ) : existingRoomNumbers.length > 0 ? (
                 <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 p-4">
                   <p className="mb-2 text-sm font-semibold text-amber-900">
                     📋 Existing Room Numbers in This Hotel:
@@ -366,7 +405,7 @@ export default function IndividualRoomsManager({ roomTypeId, roomTypeName, roomT
                     </p>
                   )}
                 </div>
-              )}
+              ) : null}
 
               <div className="grid gap-4 md:grid-cols-2">
                 <div>
@@ -389,12 +428,12 @@ export default function IndividualRoomsManager({ roomTypeId, roomTypeName, roomT
                     Start Number
                   </label>
                   <input
-                    type="number"
-                    value={startNumber}
-                    onChange={(e) => setStartNumber(parseInt(e.target.value) || 1)}
+                    inputMode="numeric"
+                    value={startNumberInput}
+                    onChange={(e) => setStartNumberInput(sanitizeNumericInput(e.target.value))}
                     className="w-full rounded-lg border border-gray-300 px-4 py-2 text-gray-900"
                   />
-                  {nextAvailableNumber !== null && nextAvailableNumber !== startNumber && (
+                  {nextAvailableNumber !== null && nextAvailableNumber !== parsedStartNumber && (
                     <p className="mt-1 text-xs text-amber-600">
                       ⚠️ Suggested: {nextAvailableNumber} to avoid conflicts
                     </p>
@@ -410,13 +449,12 @@ export default function IndividualRoomsManager({ roomTypeId, roomTypeName, roomT
                     )}
                   </label>
                   <input
-                    type="number"
-                    value={count}
-                    onChange={(e) => setCount(parseInt(e.target.value) || 1)}
-                    max={maxQuantity > 0 ? availableSlots : undefined}
+                    inputMode="numeric"
+                    value={countInput}
+                    onChange={(e) => setCountInput(sanitizeNumericInput(e.target.value))}
                     className="w-full rounded-lg border border-gray-300 px-4 py-2 text-gray-900"
                   />
-                  {maxQuantity > 0 && count > availableSlots && (
+                  {maxQuantity > 0 && parsedCount !== null && parsedCount > availableSlots && (
                     <p className="mt-1 text-xs text-red-600">
                       ⚠️ Cannot exceed {availableSlots} available slot(s)
                     </p>
@@ -424,12 +462,12 @@ export default function IndividualRoomsManager({ roomTypeId, roomTypeName, roomT
                 </div>
                 <div>
                   <label className="mb-2 block text-sm font-medium text-gray-700">
-                    Floor (optional)
+                    Floor Number (optional)
                   </label>
                   <input
-                    type="number"
-                    value={floorNumber || ''}
-                    onChange={(e) => setFloorNumber(e.target.value ? parseInt(e.target.value) : null)}
+                    inputMode="numeric"
+                    value={floorNumberInput}
+                    onChange={(e) => setFloorNumberInput(sanitizeNumericInput(e.target.value))}
                     placeholder="Auto-assign if empty"
                     className="w-full rounded-lg border border-gray-300 px-4 py-2 text-gray-900 placeholder:text-gray-400"
                   />
@@ -438,7 +476,7 @@ export default function IndividualRoomsManager({ roomTypeId, roomTypeName, roomT
               <div className="mt-4 flex gap-3">
                 <button
                   onClick={handleGenerateRooms}
-                  disabled={generating || !canCreateMore || count > availableSlots}
+                  disabled={generating || !canCreateMore || parsedCountValue > availableSlots}
                   className="rounded-lg bg-green-600 px-6 py-2 font-semibold text-white hover:bg-green-700 disabled:bg-gray-400"
                 >
                   {generating ? 'Generating...' : canCreateMore ? 'Generate Rooms' : 'All Rooms Created'}

@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { verifyEmailToken } from '@/lib/services/email-sequence/tokens';
 
+export const dynamic = 'force-dynamic';
+
 /**
  * Verify email token and return reservation data
  * GET /api/feedback/verify-token?reservationId=xxx&token=xxx

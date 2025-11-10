@@ -44,6 +44,14 @@ export default function FooterSection({ section, omd }: FooterSectionProps) {
                   Register Your Business
                 </a>
               </li>
+              <li>
+                <a
+                  href={`/${omd.slug}/business/login`}
+                  className="text-gray-400 transition-colors hover:text-white"
+                >
+                  Business Login
+                </a>
+              </li>
               {/* Custom Links */}
               {links?.map((link: any, index: number) => (
                 <li key={index}>

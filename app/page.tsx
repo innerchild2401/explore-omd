@@ -717,6 +717,22 @@ export default function HomePage() {
               <h4 className="mb-4 text-lg font-semibold">Linkuri rapide</h4>
               <ul className="space-y-2">
                 <li>
+                  <a
+                    href="/admin/signup"
+                    className="text-gray-400 transition-colors hover:text-white"
+                  >
+                    Înregistrează un OMD
+                  </a>
+                </li>
+                <li>
+                  <a
+                    href="/admin/login"
+                    className="text-gray-400 transition-colors hover:text-white"
+                  >
+                    Autentificare OMD
+                  </a>
+                </li>
+                <li>
                   <a href="#ce-oferim" className="text-gray-400 transition-colors hover:text-white">
                     Despre
                   </a>

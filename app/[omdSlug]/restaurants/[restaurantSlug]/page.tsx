@@ -144,47 +144,73 @@ export default async function RestaurantPage({ params }: RestaurantPageProps) {
 
             {/* Menu */}
             {Object.keys(groupedMenuItems).length > 0 && (
-              <div className="rounded-lg bg-white shadow border border-gray-200 min-w-0">
+              <div className="rounded-2xl bg-white shadow border border-gray-200 min-w-0">
                 <div className="px-6 py-4 border-b border-gray-200">
                   <h2 className="text-xl font-semibold text-gray-900">Menu</h2>
+                  <p className="mt-1 text-sm text-gray-500">
+                    Tap a section to explore dishes and details.
+                  </p>
                 </div>
-                
+
                 <div className="divide-y divide-gray-200">
-                  {Object.entries(groupedMenuItems).map(([category, items]) => (
-                    <div key={category} className="p-6">
-                      <h3 className="text-lg font-semibold text-gray-900 mb-4">{category}</h3>
-                      
-                      <div className="space-y-4">
+                  {Object.entries(groupedMenuItems).map(([category, items], idx) => (
+                    <details
+                      key={category}
+                      className="group"
+                      open={idx === 0}
+                    >
+                      <summary className="flex cursor-pointer items-center justify-between px-6 py-4 text-left text-lg font-semibold text-gray-900 transition hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 [&::-webkit-details-marker]:hidden">
+                        <span className="capitalize break-words">{category}</span>
+                        <span className="ml-4 flex items-center gap-2 text-sm font-normal text-gray-500">
+                          {(items as any[]).length} item{(items as any[]).length !== 1 ? 's' : ''}
+                          <svg
+                            className="h-5 w-5 text-gray-400 transition group-open:rotate-180"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 9l-7 7-7-7" />
+                          </svg>
+                        </span>
+                      </summary>
+
+                      <div className="px-6 pb-6 pt-2 space-y-6">
                         {(items as any[]).map((item: any) => (
-                          <div key={item.id} className="flex items-start justify-between">
-                            <div className="flex-1">
-                              <div className="flex items-center space-x-3">
-                                <h4 className="font-medium text-gray-900">{item.name}</h4>
-                                {item.allergens && item.allergens.length > 0 && (
-                                  <div className="flex space-x-1">
-                                    {item.allergens.map((allergen: any) => (
-                                      <span key={allergen} className="px-2 py-1 text-xs font-medium text-orange-800 bg-orange-100 rounded">
-                                        {allergen}
-                                      </span>
-                                    ))}
-                                  </div>
-                                )}
-                              </div>
-                              
-                              {item.description && (
-                                <p className="mt-1 text-gray-600">{item.description}</p>
+                          <div
+                            key={item.id ?? `${category}-${item.name}`}
+                            className="rounded-xl border border-gray-100 bg-gray-50/60 p-4"
+                          >
+                            <div className="flex flex-col gap-2 sm:flex-row sm:items-baseline sm:justify-between">
+                              <h4 className="text-lg font-semibold text-gray-900 break-words">{item.name}</h4>
+                              {typeof item.price !== 'undefined' && (
+                                <span className="whitespace-nowrap text-sm font-semibold text-gray-900">
+                                  ${Number(item.price).toFixed(2)}
+                                </span>
                               )}
                             </div>
-                            
-                            <div className="ml-4">
-                              <span className="text-lg font-semibold text-gray-900">
-                                ${item.price.toFixed(2)}
-                              </span>
-                            </div>
+
+                            {item.description && (
+                              <p className="mt-2 text-sm leading-relaxed text-gray-600 break-words">
+                                {item.description}
+                              </p>
+                            )}
+
+                            {item.allergens && item.allergens.length > 0 && (
+                              <div className="mt-3 flex flex-wrap gap-2">
+                                {item.allergens.map((allergen: any) => (
+                                  <span
+                                    key={allergen}
+                                    className="rounded-full bg-orange-100 px-3 py-1 text-xs font-medium text-orange-800"
+                                  >
+                                    Contains {allergen}
+                                  </span>
+                                ))}
+                              </div>
+                            )}
                           </div>
                         ))}
                       </div>
-                    </div>
+                    </details>
                   ))}
                 </div>
               </div>

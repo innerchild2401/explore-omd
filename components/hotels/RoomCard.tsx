@@ -117,134 +117,120 @@ export default function RoomCard({ room, hotelSlug, omdSlug, hotelId, amenities 
   };
   
   return (
-    <div className={`overflow-hidden rounded-2xl bg-white shadow-sm transition-shadow hover:shadow-md ${
-      !canBook ? 'opacity-75' : ''
-    }`}>
-      <div className="grid gap-4 md:grid-cols-3 w-full min-w-0">
-        {/* Room Image Carousel */}
-        <div className="md:col-span-1 w-full min-w-0">
-          <RoomImageCarousel 
-            images={room.images || []} 
-            roomName={room.name} 
-          />
-        </div>
+    <div
+      className={`overflow-hidden rounded-2xl bg-white shadow-sm transition-shadow hover:shadow-md ${
+        !canBook ? 'opacity-75' : ''
+      }`}
+    >
+      <RoomImageCarousel images={room.images || []} roomName={room.name} />
 
-        {/* Room Info */}
-        <div className="p-6 md:col-span-2 w-full min-w-0">
-          <div className="flex items-start justify-between">
-            <div className="flex-1">
-              <h3 className="mb-2 text-2xl font-bold text-gray-900">{room.name}</h3>
-              <p className="mb-4 text-sm capitalize text-gray-600">
-                {room.room_type.replace('_', ' ')}
-              </p>
-
-              {/* Room Features */}
-              <div className="mb-4 grid gap-3 sm:grid-cols-2">
-                <div className="flex items-center gap-2 text-gray-700">
-                  <svg className="h-5 w-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-                  </svg>
-                  <span className="text-sm">{room.max_occupancy} {room.max_occupancy === 1 ? 'Guest' : 'Guests'}</span>
-                </div>
-                {room.size_sqm && (
-                  <div className="flex items-center gap-2 text-gray-700">
-                    <svg className="h-5 w-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
-                    </svg>
-                    <span className="text-sm">{room.size_sqm} m²</span>
-                  </div>
-                )}
-                {bedConfigurations.length > 0 && (
-                  <div className="flex items-start gap-3 text-gray-700 sm:col-span-2">
-                    <svg className="mt-1 h-5 w-5 flex-shrink-0 text-gray-500" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 10a2 2 0 012-2h12a2 2 0 012 2v6h1a1 1 0 010 2H3a1 1 0 110-2h1v-6zm2 0v6h12v-6H6z" />
-                    </svg>
-                    <div className="flex flex-wrap gap-2">
-                      {bedConfigurations.map((bed, index) => (
-                        <span
-                          key={`${bed}-${index}`}
-                          className="rounded-full bg-gray-100 px-3 py-1 text-xs font-medium text-gray-700"
-                        >
-                          {bed}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Room Amenities */}
-              {normalizedRoomAmenities.length > 0 && (
-                <div className="mb-4">
-                  <div className="flex flex-wrap gap-2">
-                    {normalizedRoomAmenities.slice(0, 5).map((amenity, idx) => {
-                      return (
-                        <span
-                          key={idx}
-                          className="inline-flex items-center gap-2 rounded-full border border-blue-100 bg-blue-50/90 px-3 py-1 text-xs font-medium text-blue-700"
-                          title={formatAmenityName(amenity)}
-                        >
-                          <AmenityIcon icon={amenity.icon} variant="xs" className="bg-white text-blue-600" />
-                          <span className="max-w-[160px] truncate">{formatAmenityName(amenity)}</span>
-                        </span>
-                      );
-                    })}
-                    {normalizedRoomAmenities.length > 5 && (
-                      <span className="rounded-full bg-gray-100 px-3 py-1 text-sm text-gray-700">
-                        +{normalizedRoomAmenities.length - 5} more
-                      </span>
-                    )}
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Price & Booking */}
-            <div className="ml-4 text-right flex-shrink-0">
-              <div className="mb-2">
-                <div className="text-3xl font-bold text-gray-900">{formatPrice(dynamicPrice, 'RON')}</div>
-                <div className="text-sm text-gray-600">per night</div>
-                {dynamicPrice !== room.base_price && (
-                  <div className="text-xs text-gray-500 line-through">{formatPrice(room.base_price, 'RON')}</div>
-                )}
-              </div>
-              
-              {/* Availability Status */}
-              <div className="mb-3 text-sm">
-                {!canBook ? (
-                  <div className="text-red-600 font-semibold">
-                    {!isAvailable ? 'Fully Booked' : 
-                     !meetsMinStay ? `Minimum ${minStayNights} night${minStayNights > 1 ? 's' : ''} required` :
-                     'Not Available'}
-                  </div>
-                ) : (
-                  <div className="text-green-600">
-                    {availableQuantity} {availableQuantity === 1 ? 'room' : 'rooms'} available
-                  </div>
-                )}
-              </div>
-              
-              {/* Minimum Stay Notice */}
-              {minStayNights > 1 && searchParams?.checkIn && searchParams?.checkOut && (
-                <div className="mb-2 text-xs text-gray-500">
-                  Min. {minStayNights} night{minStayNights > 1 ? 's' : ''}
-                </div>
-              )}
-              
-              <button
-                onClick={() => setIsBookingModalOpen(true)}
-                disabled={!canBook}
-                className={`inline-block rounded-lg px-6 py-2 font-semibold transition-colors ${
-                  canBook 
-                    ? 'bg-blue-600 text-white hover:bg-blue-700' 
-                    : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                }`}
-              >
-                {canBook ? 'Book Now' : 'Not Available'}
-              </button>
-            </div>
+      <div className="p-6 space-y-5">
+        {/* Row 1 */}
+        <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+          <div className="min-w-0">
+            <h3 className="text-2xl font-bold text-gray-900 break-words">{room.name}</h3>
+          </div>
+          <div className="text-left md:text-right">
+            <div className="text-3xl font-bold text-gray-900">{formatPrice(dynamicPrice, 'RON')}</div>
+            {dynamicPrice !== room.base_price && (
+              <div className="text-xs text-gray-500 line-through">{formatPrice(room.base_price, 'RON')}</div>
+            )}
           </div>
         </div>
+
+        {/* Row 2 */}
+        <div className="flex flex-col gap-2 text-sm text-gray-600 sm:flex-row sm:items-center sm:justify-between">
+          <span className="capitalize break-words">{room.room_type.replace('_', ' ')}</span>
+          <span className="font-medium text-gray-900 break-words">Per night</span>
+        </div>
+
+        {/* Row 3 */}
+        <div className="flex flex-col gap-2">
+          <button
+            onClick={() => setIsBookingModalOpen(true)}
+            disabled={!canBook}
+            className={`w-full rounded-lg px-6 py-3 text-center text-sm font-semibold transition-colors ${
+              canBook ? 'bg-blue-600 text-white hover:bg-blue-700' : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+            }`}
+          >
+            {canBook ? 'Book Now' : 'Not Available'}
+          </button>
+          <div className="text-sm">
+            {!canBook ? (
+              <span className="font-semibold text-red-600">
+                {!isAvailable
+                  ? 'Fully booked'
+                  : !meetsMinStay
+                  ? `Minimum ${minStayNights} night${minStayNights > 1 ? 's' : ''} required`
+                  : 'Not available'}
+              </span>
+            ) : (
+              <span className="text-green-600">
+                {availableQuantity} {availableQuantity === 1 ? 'room' : 'rooms'} available
+              </span>
+            )}
+          </div>
+          {minStayNights > 1 && searchParams?.checkIn && searchParams?.checkOut && (
+            <div className="text-xs text-gray-500">
+              Min. {minStayNights} night{minStayNights > 1 ? 's' : ''}
+            </div>
+          )}
+        </div>
+
+        {/* Row 4 */}
+        <div className="flex flex-wrap items-center gap-3 border-t border-gray-100 pt-3 text-sm text-gray-700">
+          <span className="inline-flex items-center gap-2 rounded-full bg-gray-100 px-3 py-1 break-words">
+            <svg className="h-4 w-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"
+              />
+            </svg>
+            {room.max_occupancy} {room.max_occupancy === 1 ? 'Guest' : 'Guests'}
+          </span>
+          {room.size_sqm && (
+            <span className="inline-flex items-center gap-2 rounded-full bg-gray-100 px-3 py-1 break-words">
+              <svg className="h-4 w-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"
+                />
+              </svg>
+              {room.size_sqm} m²
+            </span>
+          )}
+          {bedConfigurations.map((bed, index) => (
+            <span
+              key={`${bed}-${index}`}
+              className="inline-flex max-w-full items-center rounded-full bg-gray-100 px-3 py-1 text-xs font-medium text-gray-700 break-words"
+            >
+              {bed}
+            </span>
+          ))}
+        </div>
+
+        {/* Amenities */}
+        {normalizedRoomAmenities.length > 0 && (
+          <div className="border-t border-gray-100 pt-3">
+            <div className="grid gap-3 sm:grid-cols-2">
+              {normalizedRoomAmenities.map((amenity, idx) => (
+                <div
+                  key={idx}
+                  className="flex items-start gap-3 rounded-xl border border-gray-100 bg-gray-50/60 px-3 py-2"
+                >
+                  <AmenityIcon icon={amenity.icon} variant="xs" className="bg-white text-blue-600" />
+                  <span className="text-sm font-medium text-gray-700 leading-snug break-words">
+                    {formatAmenityName(amenity)}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       <BookingModal

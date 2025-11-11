@@ -104,7 +104,7 @@ export default async function ExperiencesPage({ params, searchParams }: Experien
       <header className="bg-white shadow-sm">
         <div className="mx-auto max-w-7xl px-4 py-6">
           <div className="mb-4">
-            <BackButton href={`/${params.omdSlug}`} label={`Back to ${omd.name}`} />
+            <BackButton href={`/${params.omdSlug}/explore`} label={`Back to ${omd.name}`} />
           </div>
           <h1 className="text-3xl font-bold text-gray-900">Experiences & Activities</h1>
           

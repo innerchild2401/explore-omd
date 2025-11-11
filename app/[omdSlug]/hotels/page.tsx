@@ -225,7 +225,7 @@ export default async function HotelsPage({ params, searchParams }: HotelsPagePro
         <div className="mx-auto max-w-7xl px-4 py-12">
           <div className="flex items-center justify-between">
             <div className="flex flex-col gap-4">
-              <BackButton href={`/${params.omdSlug}`} label={`Back to ${omd.name}`} variant="inverted" />
+              <BackButton href={`/${params.omdSlug}/explore`} label={`Back to ${omd.name}`} variant="inverted" />
               <h1 className="text-4xl font-bold">Hotels & Accommodations</h1>
               <p className="text-blue-100 text-lg mb-4">
                 {hasSearchParams 

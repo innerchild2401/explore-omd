@@ -81,7 +81,7 @@ export default async function RestaurantsPage({ params, searchParams }: Restaura
       <header className="bg-white shadow-sm w-full">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6 w-full min-w-0">
           <div className="mb-4">
-            <BackButton href={`/${omdSlug}`} label={`Back to ${omd.name}`} />
+            <BackButton href={`/${omdSlug}/explore`} label={`Back to ${omd.name}`} />
           </div>
           <h1 className="text-3xl font-bold text-gray-900 break-words">Restaurants & Dining</h1>
           {(searchParams.date || searchParams.time) && (

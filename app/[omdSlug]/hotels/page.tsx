@@ -7,6 +7,7 @@ import SortSelect from '@/components/hotels/SortSelect';
 import OmdMemberBadge from '@/components/ui/OmdMemberBadge';
 import { sortBusinessesByFeaturedOrder } from '@/lib/utils/business-sorting';
 import BackButton from '@/components/ui/BackButton';
+import ScrollRestoration from '@/components/ui/ScrollRestoration';
 
 interface HotelsPageProps {
   params: { omdSlug: string };
@@ -218,8 +219,11 @@ export default async function HotelsPage({ params, searchParams }: HotelsPagePro
     );
   }
 
+  const scrollKey = `hotels:${params.omdSlug}:${searchParams.checkIn ?? ''}:${searchParams.checkOut ?? ''}:${searchParams.adults ?? ''}:${searchParams.children ?? ''}:${searchParams.area ?? ''}:${searchParams.sort ?? ''}`;
+
   return (
     <div className="min-h-screen bg-gray-50">
+      <ScrollRestoration storageKey={scrollKey} />
       {/* Hero Header */}
       <div className="bg-gradient-to-r from-blue-600 to-blue-800 text-white">
         <div className="mx-auto max-w-7xl px-4 py-12">

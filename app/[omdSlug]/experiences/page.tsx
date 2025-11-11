@@ -6,6 +6,7 @@ import OmdMemberBadge from '@/components/ui/OmdMemberBadge';
 import { sortBusinessesByFeaturedOrder } from '@/lib/utils/business-sorting';
 import BackButton from '@/components/ui/BackButton';
 import Link from 'next/link';
+import ScrollRestoration from '@/components/ui/ScrollRestoration';
 
 interface ExperiencesPageProps {
   params: { omdSlug: string };
@@ -98,8 +99,11 @@ export default async function ExperiencesPage({ params, searchParams }: Experien
   // Sort experiences using featured ordering: featured first (1,2,3), then remaining members (random), then non-members (random)
   filteredExperiences = sortBusinessesByFeaturedOrder(filteredExperiences);
 
+  const scrollKey = `experiences:${params.omdSlug}:${searchParams.date ?? ''}:${searchParams.area ?? ''}`;
+
   return (
     <div className="min-h-screen bg-gray-50">
+      <ScrollRestoration storageKey={scrollKey} />
       {/* Header */}
       <header className="bg-white shadow-sm">
         <div className="mx-auto max-w-7xl px-4 py-6">

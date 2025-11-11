@@ -6,6 +6,7 @@ import OmdMemberBadge from '@/components/ui/OmdMemberBadge';
 import { sortBusinessesByFeaturedOrder } from '@/lib/utils/business-sorting';
 import BackButton from '@/components/ui/BackButton';
 import Link from 'next/link';
+import ScrollRestoration from '@/components/ui/ScrollRestoration';
 
 interface RestaurantsPageProps {
   params: { omdSlug: string };
@@ -75,8 +76,11 @@ export default async function RestaurantsPage({ params, searchParams }: Restaura
   // Sort restaurants using featured ordering: featured first (1,2,3), then remaining members (random), then non-members (random)
   const sortedRestaurants = restaurants ? sortBusinessesByFeaturedOrder(restaurants) : null;
 
+  const scrollKey = `restaurants:${omdSlug}:${searchParams.date ?? ''}:${searchParams.time ?? ''}:${searchParams.area ?? ''}`;
+
   return (
     <div className="min-h-screen bg-gray-50 w-full overflow-x-hidden" style={{ maxWidth: '100vw', boxSizing: 'border-box' as const }}>
+      <ScrollRestoration storageKey={scrollKey} />
       {/* Header */}
       <header className="bg-white shadow-sm w-full">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6 w-full min-w-0">

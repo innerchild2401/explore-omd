@@ -4,6 +4,7 @@ import TrackPageView from '@/components/analytics/TrackPageView';
 import ContactLink from '@/components/analytics/ContactLink';
 import RestaurantImageGallery from '@/components/restaurants/RestaurantImageGallery';
 import BackButton from '@/components/ui/BackButton';
+import { formatPrice } from '@/lib/utils';
 
 interface RestaurantPageProps {
   params: {
@@ -68,16 +69,51 @@ export default async function RestaurantPage({ params }: RestaurantPageProps) {
     .order('category')
     .order('order_index');
 
+  const { data: menuCategories } = await supabase
+    .from('menu_categories')
+    .select('id, name, display_order, is_active')
+    .eq('restaurant_id', restaurant.id)
+    .order('display_order');
+
   const business = restaurant.businesses;
 
   // Group menu items by category
-  const groupedMenuItems = menuItems?.reduce((acc, item) => {
-    if (!acc[item.category]) {
-      acc[item.category] = [];
-    }
-    acc[item.category].push(item);
-    return acc;
-  }, {} as Record<string, any[]>) || {};
+  const groupedMenuItems =
+    menuItems?.reduce((acc, item) => {
+      if (!acc[item.category]) {
+        acc[item.category] = [];
+      }
+      acc[item.category].push(item);
+      return acc;
+    }, {} as Record<string, any[]>) || {};
+
+  const orderedMenuSections = (() => {
+    const sections: { name: string; items: any[] }[] = [];
+    const activeCategories =
+      menuCategories
+        ?.filter((cat) => cat.is_active ?? true)
+        .sort((a, b) => (a.display_order ?? 0) - (b.display_order ?? 0))
+        .map((cat) => cat.name) || [];
+
+    activeCategories.forEach((name) => {
+      if (groupedMenuItems[name]?.length) {
+        sections.push({ name, items: groupedMenuItems[name] });
+      }
+    });
+
+    const remaining = Object.entries(groupedMenuItems)
+      .filter(([name]) => !activeCategories.includes(name))
+      .sort((a, b) => a[0].localeCompare(b[0]));
+
+    remaining.forEach(([name, items]) => {
+      const sectionItems = items as any[];
+      if (sectionItems.length) {
+        sections.push({ name, items: sectionItems });
+      }
+    });
+
+    return sections;
+  })();
 
   return (
     <div className="min-h-screen bg-gray-50 w-full overflow-x-hidden" style={{ maxWidth: '100vw', boxSizing: 'border-box' as const }}>
@@ -143,26 +179,22 @@ export default async function RestaurantPage({ params }: RestaurantPageProps) {
             </div>
 
             {/* Menu */}
-            {Object.keys(groupedMenuItems).length > 0 && (
+            {orderedMenuSections.length > 0 && (
               <div className="rounded-2xl bg-white shadow border border-gray-200 min-w-0">
                 <div className="px-6 py-4 border-b border-gray-200">
                   <h2 className="text-xl font-semibold text-gray-900">Menu</h2>
                   <p className="mt-1 text-sm text-gray-500">
-                    Tap a section to explore dishes and details.
+                    Expand a section to discover dishes, descriptions, and allergens.
                   </p>
                 </div>
 
                 <div className="divide-y divide-gray-200">
-                  {Object.entries(groupedMenuItems).map(([category, items], idx) => (
-                    <details
-                      key={category}
-                      className="group"
-                      open={idx === 0}
-                    >
+                  {orderedMenuSections.map(({ name, items }) => (
+                    <details key={name} className="group">
                       <summary className="flex cursor-pointer items-center justify-between px-6 py-4 text-left text-lg font-semibold text-gray-900 transition hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 [&::-webkit-details-marker]:hidden">
-                        <span className="capitalize break-words">{category}</span>
+                        <span className="capitalize break-words">{name}</span>
                         <span className="ml-4 flex items-center gap-2 text-sm font-normal text-gray-500">
-                          {(items as any[]).length} item{(items as any[]).length !== 1 ? 's' : ''}
+                          {items.length} item{items.length !== 1 ? 's' : ''}
                           <svg
                             className="h-5 w-5 text-gray-400 transition group-open:rotate-180"
                             fill="none"
@@ -175,16 +207,16 @@ export default async function RestaurantPage({ params }: RestaurantPageProps) {
                       </summary>
 
                       <div className="px-6 pb-6 pt-2 space-y-6">
-                        {(items as any[]).map((item: any) => (
+                        {items.map((item: any) => (
                           <div
-                            key={item.id ?? `${category}-${item.name}`}
+                            key={item.id ?? `${name}-${item.name}`}
                             className="rounded-xl border border-gray-100 bg-gray-50/60 p-4"
                           >
                             <div className="flex flex-col gap-2 sm:flex-row sm:items-baseline sm:justify-between">
                               <h4 className="text-lg font-semibold text-gray-900 break-words">{item.name}</h4>
                               {typeof item.price !== 'undefined' && (
                                 <span className="whitespace-nowrap text-sm font-semibold text-gray-900">
-                                  ${Number(item.price).toFixed(2)}
+                                  {formatPrice(Number(item.price) || 0, 'RON')}
                                 </span>
                               )}
                             </div>

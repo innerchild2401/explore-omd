@@ -60,7 +60,8 @@ export default function SearchBar({ omdSlug, template }: SearchBarProps) {
     const params = new URLSearchParams();
     if (checkIn) params.set('checkIn', checkIn);
     if (checkOut) params.set('checkOut', checkOut);
-    const url = `/${omdSlug}/hotels?${params.toString()}`;
+    const query = params.toString();
+    const url = query ? `/${omdSlug}/hotels?${query}` : `/${omdSlug}/hotels`;
     console.log('SearchBar - navigating to:', url);
     router.push(url);
   };
@@ -69,13 +70,15 @@ export default function SearchBar({ omdSlug, template }: SearchBarProps) {
     const params = new URLSearchParams();
     if (reservationDate) params.set('date', reservationDate);
     if (reservationTime) params.set('time', reservationTime);
-    router.push(`/${omdSlug}/restaurants?${params.toString()}`);
+    const query = params.toString();
+    router.push(query ? `/${omdSlug}/restaurants?${query}` : `/${omdSlug}/restaurants`);
   };
 
   const handleExperienceSearch = () => {
     const params = new URLSearchParams();
     if (experienceDate) params.set('date', experienceDate);
-    router.push(`/${omdSlug}/experiences?${params.toString()}`);
+    const query = params.toString();
+    router.push(query ? `/${omdSlug}/experiences?${query}` : `/${omdSlug}/experiences`);
   };
 
   const sectionBackground =
@@ -109,7 +112,7 @@ export default function SearchBar({ omdSlug, template }: SearchBarProps) {
       : 'w-full rounded-lg border-2 border-gray-200 px-4 py-3 text-gray-900 outline-none transition-all focus:border-blue-600';
 
   return (
-    <section className={`sticky top-0 z-40 ${sectionBackground}`}>
+    <section className={`relative z-30 ${sectionBackground} lg:sticky lg:top-0`}>
       <div className="mx-auto max-w-6xl px-4 py-4">
         {/* Tabs */}
         <div className="mb-4 flex justify-center space-x-2 sm:space-x-4">

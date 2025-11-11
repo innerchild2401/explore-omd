@@ -247,7 +247,7 @@ export default function BusinessCarousel({
   };
 
   return (
-    <section className={`${sectionBackground} py-16`}>
+    <section className={`${sectionBackground} py-12 md:py-14`}>
       <div className="mx-auto max-w-7xl px-4">
         {/* Section Header */}
         <div className="mb-8 text-center">

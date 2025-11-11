@@ -22,7 +22,7 @@ export default function MapSection({ section, businesses }: MapSectionProps) {
   }
 
   return (
-    <section className="bg-white py-16">
+    <section className="bg-white py-12 md:py-14">
       <div className="mx-auto max-w-7xl px-4">
         <div className="text-center">
           <h2 className="mb-4 text-4xl font-bold">

@@ -62,7 +62,7 @@ export default async function ExplorePage({ params }: ExplorePageProps) {
 
       {/* Welcome Section */}
       {exploreSection && (
-        <section className="bg-gradient-to-b from-blue-50 to-white py-16">
+        <section className="bg-gradient-to-b from-blue-50 to-white py-12 md:py-14">
           <div className="mx-auto max-w-4xl px-4 text-center">
             <h1 className="mb-4 text-5xl font-bold text-gray-900">
               {exploreSection.content.title || `Explore ${omd.name}`}
@@ -83,7 +83,7 @@ export default async function ExplorePage({ params }: ExplorePageProps) {
 
       {/* No Welcome Section Fallback */}
       {!exploreSection && (
-        <section className="bg-gradient-to-b from-blue-50 to-white py-16">
+        <section className="bg-gradient-to-b from-blue-50 to-white py-12 md:py-14">
           <div className="mx-auto max-w-4xl px-4 text-center">
             <h1 className="mb-4 text-5xl font-bold text-gray-900">
               Explore {omd.name}
@@ -130,7 +130,7 @@ export default async function ExplorePage({ params }: ExplorePageProps) {
 
       {/* Empty State */}
       {hotels.length === 0 && restaurants.length === 0 && experiences.length === 0 && (
-        <section className="py-20">
+        <section className="py-12 md:py-16">
           <div className="mx-auto max-w-2xl px-4 text-center">
             <div className="rounded-lg bg-gray-50 p-12">
               <svg

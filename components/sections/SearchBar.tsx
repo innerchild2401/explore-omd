@@ -112,7 +112,7 @@ export default function SearchBar({ omdSlug, template }: SearchBarProps) {
       : 'w-full rounded-lg border-2 border-gray-200 px-4 py-3 text-gray-900 outline-none transition-all focus:border-blue-600';
 
   return (
-    <section className={`relative z-30 ${sectionBackground} lg:sticky lg:top-0`}>
+    <section className={`relative z-10 ${sectionBackground}`}>
       <div className="mx-auto max-w-6xl px-4 py-4">
         {/* Tabs */}
         <div className="mb-4 flex justify-center space-x-2 sm:space-x-4">

@@ -25,14 +25,14 @@ export default function AmenitiesList({ amenities }: AmenitiesListProps) {
       {Object.entries(grouped).map(([category, items]) => (
         <div key={category}>
           <h3 className="mb-3 font-semibold text-gray-900 capitalize">{category}</h3>
-          <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {items.map((amenity) => (
               <div
                 key={amenity.id}
                 className="flex items-center gap-3 rounded-xl border border-gray-100 bg-white/70 p-3 shadow-sm transition hover:border-blue-100 hover:bg-blue-50/60"
               >
                 <AmenityIcon icon={amenity.icon} variant="sm" />
-                <span className="flex-1 min-w-0 text-sm font-medium text-gray-800 leading-snug break-words">
+                <span className="flex-1 min-w-0 text-sm font-medium text-gray-800 leading-snug">
                   {amenity.name}
                 </span>
               </div>

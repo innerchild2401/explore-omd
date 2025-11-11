@@ -46,16 +46,17 @@ export default async function ExplorePage({ params }: ExplorePageProps) {
   return (
     <main className="min-h-screen bg-white">
       {/* Header with Back Link */}
-      <header className="sticky top-0 z-40 bg-white shadow-sm">
-        <div className="mx-auto max-w-7xl px-4 py-4">
-          <Link 
+      <header className="sticky top-0 z-40 flex justify-center bg-transparent pb-3 pt-4">
+        <div className="w-full max-w-7xl px-4">
+          <Link
             href={`/${omdSlug}`}
-            className="inline-flex items-center text-blue-600 transition-colors hover:text-blue-700"
+            aria-label="Back to Home"
+            className="inline-flex h-11 w-11 items-center justify-center gap-2 rounded-full bg-white/95 text-blue-600 shadow-md ring-1 ring-gray-200 backdrop-blur transition hover:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 md:w-auto md:px-4"
           >
-            <svg className="mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
             </svg>
-            Back to Home
+            <span className="hidden text-sm font-medium md:inline">Back to Home</span>
           </Link>
         </div>
       </header>

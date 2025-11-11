@@ -11,7 +11,6 @@ import TrackPageView from '@/components/analytics/TrackPageView';
 import { formatPrice } from '@/lib/utils';
 import ContactLink from '@/components/analytics/ContactLink';
 import BackButton from '@/components/ui/BackButton';
-import Link from 'next/link';
 
 export const revalidate = 60;
 
@@ -132,57 +131,101 @@ export default async function HotelDetailPage({ params, searchParams }: HotelPag
   return (
     <main className="min-h-screen bg-gray-50">
       <TrackPageView businessId={business.id} eventType="detail_view" />
-      {/* Header Navigation */}
-      <header className="sticky top-0 z-40 bg-white shadow-sm">
-        <div className="mx-auto max-w-7xl px-4 py-3">
-          <div className="flex items-center justify-between">
-            <BackButton href={backHref} label="Back to Hotels" />
-            <Link 
-              href={`/${omdSlug}`}
-              className="hidden sm:block text-sm text-gray-700 transition-colors hover:text-blue-600"
-            >
-              Home
-            </Link>
-          </div>
-        </div>
-      </header>
-
-      {/* Search Summary */}
-      {searchParams.checkIn && searchParams.checkOut && (
-        <div className="bg-blue-50 border-b border-blue-200">
-          <div className="mx-auto max-w-7xl px-4 py-3">
-            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
-                <div className="flex items-center gap-2 text-blue-800">
-                  <svg className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                  </svg>
-                  <span className="text-sm font-semibold">
-                    {new Date(searchParams.checkIn).toLocaleDateString('en-US', { 
-                      month: 'short', 
-                      day: 'numeric',
-                      year: 'numeric'
-                    })} - {new Date(searchParams.checkOut).toLocaleDateString('en-US', { 
-                      month: 'short', 
-                      day: 'numeric',
-                      year: 'numeric'
-                    })}
+      {/* Hero Section */}
+      <section className="bg-gradient-to-b from-blue-600 via-blue-600/15 to-transparent">
+        <div className="mx-auto max-w-7xl px-4 pt-10 pb-12">
+          <BackButton href={backHref} label="Back to Hotels" variant="inverted" />
+          <div className="mt-8 grid gap-8 lg:grid-cols-[minmax(0,2.2fr)_minmax(0,1fr)] lg:items-end">
+            <div className="space-y-5 text-white">
+              {hotel?.star_rating && (
+                <div className="inline-flex items-center gap-2 rounded-full bg-white/10 px-4 py-2 text-sm font-medium text-white/90">
+                  <span className="inline-flex items-center gap-1">
+                    {[...Array(hotel.star_rating)].map((_, i) => (
+                      <svg key={i} className="h-4 w-4 text-yellow-200" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M12 17.27l5.18 3.24-1.64-5.81L20 10.24l-6-.21L12 4.5l-2 5.53-6 .21 4.46 4.46-1.64 5.81L12 17.27z" />
+                      </svg>
+                    ))}
                   </span>
+                  <span>{hotel.star_rating}-Star Property</span>
                 </div>
-                <div className="text-sm text-blue-700">
-                  {parseInt(searchParams.adults || '1')} {parseInt(searchParams.adults || '1') === 1 ? 'Guest' : 'Guests'}
-                  {parseInt(searchParams.children || '0') > 0 && (
-                    <>, {parseInt(searchParams.children || '0')} {parseInt(searchParams.children || '0') === 1 ? 'Child' : 'Children'}</>
-                  )}
-                </div>
+              )}
+              <div className="space-y-3">
+                <h1 className="text-3xl font-bold leading-tight text-white sm:text-4xl lg:text-5xl">{business.name}</h1>
+                {business.location?.address && (
+                  <div className="flex items-center gap-2 text-white/80">
+                    <svg className="h-5 w-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                    <span className="text-base sm:text-lg">{business.location.address}</span>
+                  </div>
+                )}
+                {business.rating > 0 && (
+                  <div className="inline-flex items-center gap-2 rounded-full bg-white/10 px-4 py-2 text-sm font-semibold text-white/90">
+                    <svg className="h-4 w-4 text-white" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118L5.54 10.1c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.673z" />
+                    </svg>
+                    <span>{business.rating.toFixed(1)} • Guest Rating</span>
+                  </div>
+                )}
               </div>
-              <div className="text-sm font-medium text-blue-600">
-                {rooms?.length || 0} room{(rooms?.length || 0) === 1 ? '' : 's'} available
+              <div className="flex flex-wrap gap-3 text-sm text-white/80">
+                {hotel?.property_subtype && (
+                  <span className="inline-flex items-center rounded-full bg-white/10 px-3 py-1">{hotel.property_subtype.replace('_', ' ')}</span>
+                )}
+                <span className="inline-flex items-center rounded-full bg-white/10 px-3 py-1">
+                  {rooms?.length || 0} {rooms?.length === 1 ? 'Room Type' : 'Room Types'}
+                </span>
               </div>
             </div>
+
+            {searchParams.checkIn && searchParams.checkOut && (
+              <div className="rounded-2xl bg-white/10 p-6 shadow-lg ring-1 ring-white/20 backdrop-blur">
+                <h3 className="text-lg font-semibold text-white">Your Travel Details</h3>
+                <div className="mt-4 space-y-3 text-sm text-white/80">
+                  <div className="flex items-center gap-2">
+                    <svg className="h-5 w-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                    <span>
+                      {new Date(searchParams.checkIn).toLocaleDateString('en-US', {
+                        month: 'short',
+                        day: 'numeric',
+                        year: 'numeric',
+                      })}{' '}
+                      –{' '}
+                      {new Date(searchParams.checkOut).toLocaleDateString('en-US', {
+                        month: 'short',
+                        day: 'numeric',
+                        year: 'numeric',
+                      })}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <svg className="h-5 w-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                    </svg>
+                    <span>
+                      {parseInt(searchParams.adults || '1')} {parseInt(searchParams.adults || '1') === 1 ? 'Adult' : 'Adults'}
+                      {parseInt(searchParams.children || '0') > 0 && (
+                        <> · {parseInt(searchParams.children || '0')} {parseInt(searchParams.children || '0') === 1 ? 'Child' : 'Children'}</>
+                      )}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <svg className="h-5 w-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 12h16M4 18h16M4 6h16" />
+                    </svg>
+                    <span>
+                      {rooms?.length || 0} room{(rooms?.length || 0) === 1 ? '' : 's'} available for your stay
+                    </span>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </div>
-      )}
+      </section>
 
       {/* Image Gallery Section */}
       <section className="bg-white">

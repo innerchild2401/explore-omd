@@ -20,18 +20,32 @@ interface RoomCardProps {
   };
 }
 
-const formatBedConfiguration = (config: any): string => {
-  if (typeof config === 'string') return config;
-  if (!config || typeof config !== 'object') return '';
-  
-  // Convert object like {queen: 2, single: 1} to "2 Queen, 1 Single"
-  return Object.entries(config)
-    .map(([type, count]) => `${count} ${type.charAt(0).toUpperCase() + type.slice(1)}`)
-    .join(', ');
+const formatBedConfigurationList = (config: any): string[] => {
+  if (!config) return [];
+
+  if (typeof config === 'string') {
+    return config
+      .split(/[,;/]+|\s\+\s/)
+      .map((item) => item.trim())
+      .filter(Boolean);
+  }
+
+  if (typeof config === 'object') {
+    return Object.entries(config)
+      .map(([type, count]) => {
+        const countNumber = Number(count);
+        const normalizedType = type.replace(/_/g, ' ');
+        return `${countNumber} ${normalizedType.charAt(0).toUpperCase() + normalizedType.slice(1)}${countNumber > 1 ? 's' : ''}`.trim();
+      })
+      .filter(Boolean);
+  }
+
+  return [];
 };
 
 export default function RoomCard({ room, hotelSlug, omdSlug, hotelId, amenities = [], searchParams }: RoomCardProps) {
   const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
+  const bedConfigurations = useMemo(() => formatBedConfigurationList(room.bed_configuration), [room.bed_configuration]);
   
   // Check if room is available
   const isAvailable = room.availability ? room.availability.is_available : true;
@@ -125,27 +139,36 @@ export default function RoomCard({ room, hotelSlug, omdSlug, hotelId, amenities 
               </p>
 
               {/* Room Features */}
-              <div className="mb-4 flex flex-wrap gap-4">
+              <div className="mb-4 grid gap-3 sm:grid-cols-2">
                 <div className="flex items-center gap-2 text-gray-700">
                   <svg className="h-5 w-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
                   </svg>
-                  <span>{room.max_occupancy} {room.max_occupancy === 1 ? 'Guest' : 'Guests'}</span>
+                  <span className="text-sm">{room.max_occupancy} {room.max_occupancy === 1 ? 'Guest' : 'Guests'}</span>
                 </div>
                 {room.size_sqm && (
                   <div className="flex items-center gap-2 text-gray-700">
                     <svg className="h-5 w-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
                     </svg>
-                    <span>{room.size_sqm} m²</span>
+                    <span className="text-sm">{room.size_sqm} m²</span>
                   </div>
                 )}
-                {room.bed_configuration && formatBedConfiguration(room.bed_configuration) && (
-                  <div className="flex items-center gap-2 text-gray-700">
-                    <svg className="h-5 w-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                {bedConfigurations.length > 0 && (
+                  <div className="flex items-start gap-3 text-gray-700 sm:col-span-2">
+                    <svg className="mt-1 h-5 w-5 flex-shrink-0 text-gray-500" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 10a2 2 0 012-2h12a2 2 0 012 2v6h1a1 1 0 010 2H3a1 1 0 110-2h1v-6zm2 0v6h12v-6H6z" />
                     </svg>
-                    <span>{formatBedConfiguration(room.bed_configuration)}</span>
+                    <div className="flex flex-wrap gap-2">
+                      {bedConfigurations.map((bed, index) => (
+                        <span
+                          key={`${bed}-${index}`}
+                          className="rounded-full bg-gray-100 px-3 py-1 text-xs font-medium text-gray-700"
+                        >
+                          {bed}
+                        </span>
+                      ))}
+                    </div>
                   </div>
                 )}
               </div>

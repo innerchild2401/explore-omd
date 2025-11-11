@@ -110,6 +110,19 @@ export default async function HotelDetailPage({ params, searchParams }: HotelPag
   const mainImage = business.images?.[0] || '/placeholder-hotel.jpg';
   const gallery = business.images || [];
   const landmarks = hotel?.landmarks || [];
+  const locationHighlightsList = (() => {
+    if (!hotel?.location_highlights) return [];
+    const initial = hotel.location_highlights
+      .split(/\r?\n/)
+      .map((item: string) => item.trim())
+      .filter(Boolean);
+    if (initial.length > 1) {
+      return initial;
+    }
+    const commaSplit = initial[0]?.split(/[,;]+/).map((item: string) => item.trim()).filter(Boolean) ?? [];
+    return commaSplit.length > 1 ? commaSplit : initial;
+  })();
+  const languagesSpoken = Array.isArray(hotel?.languages_spoken) ? hotel?.languages_spoken.filter(Boolean) : [];
   const backHref = `/${omdSlug}/hotels${
     searchParams.checkIn && searchParams.checkOut
       ? `?checkIn=${searchParams.checkIn}&checkOut=${searchParams.checkOut}&adults=${searchParams.adults || '1'}&children=${searchParams.children || '0'}`
@@ -226,6 +239,74 @@ export default async function HotelDetailPage({ params, searchParams }: HotelPag
               <div className="mb-8 rounded-2xl bg-white p-4 sm:p-6 shadow-sm">
                 <h2 className="mb-3 text-xl sm:text-2xl font-bold text-gray-900">About this property</h2>
                 <p className="text-sm sm:text-base text-gray-700 leading-relaxed">{business.description}</p>
+              </div>
+            )}
+
+            {/* Key Details */}
+            {(hotel?.check_in_time || hotel?.check_out_time || locationHighlightsList.length > 0 || languagesSpoken.length > 0) && (
+              <div className="mb-8 rounded-2xl bg-white p-6 shadow-sm">
+                <h2 className="mb-4 text-2xl font-bold text-gray-900">Good to Know</h2>
+                <div className="space-y-6">
+                  {(hotel?.check_in_time || hotel?.check_out_time) && (
+                    <div>
+                      <h3 className="mb-2 text-sm font-semibold uppercase tracking-wide text-gray-500">Check-in & Check-out</h3>
+                      <div className="grid gap-3 sm:grid-cols-2">
+                        {hotel?.check_in_time && (
+                          <div className="flex items-center gap-3 rounded-xl border border-blue-50 bg-blue-50/60 p-3">
+                            <svg className="h-10 w-10 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            <div>
+                              <p className="text-sm font-medium text-gray-600">Check-in</p>
+                              <p className="text-lg font-semibold text-gray-900">{hotel.check_in_time}</p>
+                            </div>
+                          </div>
+                        )}
+                        {hotel?.check_out_time && (
+                          <div className="flex items-center gap-3 rounded-xl border border-blue-50 bg-blue-50/60 p-3">
+                            <svg className="h-10 w-10 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            <div>
+                              <p className="text-sm font-medium text-gray-600">Check-out</p>
+                              <p className="text-lg font-semibold text-gray-900">{hotel.check_out_time}</p>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                  {locationHighlightsList.length > 0 && (
+                    <div>
+                      <h3 className="mb-2 text-sm font-semibold uppercase tracking-wide text-gray-500">Location Highlights</h3>
+                      <ul className="space-y-2">
+                        {locationHighlightsList.map((highlight: string, index: number) => (
+                          <li key={`${highlight}-${index}`} className="flex items-start gap-3 text-sm text-gray-700">
+                            <svg className="mt-1 h-4 w-4 flex-shrink-0 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
+                              <path d="M16.707 5.293a1 1 0 010 1.414l-7.25 7.25a1 1 0 01-1.414 0l-3.25-3.25a1 1 0 111.414-1.414L8.5 11.586l6.543-6.543a1 1 0 011.414 0z" />
+                            </svg>
+                            <span>{highlight}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  {languagesSpoken.length > 0 && (
+                    <div>
+                      <h3 className="mb-2 text-sm font-semibold uppercase tracking-wide text-gray-500">Languages Spoken</h3>
+                      <div className="flex flex-wrap gap-2">
+                        {languagesSpoken.map((language: string, index: number) => (
+                          <span
+                            key={`${language}-${index}`}
+                            className="inline-flex items-center rounded-full bg-blue-50 px-3 py-1 text-sm font-medium text-blue-700"
+                          >
+                            {language}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
             )}
 

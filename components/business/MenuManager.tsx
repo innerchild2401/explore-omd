@@ -350,6 +350,7 @@ export default function MenuManager({ restaurantId, businessId, onUpdate }: Menu
 
     const updates = reordered.map((cat, idx) => ({
       id: cat.id,
+      restaurant_id: restaurantId,
       display_order: idx,
     }));
 
@@ -357,7 +358,9 @@ export default function MenuManager({ restaurantId, businessId, onUpdate }: Menu
       setMenuCategories((prev) =>
         reordered.map((cat, idx) => ({ ...cat, display_order: idx })),
       );
-      await supabase.from('menu_categories').upsert(updates);
+      for (const payload of updates) {
+        await supabase.from('menu_categories').update({ display_order: payload.display_order }).eq('id', payload.id);
+      }
       await fetchMenuData();
       onUpdate();
     } catch (error) {

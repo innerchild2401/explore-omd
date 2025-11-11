@@ -1,10 +1,11 @@
 import { createClient } from '@/lib/supabase/server';
 import { notFound } from 'next/navigation';
-import Link from 'next/link';
 import OptimizedImage from '@/components/ui/OptimizedImage';
 import AreaFilter from '@/components/hotels/AreaFilter';
 import OmdMemberBadge from '@/components/ui/OmdMemberBadge';
 import { sortBusinessesByFeaturedOrder } from '@/lib/utils/business-sorting';
+import BackButton from '@/components/ui/BackButton';
+import Link from 'next/link';
 
 interface RestaurantsPageProps {
   params: { omdSlug: string };
@@ -79,10 +80,10 @@ export default async function RestaurantsPage({ params, searchParams }: Restaura
       {/* Header */}
       <header className="bg-white shadow-sm w-full">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6 w-full min-w-0">
-          <Link href={`/${omdSlug}`} className="text-blue-600 hover:text-blue-700 break-words inline-block">
-            ← Back to {omd.name}
-          </Link>
-          <h1 className="mt-2 text-3xl font-bold text-gray-900 break-words">Restaurants & Dining</h1>
+          <div className="mb-4">
+            <BackButton href={`/${omdSlug}`} label={`Back to ${omd.name}`} />
+          </div>
+          <h1 className="text-3xl font-bold text-gray-900 break-words">Restaurants & Dining</h1>
           {(searchParams.date || searchParams.time) && (
             <p className="mt-2 text-gray-600">
               {searchParams.date && `Date: ${searchParams.date}`}

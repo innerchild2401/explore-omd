@@ -1,6 +1,5 @@
 import { createClient } from '@/lib/supabase/server';
 import { notFound } from 'next/navigation';
-import Link from 'next/link';
 import ImageGallery from '@/components/hotels/ImageGallery';
 import RoomCard from '@/components/hotels/RoomCard';
 import AmenitiesList from '@/components/hotels/AmenitiesList';
@@ -11,6 +10,8 @@ import ScrollToRoomsButton from '@/components/hotels/ScrollToRoomsButton';
 import TrackPageView from '@/components/analytics/TrackPageView';
 import { formatPrice } from '@/lib/utils';
 import ContactLink from '@/components/analytics/ContactLink';
+import BackButton from '@/components/ui/BackButton';
+import Link from 'next/link';
 
 export const revalidate = 60;
 
@@ -109,6 +110,11 @@ export default async function HotelDetailPage({ params, searchParams }: HotelPag
   const mainImage = business.images?.[0] || '/placeholder-hotel.jpg';
   const gallery = business.images || [];
   const landmarks = hotel?.landmarks || [];
+  const backHref = `/${omdSlug}/hotels${
+    searchParams.checkIn && searchParams.checkOut
+      ? `?checkIn=${searchParams.checkIn}&checkOut=${searchParams.checkOut}&adults=${searchParams.adults || '1'}&children=${searchParams.children || '0'}`
+      : ''
+  }`;
 
   return (
     <main className="min-h-screen bg-gray-50">
@@ -117,15 +123,7 @@ export default async function HotelDetailPage({ params, searchParams }: HotelPag
       <header className="sticky top-0 z-40 bg-white shadow-sm">
         <div className="mx-auto max-w-7xl px-4 py-3">
           <div className="flex items-center justify-between">
-            <Link 
-              href={`/${omdSlug}/hotels${searchParams.checkIn && searchParams.checkOut ? `?checkIn=${searchParams.checkIn}&checkOut=${searchParams.checkOut}&adults=${searchParams.adults || '1'}&children=${searchParams.children || '0'}` : ''}`}
-              className="inline-flex items-center text-sm sm:text-base text-gray-700 transition-colors hover:text-blue-600"
-            >
-              <svg className="mr-2 h-5 w-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-              </svg>
-              <span className="truncate">Back to Hotels</span>
-            </Link>
+            <BackButton href={backHref} label="Back to Hotels" />
             <Link 
               href={`/${omdSlug}`}
               className="hidden sm:block text-sm text-gray-700 transition-colors hover:text-blue-600"

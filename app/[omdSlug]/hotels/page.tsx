@@ -6,6 +6,7 @@ import AreaFilter from '@/components/hotels/AreaFilter';
 import SortSelect from '@/components/hotels/SortSelect';
 import OmdMemberBadge from '@/components/ui/OmdMemberBadge';
 import { sortBusinessesByFeaturedOrder } from '@/lib/utils/business-sorting';
+import BackButton from '@/components/ui/BackButton';
 
 interface HotelsPageProps {
   params: { omdSlug: string };
@@ -223,17 +224,9 @@ export default async function HotelsPage({ params, searchParams }: HotelsPagePro
       <div className="bg-gradient-to-r from-blue-600 to-blue-800 text-white">
         <div className="mx-auto max-w-7xl px-4 py-12">
           <div className="flex items-center justify-between">
-            <div>
-              <Link 
-                href={`/${params.omdSlug}`} 
-                className="inline-flex items-center text-blue-200 hover:text-white transition-colors mb-4"
-              >
-                <svg className="mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-                </svg>
-                Back to {omd.name}
-              </Link>
-              <h1 className="text-4xl font-bold mb-2">Hotels & Accommodations</h1>
+            <div className="flex flex-col gap-4">
+              <BackButton href={`/${params.omdSlug}`} label={`Back to ${omd.name}`} variant="inverted" />
+              <h1 className="text-4xl font-bold">Hotels & Accommodations</h1>
               <p className="text-blue-100 text-lg mb-4">
                 {hasSearchParams 
                   ? 'Available hotels for your selected dates' 

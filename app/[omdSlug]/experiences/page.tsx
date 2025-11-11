@@ -1,10 +1,11 @@
 import { createClient } from '@/lib/supabase/server';
 import { notFound } from 'next/navigation';
-import Link from 'next/link';
 import OptimizedImage from '@/components/ui/OptimizedImage';
 import AreaFilter from '@/components/hotels/AreaFilter';
 import OmdMemberBadge from '@/components/ui/OmdMemberBadge';
 import { sortBusinessesByFeaturedOrder } from '@/lib/utils/business-sorting';
+import BackButton from '@/components/ui/BackButton';
+import Link from 'next/link';
 
 interface ExperiencesPageProps {
   params: { omdSlug: string };
@@ -102,10 +103,10 @@ export default async function ExperiencesPage({ params, searchParams }: Experien
       {/* Header */}
       <header className="bg-white shadow-sm">
         <div className="mx-auto max-w-7xl px-4 py-6">
-          <Link href={`/${params.omdSlug}`} className="text-blue-600 hover:text-blue-700">
-            ← Back to {omd.name}
-          </Link>
-          <h1 className="mt-2 text-3xl font-bold text-gray-900">Experiences & Activities</h1>
+          <div className="mb-4">
+            <BackButton href={`/${params.omdSlug}`} label={`Back to ${omd.name}`} />
+          </div>
+          <h1 className="text-3xl font-bold text-gray-900">Experiences & Activities</h1>
           
           {/* Filters */}
           <div className="mt-4 flex flex-wrap gap-3 items-end">

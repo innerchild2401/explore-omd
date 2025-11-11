@@ -4,8 +4,8 @@ import { getOMDBySlug, getSectionsByOMD, getBusinessesByOMD } from '@/lib/supaba
 import BusinessCarousel from '@/components/sections/BusinessCarousel';
 import MapSection from '@/components/sections/MapSection';
 import FooterSection from '@/components/sections/FooterSection';
-import Link from 'next/link';
 import { DEFAULT_TEMPLATE, TemplateName } from '@/lib/omdTemplates';
+import BackButton from '@/components/ui/BackButton';
 
 export const revalidate = 60;
 
@@ -45,19 +45,10 @@ export default async function ExplorePage({ params }: ExplorePageProps) {
 
   return (
     <main className="min-h-screen bg-white">
-      {/* Header with Back Link */}
-      <header className="sticky top-0 z-40 flex justify-center bg-transparent pb-3 pt-4">
-        <div className="w-full max-w-7xl px-4">
-          <Link
-            href={`/${omdSlug}`}
-            aria-label="Back to Home"
-            className="inline-flex h-11 w-11 items-center justify-center gap-2 rounded-full bg-white/95 text-blue-600 shadow-md ring-1 ring-gray-200 backdrop-blur transition hover:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 md:w-auto md:px-4"
-          >
-            <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-            </svg>
-            <span className="hidden text-sm font-medium md:inline">Back to Home</span>
-          </Link>
+      {/* Floating Back Button */}
+      <header className="pointer-events-none fixed inset-x-0 top-4 z-40">
+        <div className="mx-auto flex w-full max-w-7xl justify-start px-4">
+          <BackButton href={`/${omdSlug}`} label="Back to Home" className="pointer-events-auto" />
         </div>
       </header>
 

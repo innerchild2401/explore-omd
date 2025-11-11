@@ -1,9 +1,9 @@
 import { createClient } from '@/lib/supabase/server';
 import { notFound } from 'next/navigation';
 import TrackPageView from '@/components/analytics/TrackPageView';
-import Link from 'next/link';
 import ContactLink from '@/components/analytics/ContactLink';
 import RestaurantImageGallery from '@/components/restaurants/RestaurantImageGallery';
+import BackButton from '@/components/ui/BackButton';
 
 interface RestaurantPageProps {
   params: {
@@ -85,10 +85,10 @@ export default async function RestaurantPage({ params }: RestaurantPageProps) {
       {/* Header */}
       <header className="bg-white shadow-sm w-full">
         <div className="mx-auto max-w-7xl px-4 py-6 w-full min-w-0">
-          <Link href={`/${omdSlug}/restaurants`} className="text-blue-600 hover:text-blue-700 break-words inline-block">
-            ← Back to Restaurants
-          </Link>
-          <h1 className="mt-2 text-3xl font-bold text-gray-900 break-words">{business.name}</h1>
+          <div className="mb-4">
+            <BackButton href={`/${omdSlug}/restaurants`} label="Back to Restaurants" />
+          </div>
+          <h1 className="text-3xl font-bold text-gray-900 break-words">{business.name}</h1>
           <p className="mt-1 text-gray-600 break-words">{business.description}</p>
         </div>
       </header>

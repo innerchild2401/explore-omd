@@ -207,19 +207,21 @@ export default async function ExperiencesPage({ params, searchParams }: Experien
                       </div>
                     )}
                     
-                    {/* Badges - Top Left */}
-                    <div className="absolute top-4 left-4 flex flex-col gap-2">
-                      {business.is_omd_member && (
+                    {/* Price - Top Left */}
+                    {experience.price_from && (
+                      <div className="absolute top-4 left-4 bg-white/90 backdrop-blur-sm rounded-full px-3 py-1">
+                        <span className="text-sm font-semibold text-gray-700">
+                          {require('@/lib/utils').formatPrice(experience.price_from || 0, 'RON')}
+                        </span>
+                      </div>
+                    )}
+                    
+                    {/* OMD Member Badge - Top Right */}
+                    {business.is_omd_member && (
+                      <div className="absolute top-4 right-4">
                         <OmdMemberBadge size="sm" />
-                      )}
-                      {experience.price_from && (
-                        <div className="bg-white/90 backdrop-blur-sm rounded-full px-3 py-1">
-                          <span className="text-sm font-semibold text-gray-700">
-                            {require('@/lib/utils').formatPrice(experience.price_from || 0, 'RON')}
-                          </span>
-                        </div>
-                      )}
-                    </div>
+                      </div>
+                    )}
                   </div>
                   <div className="p-4">
                     <div className="mb-2">

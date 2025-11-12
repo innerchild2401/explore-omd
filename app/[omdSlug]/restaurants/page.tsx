@@ -155,17 +155,19 @@ export default async function RestaurantsPage({ params, searchParams }: Restaura
                       </div>
                     )}
                     
-                    {/* Badges - Top Left */}
-                    <div className="absolute top-4 left-4 flex flex-col gap-2">
-                      {business.is_omd_member && (
+                    {/* Price Range - Top Left */}
+                    {restaurant.price_range && (
+                      <div className="absolute top-4 left-4 bg-white/90 backdrop-blur-sm rounded-full px-3 py-1">
+                        <span className="text-sm font-semibold text-gray-700">{restaurant.price_range}</span>
+                      </div>
+                    )}
+                    
+                    {/* OMD Member Badge - Top Right */}
+                    {business.is_omd_member && (
+                      <div className="absolute top-4 right-4">
                         <OmdMemberBadge size="sm" />
-                      )}
-                      {restaurant.price_range && (
-                        <div className="bg-white/90 backdrop-blur-sm rounded-full px-3 py-1">
-                          <span className="text-sm font-semibold text-gray-700">{restaurant.price_range}</span>
-                        </div>
-                      )}
-                    </div>
+                      </div>
+                    )}
                   </div>
 
                   {/* Restaurant Info */}

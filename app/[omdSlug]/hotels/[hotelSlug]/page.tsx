@@ -94,16 +94,32 @@ export default async function HotelDetailPage({ params, searchParams }: HotelPag
     }
   }
 
-  // Get hotel amenities
+  // Get hotel amenities (for hotel-level amenities display)
   const amenityIds = hotel?.selected_amenities || [];
+  
+  // Get ALL room category amenities for the OMD (needed for RoomCard to match room amenities)
+  // This ensures room amenities can be properly displayed even if not in hotel.selected_amenities
+  const { data: roomAmenitiesData } = await supabase
+    .from('omd_amenities')
+    .select('*')
+    .eq('omd_id', omd.id)
+    .eq('category', 'room');
+  
+  // Combine hotel amenity IDs with all room amenity IDs, removing duplicates
+  const allAmenityIds = new Set([
+    ...amenityIds,
+    ...(roomAmenitiesData || []).map(a => a.id)
+  ]);
+  
+  // Fetch all amenities (hotel + room) in one query
   let amenities = [];
-  if (amenityIds.length > 0) {
-    const { data: amenitiesData } = await supabase
+  if (allAmenityIds.size > 0) {
+    const { data: allAmenitiesData } = await supabase
       .from('omd_amenities')
       .select('*')
-      .in('id', amenityIds)
+      .in('id', Array.from(allAmenityIds))
       .order('category', { ascending: true });
-    amenities = amenitiesData || [];
+    amenities = allAmenitiesData || [];
   }
 
   const mainImage = business.images?.[0] || '/placeholder-hotel.jpg';

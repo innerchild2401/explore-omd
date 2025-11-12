@@ -86,7 +86,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const adminDashboardUrl = `${process.env.NEXT_PUBLIC_SITE_URL || 'https://destexplore.eu'}/${omd.slug}/admin`;
+    const adminDashboardUrl = `${process.env.NEXT_PUBLIC_SITE_URL || 'https://destexplore.eu'}/admin`;
 
     const htmlContent = `
 <!DOCTYPE html>

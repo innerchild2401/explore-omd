@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server';
 /**
  * Returns a list of OMDs that should appear in marketing carousels.
  * We treat an OMD as active unless settings explicitly disable it.
+ * Includes hero section data (backgroundVideo, backgroundImage) for each OMD.
  */
 export async function GET() {
   try {
@@ -38,7 +39,28 @@ export async function GET() {
         return true;
       }) ?? [];
 
-    return NextResponse.json({ data: activeOmds });
+    // Fetch hero sections for each OMD to get backgroundVideo and backgroundImage
+    const omdsWithHeroData = await Promise.all(
+      activeOmds.map(async (omd) => {
+        const { data: heroSection } = await supabase
+          .from('sections')
+          .select('content')
+          .eq('omd_id', omd.id)
+          .eq('type', 'hero')
+          .eq('is_visible', true)
+          .single();
+
+        const heroContent = (heroSection?.content as Record<string, any> | null) ?? {};
+        
+        return {
+          ...omd,
+          heroBackgroundVideo: heroContent.backgroundVideo || null,
+          heroBackgroundImage: heroContent.backgroundImage || null,
+        };
+      })
+    );
+
+    return NextResponse.json({ data: omdsWithHeroData });
   } catch (error) {
     console.error('Unexpected error when loading OMD list:', error);
     return NextResponse.json({ error: 'Unexpected error' }, { status: 500 });

@@ -13,6 +13,8 @@ type DemoDestination = {
   colors: Record<string, string> | null;
   settings?: Record<string, any> | null;
   created_at?: string;
+  heroBackgroundVideo?: string | null;
+  heroBackgroundImage?: string | null;
 };
 
 export default function HomePage() {
@@ -516,17 +518,25 @@ export default function HomePage() {
                   const primaryColor = destination.colors?.primary ?? '#1d4ed8';
                   const secondaryColor = destination.colors?.secondary ?? '#2563eb';
                   const gradientBackground = `linear-gradient(135deg, ${primaryColor} 0%, ${secondaryColor} 100%)`;
-                  const coverImagePath =
-                    typeof settings.hero_image === 'string' && settings.hero_image.trim().length > 0
+                  
+                  // Priority: heroBackgroundVideo → heroBackgroundImage → settings images → logo
+                  const backgroundVideo = destination.heroBackgroundVideo || null;
+                  const backgroundImage = 
+                    destination.heroBackgroundImage ||
+                    (typeof settings.hero_image === 'string' && settings.hero_image.trim().length > 0
                       ? settings.hero_image
                       : typeof settings.cover_image === 'string' && settings.cover_image.trim().length > 0
                       ? settings.cover_image
-                      : destination.logo;
-                  const coverImageUrl = coverImagePath ? getImageUrl(coverImagePath) : null;
-                  const logoUrl =
-                    destination.logo && (!coverImageUrl || coverImageUrl !== getImageUrl(destination.logo))
-                      ? getImageUrl(destination.logo)
-                      : null;
+                      : null);
+                  
+                  const imageUrl = backgroundImage ? getImageUrl(backgroundImage) : null;
+                  const videoUrl = backgroundVideo 
+                    ? (backgroundVideo.startsWith('http') ? backgroundVideo : getImageUrl(backgroundVideo))
+                    : null;
+                  
+                  const logoUrl = destination.logo ? getImageUrl(destination.logo) : null;
+                  const hasMedia = videoUrl || imageUrl;
+                  
                   const tagline =
                     typeof settings.tagline === 'string' && settings.tagline.trim().length > 0
                       ? settings.tagline
@@ -546,9 +556,25 @@ export default function HomePage() {
                     >
                       <div className="group flex h-full flex-col overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-md transition-transform hover:-translate-y-1 hover:shadow-xl">
                         <div className="relative aspect-[4/3] w-full overflow-hidden">
-                          {coverImageUrl ? (
+                          {/* Video (highest priority) */}
+                          {videoUrl ? (
+                            <video
+                              className="h-full w-full object-cover"
+                              autoPlay
+                              loop
+                              muted
+                              playsInline
+                              poster={imageUrl || undefined}
+                            >
+                              <source
+                                src={videoUrl}
+                                type={videoUrl.toLowerCase().endsWith('.webm') ? 'video/webm' : 'video/mp4'}
+                              />
+                            </video>
+                          ) : imageUrl ? (
+                            /* Image (second priority) */
                             <Image
-                              src={coverImageUrl}
+                              src={imageUrl}
                               alt={destination.name}
                               fill
                               sizes="(max-width: 640px) 90vw, (max-width: 1024px) 45vw, 320px"
@@ -556,14 +582,35 @@ export default function HomePage() {
                               priority={false}
                             />
                           ) : (
-                            <div className="h-full w-full" style={{ background: gradientBackground }} />
+                            /* Gradient fallback with centered logo */
+                            <div className="h-full w-full" style={{ background: gradientBackground }}>
+                              {logoUrl && (
+                                <div className="absolute inset-0 flex items-center justify-center">
+                                  <div className="flex h-24 w-24 items-center justify-center rounded-full bg-white/20 p-4 shadow-lg backdrop-blur-sm">
+                                    <Image
+                                      src={logoUrl}
+                                      alt={`${destination.name} logo`}
+                                      width={80}
+                                      height={80}
+                                      className="h-full w-full object-contain"
+                                    />
+                                  </div>
+                                </div>
+                              )}
+                            </div>
                           )}
+                          
+                          {/* Overlay gradient for text readability */}
                           <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/15 to-transparent" />
+                          
+                          {/* Content overlay */}
                           <div className="absolute bottom-4 left-4 right-4">
                             <span className="text-xs uppercase tracking-wide text-white/70">Destinație demonstrativă</span>
                             <h3 className="mt-1 text-2xl font-semibold text-white">{destination.name}</h3>
                           </div>
-                          {logoUrl && (
+                          
+                          {/* Logo badge (only show when we have media, not on gradient fallback) */}
+                          {hasMedia && logoUrl && (
                             <div className="absolute right-4 top-4 flex h-12 w-12 items-center justify-center rounded-full bg-white/90 p-2 shadow-md backdrop-blur">
                               <Image
                                 src={logoUrl}

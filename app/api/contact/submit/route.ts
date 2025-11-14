@@ -1,10 +1,11 @@
-import { createClient } from '@/lib/supabase/server';
+import { createServiceRoleClient } from '@/lib/supabase/server';
 import { MailerSend, EmailParams, Sender, Recipient } from 'mailersend';
 import { NextResponse } from 'next/server';
 
 export async function POST(request: Request) {
   try {
-    const supabase = await createClient();
+    // Use service role client to bypass RLS for public form submissions
+    const supabase = createServiceRoleClient();
 
     const body = await request.json();
     const { nume, email, mesaj, omdSlug } = body;
@@ -49,6 +50,26 @@ export async function POST(request: Request) {
       );
     }
 
+    // Get superadmin email from database
+    let superadminEmail: string | null = null;
+    try {
+      const { data: superadminProfile } = await supabase
+        .from('user_profiles')
+        .select('id')
+        .eq('role', 'super_admin')
+        .limit(1)
+        .single();
+
+      if (superadminProfile?.id) {
+        const { data: superadminUser, error: userError } = await supabase.auth.admin.getUserById(superadminProfile.id);
+        if (!userError && superadminUser?.user?.email) {
+          superadminEmail = superadminUser.user.email;
+        }
+      }
+    } catch (adminError) {
+      console.error('Error fetching superadmin email:', adminError);
+    }
+
     const mailerSendApiKey = process.env.MAILER_SEND_API_KEY;
     if (mailerSendApiKey) {
       try {
@@ -58,7 +79,9 @@ export async function POST(request: Request) {
         const senderName = process.env.MAILER_SEND_SENDER_NAME || 'DestExplore Marketing';
         const sender = new Sender(senderEmail, senderName);
 
+        // Use superadmin email, fallback to env vars, then to default
         const primaryRecipient =
+          superadminEmail ||
           process.env.MARKETING_CONTACT_EMAIL ||
           process.env.MAILER_SEND_TRIAL_EMAIL ||
           'filip.alex24@gmail.com';

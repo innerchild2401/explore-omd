@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { createServiceRoleClient } from '@/lib/supabase/server';
 import { verifyEmailToken } from '@/lib/services/email-sequence/tokens';
 
 /**
@@ -26,7 +26,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const supabase = await createClient();
+    // Use service role client to bypass RLS for public form submissions
+    const supabase = createServiceRoleClient();
 
     // Get reservation with guest email and hotel ID
     const { data: reservation, error: reservationError } = await supabase

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { createServiceRoleClient } from '@/lib/supabase/server';
 
 /**
  * Submit destination rating
@@ -24,7 +24,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const supabase = await createClient();
+    // Use service role client to bypass RLS for public form submissions
+    const supabase = createServiceRoleClient();
 
     // Get OMD ID from slug
     const { data: omd, error: omdError } = await supabase

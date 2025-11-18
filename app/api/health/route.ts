@@ -7,7 +7,9 @@
 
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
-import { log } from '@/lib/logger';
+import logger from '@/lib/logger';
+
+export const dynamic = 'force-dynamic';
 
 export async function GET() {
   const startTime = Date.now();
@@ -42,12 +44,15 @@ export async function GET() {
       if (error) {
         health.checks.database = 'error';
         health.status = 'degraded';
-        log.warn('Health check: Database connection failed', { error: error.message });
+        logger.warn({ error: error.message }, 'Health check: Database connection failed');
       }
     } catch (dbError) {
       health.checks.database = 'error';
       health.status = 'unhealthy';
-      log.error('Health check: Database connection error', dbError);
+      const errorContext = dbError instanceof Error 
+        ? { error: { message: dbError.message, stack: dbError.stack, name: dbError.name } }
+        : { error: String(dbError) };
+      logger.error(errorContext, 'Health check: Database connection error');
     }
 
     // Check critical environment variables
@@ -62,19 +67,17 @@ export async function GET() {
 
     if (missingEnvVars.length > 0) {
       health.status = 'unhealthy';
-      log.error('Health check: Missing environment variables', {
-        missing: missingEnvVars,
-      });
+      logger.error({ missing: missingEnvVars }, 'Health check: Missing environment variables');
     }
 
     const responseTime = Date.now() - startTime;
     
     // Log health check
-    log.info('Health check completed', {
+    logger.info({
       status: health.status,
       responseTime,
       checks: health.checks,
-    });
+    }, 'Health check completed');
 
     // Return appropriate status code
     const statusCode = health.status === 'healthy' ? 200 : health.status === 'degraded' ? 200 : 503;
@@ -84,7 +87,10 @@ export async function GET() {
     health.status = 'unhealthy';
     health.checks.api = 'error';
     
-    log.error('Health check: Unexpected error', error);
+    const errorContext = error instanceof Error 
+      ? { error: { message: error.message, stack: error.stack, name: error.name } }
+      : { error: String(error) };
+    logger.error(errorContext, 'Health check: Unexpected error');
     
     return NextResponse.json(health, { status: 503 });
   }

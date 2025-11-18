@@ -1,5 +1,16 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  typescript: {
+    ignoreBuildErrors: false,
+  },
+  webpack: (config, { isServer }) => {
+    // Exclude vitest config from build
+    config.module.rules.push({
+      test: /vitest\.config\.ts$/,
+      use: 'ignore-loader',
+    });
+    return config;
+  },
   images: {
     remotePatterns: [
       {

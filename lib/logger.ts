@@ -98,7 +98,8 @@ export const log = {
       }
     }
     
-    logger.error(errorContext, message);
+    // Call pino logger with context and message
+    (logger as any).error(errorContext, message);
   },
 
   /**

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { verifyEmailToken } from '@/lib/services/email-sequence/tokens';
-import logger from '@/lib/logger';
+import { log } from '@/lib/logger';
 import { rateLimitCheck } from '@/lib/middleware/rate-limit';
 import { validateQuery } from '@/lib/validation/validate';
 import { verifyTokenQuerySchema } from '@/lib/validation/schemas';
@@ -75,7 +75,8 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error: any) {
-    logger.error('Error verifying email token', error, {
+    const searchParams = request.nextUrl.searchParams;
+    log.error('Error verifying email token', error, {
       reservationId: searchParams.get('reservationId'),
     });
     return NextResponse.json(

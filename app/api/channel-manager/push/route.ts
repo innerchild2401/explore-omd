@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { pushBookingToChannelManager } from '@/lib/services/channel-manager/push';
-import logger from '@/lib/logger';
+import { log } from '@/lib/logger';
 import { rateLimitCheck } from '@/lib/middleware/rate-limit';
 import { validateRequest } from '@/lib/validation/validate';
 import { channelManagerPushSchema } from '@/lib/validation/schemas';
@@ -17,6 +17,7 @@ export async function POST(request: NextRequest) {
   if (!rateLimit.success) {
     return rateLimit.response!;
   }
+  let reservationId: string | null = null;
   try {
     const supabase = await createClient();
     const { data: { user }, error: authError } = await supabase.auth.getUser();
@@ -30,7 +31,7 @@ export async function POST(request: NextRequest) {
     if (!validation.success) {
       return validation.response;
     }
-    const { reservationId } = validation.data;
+    reservationId = validation.data.reservationId;
 
     // Get reservation to find hotel_id
     const { data: reservation, error: reservationError } = await supabase
@@ -58,7 +59,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(result);
   } catch (error: any) {
-    logger.error('Channel manager push error', error, {
+    log.error('Channel manager push error', error, {
       reservationId,
     });
     return NextResponse.json(

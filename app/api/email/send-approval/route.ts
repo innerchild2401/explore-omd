@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { MailerSend, EmailParams, Sender, Recipient } from "mailersend";
-import logger from '@/lib/logger';
+import { log } from '@/lib/logger';
 import { rateLimitCheck } from '@/lib/middleware/rate-limit';
 import { validateRequest } from '@/lib/validation/validate';
 import { businessApprovalSchema } from '@/lib/validation/schemas';
@@ -11,13 +11,21 @@ export async function POST(request: NextRequest) {
   if (!rateLimit.success) {
     return rateLimit.response!;
   }
+  let recipientEmail: string | null = null;
+  let businessName: string | null = null;
+  let businessType: string | null = null;
+  let recipientName: string | null = null;
   try {
     // Validate request body
     const validation = await validateRequest(request, businessApprovalSchema);
     if (!validation.success) {
       return validation.response;
     }
-    const { recipientName, businessName, businessType, recipientEmail } = validation.data;
+    const { recipientName: rn, businessName: bn, businessType: bt, recipientEmail: re } = validation.data;
+    recipientEmail = re;
+    businessName = bn;
+    businessType = bt;
+    recipientName = rn;
 
     const mailerSend = new MailerSend({
       apiKey: process.env.MAILER_SEND_API_KEY || '',
@@ -311,7 +319,7 @@ Echipa OMD
         : 'Email sent successfully'
     });
   } catch (error) {
-    logger.error('Error sending approval email', error, {
+    log.error('Error sending approval email', error, {
       recipientEmail,
       businessName,
       businessType,

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceRoleClient } from '@/lib/supabase/server';
 import { verifyEmailToken } from '@/lib/services/email-sequence/tokens';
-import logger from '@/lib/logger';
+import { log } from '@/lib/logger';
 import { rateLimitCheck } from '@/lib/middleware/rate-limit';
 import { validateRequest } from '@/lib/validation/validate';
 import { reservationStaffRatingSchema } from '@/lib/validation/schemas';
@@ -103,7 +103,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ success: true });
   } catch (error: any) {
-    logger.error('Error submitting reservation staff rating', error, {});
+    log.error('Error submitting reservation staff rating', error, {});
     return NextResponse.json(
       { error: error.message || 'Failed to submit rating' },
       { status: 500 }

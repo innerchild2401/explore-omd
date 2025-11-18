@@ -9,7 +9,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { ZodSchema, ZodError } from 'zod';
-import logger from '@/lib/logger';
+import { log } from '@/lib/logger';
 
 /**
  * Validate request body against a Zod schema
@@ -24,7 +24,7 @@ export async function validateRequest<T>(
     return { success: true, data };
   } catch (error) {
     if (error instanceof ZodError) {
-      logger.warn('Request validation failed', {
+      log.warn('Request validation failed', {
         errors: error.errors,
         path: request.url,
       });
@@ -45,7 +45,7 @@ export async function validateRequest<T>(
     }
 
     // JSON parse error or other error
-    logger.error('Request parsing error', error, {
+    log.error('Request parsing error', error, {
       path: request.url,
     });
 
@@ -75,7 +75,7 @@ export function validateQuery<T>(
     return { success: true, data };
   } catch (error) {
     if (error instanceof ZodError) {
-      logger.warn('Query validation failed', {
+      log.warn('Query validation failed', {
         errors: error.errors,
         path: request.url,
       });

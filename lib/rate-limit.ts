@@ -17,7 +17,7 @@
 
 import { Ratelimit } from '@upstash/ratelimit';
 import { Redis } from '@upstash/redis';
-import logger from './logger';
+import { log, logger } from './logger';
 
 // In-memory fallback for development or when Upstash is not configured
 class MemoryStore {
@@ -76,12 +76,14 @@ try {
       token: upstashToken,
     });
     useUpstash = true;
-    logger.info('Rate limiting: Using Upstash Redis');
+    log.info('Rate limiting: Using Upstash Redis');
   } else {
-    logger.warn('Rate limiting: Upstash not configured, using in-memory store (not suitable for production)');
+    log.warn('Rate limiting: Upstash not configured, using in-memory store (not suitable for production)');
   }
-} catch (error) {
-  logger.warn('Rate limiting: Failed to initialize Upstash, using in-memory store', error, {});
+} catch (error: unknown) {
+  log.warn('Rate limiting: Failed to initialize Upstash, using in-memory store', {
+    error: error instanceof Error ? error.message : String(error),
+  });
 }
 
 /**
@@ -248,7 +250,7 @@ export async function checkRateLimit(
   const result = await limiter.limit(identifier);
   
   if (!result.success) {
-    logger.warn('Rate limit exceeded', {
+    log.warn('Rate limit exceeded', {
       identifier,
       limit: result.limit,
       remaining: result.remaining,

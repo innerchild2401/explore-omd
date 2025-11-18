@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { pushBooking } from '@/lib/services/octorate/bookings';
-import logger from '@/lib/logger';
+import { log } from '@/lib/logger';
 import { rateLimitCheck } from '@/lib/middleware/rate-limit';
 import { validateRequest } from '@/lib/validation/validate';
 import { octorateBookingPushSchema } from '@/lib/validation/schemas';
@@ -62,7 +62,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ success: true, booking: bookingResponse });
   } catch (error: any) {
-    logger.error('Octorate booking push error', error, {
+    log.error('Octorate booking push error', error, {
       reservationId,
     });
     

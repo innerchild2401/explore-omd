@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/service';
-import logger from '@/lib/logger';
+import { log } from '@/lib/logger';
 import { rateLimitCheck } from '@/lib/middleware/rate-limit';
 import { validateRequest } from '@/lib/validation/validate';
 import { bookingConfirmationSchema } from '@/lib/validation/schemas';
@@ -21,10 +21,10 @@ export async function POST(request: NextRequest) {
     return rateLimit.response!;
   }
 
-  logger.info('Booking confirmation email API called', {
-    url: request.url,
-    method: request.method,
-  });
+    log.info('Booking confirmation email API called', {
+      url: request.url,
+      method: request.method,
+    });
   
   try {
     // Validate request body
@@ -34,7 +34,7 @@ export async function POST(request: NextRequest) {
     }
     const { reservationId } = validation.data;
 
-    logger.debug('Booking confirmation email request received', { reservationId });
+    log.debug('Booking confirmation email request received', { reservationId });
 
     const supabase = createServiceClient();
 
@@ -46,7 +46,7 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (reservationError || !reservation) {
-      logger.error('Error fetching reservation', reservationError, {
+      log.error('Error fetching reservation', reservationError, {
         reservationId,
       });
       return NextResponse.json(
@@ -55,7 +55,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    logger.debug('Reservation fetched successfully', {
+    log.debug('Reservation fetched successfully', {
       reservationId: reservation.id,
       hotelId: reservation.hotel_id,
       guestId: reservation.guest_id,
@@ -70,7 +70,7 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (guestError || !guest) {
-      logger.error('Error fetching guest profile', guestError, {
+      log.error('Error fetching guest profile', guestError, {
         reservationId,
         guestId: reservation.guest_id,
       });
@@ -88,7 +88,7 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (roomError || !room) {
-      logger.error('Error fetching room', roomError, {
+      log.error('Error fetching room', roomError, {
         reservationId,
         roomId: reservation.room_id,
       });
@@ -106,7 +106,7 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (hotelError || !hotel) {
-      logger.error('Error fetching hotel', hotelError, {
+      log.error('Error fetching hotel', hotelError, {
         reservationId,
         hotelId: reservation.hotel_id,
       });
@@ -124,7 +124,7 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (businessError || !businessData) {
-      logger.error('Error fetching business', businessError, {
+      log.error('Error fetching business', businessError, {
         reservationId,
         hotelId: reservation.hotel_id,
         businessId: hotel.business_id,
@@ -135,7 +135,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    logger.debug('All reservation data fetched successfully', {
+    log.debug('All reservation data fetched successfully', {
       reservationId,
       hasGuest: !!guest,
       hasRoom: !!room,
@@ -155,7 +155,7 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (omdError || !omd) {
-      logger.error('Error fetching OMD', omdError, {
+      log.error('Error fetching OMD', omdError, {
         reservationId,
         omdId: finalBusiness.omd_id,
       });
@@ -183,7 +183,7 @@ export async function POST(request: NextRequest) {
         baseRate <= room.base_price) {
       // Recalculate as it's likely just one night's price stored
       baseRate = room.base_price * nights;
-      logger.debug('Recalculating base_rate for tentative booking', {
+      log.debug('Recalculating base_rate for tentative booking', {
         reservationId,
         reservationStatus: reservation.reservation_status,
         originalBaseRate: reservation.base_rate,
@@ -197,7 +197,7 @@ export async function POST(request: NextRequest) {
     const fees = reservation.fees || 0;
     const totalDue = baseRate + taxes + fees;
     
-    logger.debug('Pricing calculation completed', {
+    log.debug('Pricing calculation completed', {
       reservationId,
       baseRate,
       taxes,
@@ -225,7 +225,7 @@ export async function POST(request: NextRequest) {
     const trialMode = process.env.MAILER_SEND_TRIAL_MODE === 'true';
     const trialEmail = process.env.MAILER_SEND_TRIAL_EMAIL || 'filip.alex24@gmail.com';
     
-    logger.debug('Business contact info retrieved', {
+    log.debug('Business contact info retrieved', {
       reservationId,
       businessId: finalBusiness.id,
       hasBusinessEmail: !!businessEmail,
@@ -233,7 +233,7 @@ export async function POST(request: NextRequest) {
     });
     
     if (!businessEmail && !trialMode) {
-      logger.error('Business email not found in contact information', null, {
+      log.error('Business email not found in contact information', null, {
         reservationId,
         businessId: finalBusiness.id,
         contact: finalBusiness.contact,
@@ -409,7 +409,7 @@ Echipa OMD ${emailVariables.destination_name} iti ureaza sejur de poveste!
 © 2026 Platforma gestionata prin destexplore.eu
     `.trim();
 
-    logger.debug('HTML email template created', {
+    log.debug('HTML email template created', {
       reservationId,
       guestName: emailVariables.name,
       destination: emailVariables.destination_name,
@@ -444,7 +444,7 @@ Echipa OMD ${emailVariables.destination_name} iti ureaza sejur de poveste!
     let recipients = originalRecipients;
     
     if (trialMode || !businessEmail) {
-      logger.info('Email trial mode: Redirecting to verified address', {
+      log.info('Email trial mode: Redirecting to verified address', {
         reservationId,
         trialEmail,
         originalRecipients: originalRecipients.map(r => r.email),
@@ -478,7 +478,7 @@ Echipa OMD ${emailVariables.destination_name} iti ureaza sejur de poveste!
       text: textEmail,
     };
 
-    logger.info('Sending booking confirmation email via MailerSend', {
+    log.info('Sending booking confirmation email via MailerSend', {
       reservationId,
       recipients: normalizedRecipients.map(r => r.email),
       subject: mailerSendPayload.subject,
@@ -506,7 +506,7 @@ Echipa OMD ${emailVariables.destination_name} iti ureaza sejur de poveste!
       mailerSendResult = await mailerSendResponse.json();
     } else {
       const textResult = await mailerSendResponse.text();
-      logger.warn('MailerSend returned non-JSON response', {
+      log.warn('MailerSend returned non-JSON response', {
         reservationId,
         contentType,
         responseLength: textResult.length,
@@ -515,7 +515,7 @@ Echipa OMD ${emailVariables.destination_name} iti ureaza sejur de poveste!
     }
 
     if (!mailerSendResponse.ok) {
-      logger.error('MailerSend API error', null, {
+      log.error('MailerSend API error', null, {
         reservationId,
         status: mailerSendResponse.status,
         statusText: mailerSendResponse.statusText,
@@ -531,7 +531,7 @@ Echipa OMD ${emailVariables.destination_name} iti ureaza sejur de poveste!
       );
     }
 
-    logger.info('Booking confirmation email sent successfully', {
+    log.info('Booking confirmation email sent successfully', {
       reservationId,
       messageId: mailerSendResult.body?.message_id,
       recipients: normalizedRecipients.map(r => r.email),
@@ -546,7 +546,7 @@ Echipa OMD ${emailVariables.destination_name} iti ureaza sejur de poveste!
         sent_at: new Date().toISOString(),
       });
     } catch (logError) {
-      logger.error('Failed to log email to database', logError, {
+      log.error('Failed to log email to database', logError, {
         reservationId,
       });
       // Don't fail the request if logging fails
@@ -559,7 +559,7 @@ Echipa OMD ${emailVariables.destination_name} iti ureaza sejur de poveste!
         .update({ confirmation_sent: true })
         .eq('id', reservationId);
     } catch (updateError) {
-      logger.error('Failed to update reservation confirmation_sent flag', updateError, {
+      log.error('Failed to update reservation confirmation_sent flag', updateError, {
         reservationId,
       });
       // Don't fail the request if update fails
@@ -572,9 +572,9 @@ Echipa OMD ${emailVariables.destination_name} iti ureaza sejur de poveste!
       variables: emailVariables,
     });
   } catch (error: any) {
-    logger.error('Unexpected error sending booking confirmation email', error, {
-      url: request.url,
-    });
+      log.error('Unexpected error sending booking confirmation email', error, {
+        url: request.url,
+      });
     return NextResponse.json(
       {
         error: 'Failed to send booking confirmation email',

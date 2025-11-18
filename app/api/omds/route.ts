@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
-import logger from '@/lib/logger';
+import { log } from '@/lib/logger';
 import { rateLimitCheck } from '@/lib/middleware/rate-limit';
 
 /**
@@ -23,7 +23,7 @@ export async function GET(request: NextRequest) {
       .order('name');
 
     if (error) {
-      logger.error('Failed to load OMDs for homepage', error, {});
+      log.error('Failed to load OMDs for homepage', error, {});
       return NextResponse.json({ error: 'Unable to load destinations' }, { status: 500 });
     }
 
@@ -69,7 +69,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ data: omdsWithHeroData });
   } catch (error: unknown) {
-    logger.error('Unexpected error when loading OMD list', error, {});
+    log.error('Unexpected error when loading OMD list', error, {});
     return NextResponse.json({ error: 'Unexpected error' }, { status: 500 });
   }
 }

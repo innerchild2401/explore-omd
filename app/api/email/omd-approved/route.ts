@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { MailerSend, EmailParams, Sender, Recipient } from 'mailersend';
 import { createServiceClient } from '@/lib/supabase/service';
-import logger from '@/lib/logger';
+import { log } from '@/lib/logger';
 import { rateLimitCheck } from '@/lib/middleware/rate-limit';
 import { validateRequest } from '@/lib/validation/validate';
 import { omdApprovalSchema } from '@/lib/validation/schemas';
@@ -12,13 +12,14 @@ export async function POST(request: NextRequest) {
   if (!rateLimit.success) {
     return rateLimit.response!;
   }
+  let omdId: string | null = null;
   try {
     // Validate request body
     const validation = await validateRequest(request, omdApprovalSchema);
     if (!validation.success) {
       return validation.response;
     }
-    const { omdId } = validation.data;
+    omdId = validation.data.omdId;
 
     const supabase = createServiceClient();
 
@@ -303,9 +304,9 @@ Suntem aici dacă ai nevoie de suport.
       originalRecipients,
     });
   } catch (error: any) {
-    logger.error('Error sending OMD approval email', error, {
-      omdId,
-    });
+      log.error('Error sending OMD approval email', error, {
+        omdId,
+      });
     return NextResponse.json(
       {
         error: 'Failed to send OMD approval email',

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceRoleClient } from '@/lib/supabase/server';
-import logger from '@/lib/logger';
+import { log } from '@/lib/logger';
 import { rateLimitCheck } from '@/lib/middleware/rate-limit';
 import { validateRequest } from '@/lib/validation/validate';
 import { destinationRatingSchema } from '@/lib/validation/schemas';
@@ -83,7 +83,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ success: true });
   } catch (error: any) {
-    logger.error('Error submitting destination rating', error, {});
+    log.error('Error submitting destination rating', error, {});
     return NextResponse.json(
       { error: error.message || 'Eroare la trimiterea evaluării' },
       { status: 500 }

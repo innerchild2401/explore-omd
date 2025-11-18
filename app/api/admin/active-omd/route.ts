@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
-import logger from '@/lib/logger';
+import { log } from '@/lib/logger';
 import { rateLimitCheck } from '@/lib/middleware/rate-limit';
 import { validateRequest } from '@/lib/validation/validate';
 import { adminActiveOmdSchema } from '@/lib/validation/schemas';
@@ -68,7 +68,7 @@ export async function POST(request: NextRequest) {
     response.cookies.set(COOKIE_NAME, omdId, createCookieOptions());
     return response;
   } catch (error: unknown) {
-    logger.error('Failed to set active OMD', error, {});
+    log.error('Failed to set active OMD', error, {});
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
@@ -105,7 +105,7 @@ export async function DELETE(request: NextRequest) {
     response.cookies.set(COOKIE_NAME, '', { ...createCookieOptions(), maxAge: 0 });
     return response;
   } catch (error: unknown) {
-    logger.error('Failed to clear active OMD', error, {});
+    log.error('Failed to clear active OMD', error, {});
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

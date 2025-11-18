@@ -1,7 +1,7 @@
 import { createServiceRoleClient } from '@/lib/supabase/server';
 import { MailerSend, EmailParams, Sender, Recipient } from 'mailersend';
 import { NextRequest, NextResponse } from 'next/server';
-import logger from '@/lib/logger';
+import { log } from '@/lib/logger';
 import { rateLimitCheck } from '@/lib/middleware/rate-limit';
 import { validateRequest } from '@/lib/validation/validate';
 import { contactFormSchema } from '@/lib/validation/schemas';
@@ -49,7 +49,7 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (error) {
-      logger.error('Error inserting contact inquiry', error, {
+      log.error('Error inserting contact inquiry', error, {
         omdSlug,
         email,
       });
@@ -76,7 +76,7 @@ export async function POST(request: NextRequest) {
         }
       }
     } catch (adminError) {
-      logger.error('Error fetching superadmin email', adminError);
+      log.error('Error fetching superadmin email', adminError);
     }
 
     const mailerSendApiKey = process.env.MAILER_SEND_API_KEY;
@@ -268,12 +268,12 @@ Panou administrare: ${dashboardUrl}
 
         await mailerSend.email.send(emailParams);
       } catch (mailError) {
-        logger.error('Failed to send marketing contact email', mailError, {
+        log.error('Failed to send marketing contact email', mailError, {
           inquiryId: data.id,
         });
       }
     } else {
-      logger.warn('MailerSend API key missing – marketing notification email not sent', {
+      log.warn('MailerSend API key missing – marketing notification email not sent', {
         inquiryId: data.id,
       });
     }
@@ -287,7 +287,7 @@ Panou administrare: ${dashboardUrl}
       { status: 200 },
     );
   } catch (error) {
-    logger.error('Error in contact submission', error);
+    log.error('Error in contact submission', error);
     return NextResponse.json(
       { error: 'A apărut o eroare neașteptată' },
       { status: 500 },

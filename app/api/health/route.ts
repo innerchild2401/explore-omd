@@ -7,7 +7,7 @@
 
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
-import logger from '@/lib/logger';
+import { log } from '@/lib/logger';
 
 export async function GET() {
   const startTime = Date.now();
@@ -42,12 +42,12 @@ export async function GET() {
       if (error) {
         health.checks.database = 'error';
         health.status = 'degraded';
-        logger.warn('Health check: Database connection failed', { error: error.message });
+        log.warn('Health check: Database connection failed', { error: error.message });
       }
     } catch (dbError) {
       health.checks.database = 'error';
       health.status = 'unhealthy';
-      logger.error('Health check: Database connection error', dbError);
+      log.error('Health check: Database connection error', dbError);
     }
 
     // Check critical environment variables
@@ -62,7 +62,7 @@ export async function GET() {
 
     if (missingEnvVars.length > 0) {
       health.status = 'unhealthy';
-      logger.error('Health check: Missing environment variables', {
+      log.error('Health check: Missing environment variables', {
         missing: missingEnvVars,
       });
     }
@@ -70,7 +70,7 @@ export async function GET() {
     const responseTime = Date.now() - startTime;
     
     // Log health check
-    logger.info('Health check completed', {
+    log.info('Health check completed', {
       status: health.status,
       responseTime,
       checks: health.checks,
@@ -84,7 +84,7 @@ export async function GET() {
     health.status = 'unhealthy';
     health.checks.api = 'error';
     
-    logger.error('Health check: Unexpected error', error);
+    log.error('Health check: Unexpected error', error);
     
     return NextResponse.json(health, { status: 503 });
   }

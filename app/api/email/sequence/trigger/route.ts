@@ -3,7 +3,7 @@ import { createClient } from '@/lib/supabase/server';
 import { sendPostBookingFollowupEmail } from '@/lib/services/email-sequence/post-booking-followup';
 import { sendPostCheckinEmail } from '@/lib/services/email-sequence/post-checkin';
 import { sendPostCheckoutEmail } from '@/lib/services/email-sequence/post-checkout';
-import logger from '@/lib/logger';
+import { log } from '@/lib/logger';
 import { rateLimitCheck } from '@/lib/middleware/rate-limit';
 
 /**
@@ -87,7 +87,7 @@ export async function GET(request: NextRequest) {
           }
         }
       } catch (error: any) {
-        logger.error('Error processing email for reservation', error, {
+        log.error('Error processing email for reservation', error, {
           reservationId: emailLog.reservation_id,
         });
         failed++;
@@ -101,7 +101,7 @@ export async function GET(request: NextRequest) {
       failed,
     });
   } catch (error: any) {
-    logger.error('Error triggering email sequence', error, {});
+    log.error('Error triggering email sequence', error, {});
     return NextResponse.json(
       { error: error.message || 'Failed to trigger email sequence' },
       { status: 500 }
@@ -169,7 +169,7 @@ export async function POST(request: NextRequest) {
           }
         }
       } catch (error: any) {
-        logger.error('Error processing email for reservation', error, {
+        log.error('Error processing email for reservation', error, {
           reservationId: emailLog.reservation_id,
         });
         failed++;
@@ -183,7 +183,7 @@ export async function POST(request: NextRequest) {
       failed,
     });
   } catch (error: any) {
-    logger.error('Error triggering email sequence', error, {});
+    log.error('Error triggering email sequence', error, {});
     return NextResponse.json(
       { error: error.message || 'Failed to trigger email sequence' },
       { status: 500 }

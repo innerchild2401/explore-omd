@@ -1,5 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import logger from '@/lib/logger';
+import { rateLimitCheck } from '@/lib/middleware/rate-limit';
+import { validateRequest } from '@/lib/validation/validate';
+import { adminActiveOmdSchema } from '@/lib/validation/schemas';
+import { isProduction } from '@/lib/env';
 
 const COOKIE_NAME = 'admin-active-omd';
 const COOKIE_PATH = '/';
@@ -8,20 +13,25 @@ function createCookieOptions() {
   return {
     httpOnly: true,
     sameSite: 'lax' as const,
-    secure: process.env.NODE_ENV === 'production',
+    secure: isProduction,
     path: COOKIE_PATH,
     maxAge: 60 * 60 * 24 * 7, // 7 days
   };
 }
 
 export async function POST(request: NextRequest) {
+  // Rate limiting
+  const rateLimit = await rateLimitCheck(request, 'admin');
+  if (!rateLimit.success) {
+    return rateLimit.response!;
+  }
   try {
-    const body = await request.json();
-    const omdId: unknown = body?.omdId;
-
-    if (typeof omdId !== 'string' || omdId.length === 0) {
-      return NextResponse.json({ error: 'Invalid OMD id' }, { status: 400 });
+    // Validate request body
+    const validation = await validateRequest(request, adminActiveOmdSchema);
+    if (!validation.success) {
+      return validation.response;
     }
+    const { omdId } = validation.data;
 
     const supabase = await createClient();
 
@@ -57,13 +67,18 @@ export async function POST(request: NextRequest) {
     const response = NextResponse.json({ success: true });
     response.cookies.set(COOKIE_NAME, omdId, createCookieOptions());
     return response;
-  } catch (error) {
-    console.error('Failed to set active OMD:', error);
+  } catch (error: unknown) {
+    logger.error('Failed to set active OMD', error, {});
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
 
-export async function DELETE() {
+export async function DELETE(request: NextRequest) {
+  // Rate limiting
+  const rateLimit = await rateLimitCheck(request, 'admin');
+  if (!rateLimit.success) {
+    return rateLimit.response!;
+  }
   try {
     const supabase = await createClient();
 
@@ -89,11 +104,15 @@ export async function DELETE() {
     const response = NextResponse.json({ success: true });
     response.cookies.set(COOKIE_NAME, '', { ...createCookieOptions(), maxAge: 0 });
     return response;
-  } catch (error) {
-    console.error('Failed to clear active OMD:', error);
+  } catch (error: unknown) {
+    logger.error('Failed to clear active OMD', error, {});
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
+
+
+
+
 
 
 

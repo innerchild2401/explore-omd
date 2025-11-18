@@ -1,21 +1,27 @@
 import { createServiceRoleClient } from '@/lib/supabase/server';
 import { MailerSend, EmailParams, Sender, Recipient } from 'mailersend';
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
+import logger from '@/lib/logger';
+import { rateLimitCheck } from '@/lib/middleware/rate-limit';
+import { validateRequest } from '@/lib/validation/validate';
+import { contactFormSchema } from '@/lib/validation/schemas';
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
+  // Rate limiting
+  const rateLimit = await rateLimitCheck(request, 'public');
+  if (!rateLimit.success) {
+    return rateLimit.response!;
+  }
   try {
+    // Validate request body
+    const validation = await validateRequest(request, contactFormSchema);
+    if (!validation.success) {
+      return validation.response;
+    }
+    const { nume, email, mesaj, omdSlug } = validation.data;
+
     // Use service role client to bypass RLS for public form submissions
     const supabase = createServiceRoleClient();
-
-    const body = await request.json();
-    const { nume, email, mesaj, omdSlug } = body;
-
-    if (!nume || !email || !mesaj) {
-      return NextResponse.json(
-        { error: 'Toate câmpurile sunt obligatorii' },
-        { status: 400 },
-      );
-    }
 
     let omdId: string | null = null;
     if (omdSlug) {
@@ -43,7 +49,10 @@ export async function POST(request: Request) {
       .single();
 
     if (error) {
-      console.error('Error inserting inquiry:', error);
+      logger.error('Error inserting contact inquiry', error, {
+        omdSlug,
+        email,
+      });
       return NextResponse.json(
         { error: 'A apărut o eroare. Vă rugăm încercați din nou.' },
         { status: 500 },
@@ -67,7 +76,7 @@ export async function POST(request: Request) {
         }
       }
     } catch (adminError) {
-      console.error('Error fetching superadmin email:', adminError);
+      logger.error('Error fetching superadmin email', adminError);
     }
 
     const mailerSendApiKey = process.env.MAILER_SEND_API_KEY;
@@ -259,10 +268,14 @@ Panou administrare: ${dashboardUrl}
 
         await mailerSend.email.send(emailParams);
       } catch (mailError) {
-        console.error('Failed to send marketing contact email:', mailError);
+        logger.error('Failed to send marketing contact email', mailError, {
+          inquiryId: data.id,
+        });
       }
     } else {
-      console.warn('MailerSend API key missing – marketing notification email not sent.');
+      logger.warn('MailerSend API key missing – marketing notification email not sent', {
+        inquiryId: data.id,
+      });
     }
 
     return NextResponse.json(
@@ -274,7 +287,7 @@ Panou administrare: ${dashboardUrl}
       { status: 200 },
     );
   } catch (error) {
-    console.error('Error in contact submission:', error);
+    logger.error('Error in contact submission', error);
     return NextResponse.json(
       { error: 'A apărut o eroare neașteptată' },
       { status: 500 },

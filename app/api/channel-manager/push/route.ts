@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { pushBookingToChannelManager } from '@/lib/services/channel-manager/push';
+import logger from '@/lib/logger';
+import { rateLimitCheck } from '@/lib/middleware/rate-limit';
+import { validateRequest } from '@/lib/validation/validate';
+import { channelManagerPushSchema } from '@/lib/validation/schemas';
 
 /**
  * API endpoint to push a booking to the appropriate channel manager
@@ -8,6 +12,11 @@ import { pushBookingToChannelManager } from '@/lib/services/channel-manager/push
  * Body: { reservationId: string }
  */
 export async function POST(request: NextRequest) {
+  // Rate limiting
+  const rateLimit = await rateLimitCheck(request, 'api');
+  if (!rateLimit.success) {
+    return rateLimit.response!;
+  }
   try {
     const supabase = await createClient();
     const { data: { user }, error: authError } = await supabase.auth.getUser();
@@ -16,11 +25,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { reservationId } = await request.json();
-
-    if (!reservationId) {
-      return NextResponse.json({ error: 'reservationId is required' }, { status: 400 });
+    // Validate request body
+    const validation = await validateRequest(request, channelManagerPushSchema);
+    if (!validation.success) {
+      return validation.response;
     }
+    const { reservationId } = validation.data;
 
     // Get reservation to find hotel_id
     const { data: reservation, error: reservationError } = await supabase
@@ -48,7 +58,9 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(result);
   } catch (error: any) {
-    console.error('Channel manager push error:', error);
+    logger.error('Channel manager push error', error, {
+      reservationId,
+    });
     return NextResponse.json(
       { success: false, error: error.message || 'Failed to push booking' },
       { status: 500 }

@@ -3,6 +3,8 @@ import { createClient } from '@/lib/supabase/server';
 import { sendPostBookingFollowupEmail } from '@/lib/services/email-sequence/post-booking-followup';
 import { sendPostCheckinEmail } from '@/lib/services/email-sequence/post-checkin';
 import { sendPostCheckoutEmail } from '@/lib/services/email-sequence/post-checkout';
+import logger from '@/lib/logger';
+import { rateLimitCheck } from '@/lib/middleware/rate-limit';
 
 /**
  * Trigger scheduled email sequence
@@ -12,6 +14,11 @@ import { sendPostCheckoutEmail } from '@/lib/services/email-sequence/post-checko
  * Vercel cron jobs send a special header that we can verify
  */
 export async function GET(request: NextRequest) {
+  // Rate limiting (cron jobs should have higher limits)
+  const rateLimit = await rateLimitCheck(request, 'api');
+  if (!rateLimit.success) {
+    return rateLimit.response!;
+  }
   // Verify this is a Vercel cron job request
   // Vercel sends a special header when triggering cron jobs
   const cronHeader = request.headers.get('x-vercel-cron');
@@ -80,7 +87,9 @@ export async function GET(request: NextRequest) {
           }
         }
       } catch (error: any) {
-        console.error(`Error processing email for reservation ${emailLog.reservation_id}:`, error);
+        logger.error('Error processing email for reservation', error, {
+          reservationId: emailLog.reservation_id,
+        });
         failed++;
       }
     }
@@ -92,7 +101,7 @@ export async function GET(request: NextRequest) {
       failed,
     });
   } catch (error: any) {
-    console.error('Error triggering email sequence:', error);
+    logger.error('Error triggering email sequence', error, {});
     return NextResponse.json(
       { error: error.message || 'Failed to trigger email sequence' },
       { status: 500 }
@@ -160,7 +169,9 @@ export async function POST(request: NextRequest) {
           }
         }
       } catch (error: any) {
-        console.error(`Error processing email for reservation ${emailLog.reservation_id}:`, error);
+        logger.error('Error processing email for reservation', error, {
+          reservationId: emailLog.reservation_id,
+        });
         failed++;
       }
     }
@@ -172,7 +183,7 @@ export async function POST(request: NextRequest) {
       failed,
     });
   } catch (error: any) {
-    console.error('Error triggering email sequence:', error);
+    logger.error('Error triggering email sequence', error, {});
     return NextResponse.json(
       { error: error.message || 'Failed to trigger email sequence' },
       { status: 500 }

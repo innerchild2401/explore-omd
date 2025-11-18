@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { processWebhook } from '@/lib/services/octorate/webhooks';
 import { createClient } from '@/lib/supabase/server';
+import logger from '@/lib/logger';
 
 const WEBHOOK_SECRET = process.env.OCTORATE_WEBHOOK_SECRET || '';
 
@@ -52,7 +53,7 @@ function verifyIPAddress(request: NextRequest): boolean {
   const clientIP = getClientIP(request);
   
   if (!clientIP) {
-    console.warn('Could not determine client IP address');
+    logger.warn('Could not determine client IP address for Octorate webhook');
     return false; // Deny if we can't determine IP
   }
 
@@ -60,7 +61,10 @@ function verifyIPAddress(request: NextRequest): boolean {
   const isWhitelisted = OCTORATE_WHITELISTED_IPS.includes(clientIP);
   
   if (!isWhitelisted) {
-    console.warn(`Unauthorized IP attempt: ${clientIP}`);
+    logger.warn('Unauthorized IP attempt for Octorate webhook', {
+      clientIP,
+      whitelistedIPs: OCTORATE_WHITELISTED_IPS,
+    });
   }
 
   return isWhitelisted;
@@ -68,6 +72,12 @@ function verifyIPAddress(request: NextRequest): boolean {
 
 export async function POST(request: NextRequest) {
   try {
+    // Rate limiting (higher limit for webhooks)
+    const rateLimit = await rateLimitCheck(request, 'webhook');
+    if (!rateLimit.success) {
+      return rateLimit.response!;
+    }
+
     // Verify IP address is from Octorate
     if (!verifyIPAddress(request)) {
       return NextResponse.json(
@@ -113,7 +123,9 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ success: true });
   } catch (error: any) {
-    console.error('Webhook processing error:', error);
+    logger.error('Octorate webhook processing error', error, {
+      url: request.url,
+    });
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }

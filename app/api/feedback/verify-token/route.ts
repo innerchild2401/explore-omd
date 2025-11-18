@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { verifyEmailToken } from '@/lib/services/email-sequence/tokens';
+import logger from '@/lib/logger';
+import { rateLimitCheck } from '@/lib/middleware/rate-limit';
+import { validateQuery } from '@/lib/validation/validate';
+import { verifyTokenQuerySchema } from '@/lib/validation/schemas';
 
 export const dynamic = 'force-dynamic';
 
@@ -9,17 +13,18 @@ export const dynamic = 'force-dynamic';
  * GET /api/feedback/verify-token?reservationId=xxx&token=xxx
  */
 export async function GET(request: NextRequest) {
+  // Rate limiting
+  const rateLimit = await rateLimitCheck(request, 'feedback');
+  if (!rateLimit.success) {
+    return rateLimit.response!;
+  }
   try {
-    const searchParams = request.nextUrl.searchParams;
-    const reservationId = searchParams.get('reservationId');
-    const token = searchParams.get('token');
-
-    if (!reservationId || !token) {
-      return NextResponse.json(
-        { valid: false, error: 'Missing reservationId or token' },
-        { status: 400 }
-      );
+    // Validate query parameters
+    const validation = validateQuery(request, verifyTokenQuerySchema);
+    if (!validation.success) {
+      return validation.response;
     }
+    const { reservationId, token } = validation.data;
 
     const supabase = await createClient();
 
@@ -70,7 +75,9 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error: any) {
-    console.error('Error verifying token:', error);
+    logger.error('Error verifying email token', error, {
+      reservationId: searchParams.get('reservationId'),
+    });
     return NextResponse.json(
       { valid: false, error: error.message || 'Failed to verify token' },
       { status: 500 }

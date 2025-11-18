@@ -1,5 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceRoleClient } from '@/lib/supabase/server';
+import logger from '@/lib/logger';
+import { rateLimitCheck } from '@/lib/middleware/rate-limit';
+import { validateRequest } from '@/lib/validation/validate';
+import { destinationRatingSchema } from '@/lib/validation/schemas';
 
 /**
  * Submit destination rating
@@ -7,22 +11,18 @@ import { createServiceRoleClient } from '@/lib/supabase/server';
  * Body: { omdSlug, rating, comment?, name, email }
  */
 export async function POST(request: NextRequest) {
+  // Rate limiting
+  const rateLimit = await rateLimitCheck(request, 'feedback');
+  if (!rateLimit.success) {
+    return rateLimit.response!;
+  }
   try {
-    const { omdSlug, rating, comment, name, email } = await request.json();
-
-    if (!omdSlug || !rating || !name || !email) {
-      return NextResponse.json(
-        { error: 'Câmpuri obligatorii lipsă' },
-        { status: 400 }
-      );
+    // Validate request body
+    const validation = await validateRequest(request, destinationRatingSchema);
+    if (!validation.success) {
+      return validation.response;
     }
-
-    if (rating < 1 || rating > 5) {
-      return NextResponse.json(
-        { error: 'Evaluarea trebuie să fie între 1 și 5' },
-        { status: 400 }
-      );
-    }
+    const { omdSlug, rating, comment, name, email } = validation.data;
 
     // Use service role client to bypass RLS for public form submissions
     const supabase = createServiceRoleClient();
@@ -83,7 +83,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ success: true });
   } catch (error: any) {
-    console.error('Error submitting destination rating:', error);
+    logger.error('Error submitting destination rating', error, {});
     return NextResponse.json(
       { error: error.message || 'Eroare la trimiterea evaluării' },
       { status: 500 }

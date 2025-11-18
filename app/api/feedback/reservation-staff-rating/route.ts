@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceRoleClient } from '@/lib/supabase/server';
 import { verifyEmailToken } from '@/lib/services/email-sequence/tokens';
+import logger from '@/lib/logger';
+import { rateLimitCheck } from '@/lib/middleware/rate-limit';
+import { validateRequest } from '@/lib/validation/validate';
+import { reservationStaffRatingSchema } from '@/lib/validation/schemas';
 
 /**
  * Submit reservation staff rating
@@ -8,22 +12,18 @@ import { verifyEmailToken } from '@/lib/services/email-sequence/tokens';
  * Body: { reservationId, token, rating, comment? }
  */
 export async function POST(request: NextRequest) {
+  // Rate limiting
+  const rateLimit = await rateLimitCheck(request, 'feedback');
+  if (!rateLimit.success) {
+    return rateLimit.response!;
+  }
   try {
-    const { reservationId, token, rating, comment } = await request.json();
-
-    if (!reservationId || !token || !rating) {
-      return NextResponse.json(
-        { error: 'Missing required fields' },
-        { status: 400 }
-      );
+    // Validate request body
+    const validation = await validateRequest(request, reservationStaffRatingSchema);
+    if (!validation.success) {
+      return validation.response;
     }
-
-    if (rating < 1 || rating > 5) {
-      return NextResponse.json(
-        { error: 'Rating must be between 1 and 5' },
-        { status: 400 }
-      );
-    }
+    const { reservationId, token, rating, comment } = validation.data;
 
     // Use service role client to bypass RLS for public form submissions
     const supabase = createServiceRoleClient();
@@ -103,7 +103,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ success: true });
   } catch (error: any) {
-    console.error('Error submitting rating:', error);
+    logger.error('Error submitting reservation staff rating', error, {});
     return NextResponse.json(
       { error: error.message || 'Failed to submit rating' },
       { status: 500 }

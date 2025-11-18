@@ -1,12 +1,19 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import logger from '@/lib/logger';
+import { rateLimitCheck } from '@/lib/middleware/rate-limit';
 
 /**
  * Returns a list of OMDs that should appear in marketing carousels.
  * We treat an OMD as active unless settings explicitly disable it.
  * Includes hero section data (backgroundVideo, backgroundImage) for each OMD.
  */
-export async function GET() {
+export async function GET(request: NextRequest) {
+  // Rate limiting
+  const rateLimit = await rateLimitCheck(request, 'api');
+  if (!rateLimit.success) {
+    return rateLimit.response!;
+  }
   try {
     const supabase = await createClient();
 
@@ -16,7 +23,7 @@ export async function GET() {
       .order('name');
 
     if (error) {
-      console.error('Failed to load OMDs for homepage demo:', error);
+      logger.error('Failed to load OMDs for homepage', error, {});
       return NextResponse.json({ error: 'Unable to load destinations' }, { status: 500 });
     }
 
@@ -61,8 +68,8 @@ export async function GET() {
     );
 
     return NextResponse.json({ data: omdsWithHeroData });
-  } catch (error) {
-    console.error('Unexpected error when loading OMD list:', error);
+  } catch (error: unknown) {
+    logger.error('Unexpected error when loading OMD list', error, {});
     return NextResponse.json({ error: 'Unexpected error' }, { status: 500 });
   }
 }

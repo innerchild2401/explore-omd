@@ -1,18 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { MailerSend, EmailParams, Sender, Recipient } from "mailersend";
+import logger from '@/lib/logger';
+import { rateLimitCheck } from '@/lib/middleware/rate-limit';
+import { validateRequest } from '@/lib/validation/validate';
+import { businessApprovalSchema } from '@/lib/validation/schemas';
 
 export async function POST(request: NextRequest) {
+  // Rate limiting
+  const rateLimit = await rateLimitCheck(request, 'email');
+  if (!rateLimit.success) {
+    return rateLimit.response!;
+  }
   try {
-    const body = await request.json();
-    const { recipientName, businessName, businessType, recipientEmail } = body;
-
-    // Validate inputs
-    if (!recipientName || !businessName || !businessType || !recipientEmail) {
-      return NextResponse.json(
-        { error: 'Missing required fields' },
-        { status: 400 }
-      );
+    // Validate request body
+    const validation = await validateRequest(request, businessApprovalSchema);
+    if (!validation.success) {
+      return validation.response;
     }
+    const { recipientName, businessName, businessType, recipientEmail } = validation.data;
 
     const mailerSend = new MailerSend({
       apiKey: process.env.MAILER_SEND_API_KEY || '',
@@ -306,7 +311,11 @@ Echipa OMD
         : 'Email sent successfully'
     });
   } catch (error) {
-    console.error('Error sending approval email:', error);
+    logger.error('Error sending approval email', error, {
+      recipientEmail,
+      businessName,
+      businessType,
+    });
     
     // More detailed error logging
     let errorMessage = 'Unknown error';

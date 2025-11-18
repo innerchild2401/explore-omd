@@ -6,3 +6,7 @@ UPDATE businesses
 SET is_published = TRUE
 WHERE status = 'active';
 
+
+
+
+

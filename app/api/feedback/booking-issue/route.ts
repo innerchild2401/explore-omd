@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceRoleClient } from '@/lib/supabase/server';
 import { verifyEmailToken } from '@/lib/services/email-sequence/tokens';
+import logger from '@/lib/logger';
+import { rateLimitCheck } from '@/lib/middleware/rate-limit';
+import { validateRequest } from '@/lib/validation/validate';
+import { bookingIssueSchema } from '@/lib/validation/schemas';
 
 /**
  * Submit booking issue report
@@ -8,23 +12,18 @@ import { verifyEmailToken } from '@/lib/services/email-sequence/tokens';
  * Body: { reservationId, token, issueType, description, contactPreference }
  */
 export async function POST(request: NextRequest) {
+  // Rate limiting
+  const rateLimit = await rateLimitCheck(request, 'feedback');
+  if (!rateLimit.success) {
+    return rateLimit.response!;
+  }
   try {
-    const { reservationId, token, issueType, description, contactPreference } = await request.json();
-
-    if (!reservationId || !token || !issueType || !description) {
-      return NextResponse.json(
-        { error: 'Missing required fields' },
-        { status: 400 }
-      );
+    // Validate request body
+    const validation = await validateRequest(request, bookingIssueSchema);
+    if (!validation.success) {
+      return validation.response;
     }
-
-    const validIssueTypes = ['payment', 'confirmation', 'communication', 'other'];
-    if (!validIssueTypes.includes(issueType)) {
-      return NextResponse.json(
-        { error: 'Invalid issue type' },
-        { status: 400 }
-      );
-    }
+    const { reservationId, token, issueType, description, contactPreference } = validation.data;
 
     // Use service role client to bypass RLS for public form submissions
     const supabase = createServiceRoleClient();
@@ -83,7 +82,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ success: true });
   } catch (error: any) {
-    console.error('Error submitting issue report:', error);
+    logger.error('Error submitting booking issue report', error, {});
     return NextResponse.json(
       { error: error.message || 'Failed to submit issue report' },
       { status: 500 }

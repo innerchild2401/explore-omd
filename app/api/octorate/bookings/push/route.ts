@@ -1,8 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { pushBooking } from '@/lib/services/octorate/bookings';
+import logger from '@/lib/logger';
+import { rateLimitCheck } from '@/lib/middleware/rate-limit';
+import { validateRequest } from '@/lib/validation/validate';
+import { octorateBookingPushSchema } from '@/lib/validation/schemas';
 
 export async function POST(request: NextRequest) {
+  // Rate limiting
+  const rateLimit = await rateLimitCheck(request, 'api');
+  if (!rateLimit.success) {
+    return rateLimit.response!;
+  }
+  let reservationId: string | null = null;
   try {
     const supabase = await createClient();
     const { data: { user }, error: authError } = await supabase.auth.getUser();
@@ -11,11 +21,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { reservationId } = await request.json();
-
-    if (!reservationId) {
-      return NextResponse.json({ error: 'reservation_id is required' }, { status: 400 });
+    // Validate request body
+    const validation = await validateRequest(request, octorateBookingPushSchema);
+    if (!validation.success) {
+      return validation.response;
     }
+    reservationId = validation.data.reservationId;
 
     // Get reservation
     const { data: reservation } = await supabase
@@ -51,10 +62,11 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ success: true, booking: bookingResponse });
   } catch (error: any) {
-    console.error('Booking push error:', error);
+    logger.error('Octorate booking push error', error, {
+      reservationId,
+    });
     
     // Update reservation with failed status
-    const { reservationId } = await request.json();
     if (reservationId) {
       const supabase = await createClient();
       await supabase

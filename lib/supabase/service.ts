@@ -1,4 +1,5 @@
 import { createClient as createSupabaseClient } from '@supabase/supabase-js';
+import { env } from '@/lib/env';
 
 /**
  * Supabase Service Role Client
@@ -6,14 +7,7 @@ import { createClient as createSupabaseClient } from '@supabase/supabase-js';
  * such as logging emails, background jobs, etc.
  */
 export function createServiceClient() {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-  if (!supabaseUrl || !supabaseServiceKey) {
-    throw new Error('Missing Supabase environment variables for service client');
-  }
-
-  return createSupabaseClient(supabaseUrl, supabaseServiceKey, {
+  return createSupabaseClient(env.NEXT_PUBLIC_SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY, {
     auth: {
       autoRefreshToken: false,
       persistSession: false,

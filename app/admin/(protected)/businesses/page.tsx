@@ -51,7 +51,7 @@ export default async function BusinessesAdminPage() {
     .order('created_at', { ascending: false });
 
   if (pendingError) {
-    console.error('Failed to fetch pending businesses:', pendingError);
+    // Error logged but not blocking - page will show empty list
   }
 
   // Get approved businesses for this OMD

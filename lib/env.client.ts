@@ -1,8 +1,8 @@
 /**
- * Client-Safe Environment Variable Validation
+ * Client-Safe Environment Variable Access
  * 
- * Only validates NEXT_PUBLIC_* variables that are safe to expose to the client.
- * This should be used in client-side code (components, client components, etc.)
+ * Provides type-safe access to NEXT_PUBLIC_* variables that are safe to expose to the client.
+ * Validation is lazy - only validates when values are accessed, not at module load time.
  * 
  * Usage:
  *   import { env } from '@/lib/env.client';
@@ -25,58 +25,53 @@ const clientEnvSchema = z.object({
 });
 
 /**
- * Validate and parse client-safe environment variables
+ * Validate a single environment variable when accessed
+ * Uses process.env directly - Next.js replaces NEXT_PUBLIC_* at build time
  */
-function validateClientEnv() {
-  try {
-    return clientEnvSchema.parse(process.env);
-  } catch (error) {
-    if (error instanceof z.ZodError) {
-      const missingVars = error.errors
-        .filter((e) => e.code === 'invalid_type' && e.received === 'undefined')
-        .map((e) => e.path.join('.'));
-
-      const invalidVars = error.errors
-        .filter((e) => e.code !== 'invalid_type' || e.received !== 'undefined')
-        .map((e) => ({
-          path: e.path.join('.'),
-          message: e.message,
-        }));
-
-      let errorMessage = '❌ Environment variable validation failed!\n\n';
-
-      if (missingVars.length > 0) {
-        errorMessage += 'Missing required variables:\n';
-        missingVars.forEach((varName) => {
-          errorMessage += `  - ${varName}\n`;
-        });
-        errorMessage += '\n';
-      }
-
-      if (invalidVars.length > 0) {
-        errorMessage += 'Invalid variables:\n';
-        invalidVars.forEach(({ path, message }) => {
-          errorMessage += `  - ${path}: ${message}\n`;
-        });
-        errorMessage += '\n';
-      }
-
-      errorMessage +=
-        'Please check your .env.local file and ensure all required variables are set.\n';
-      errorMessage +=
-        'See README.md or .env.example for the list of required variables.';
-
-      throw new Error(errorMessage);
+function validateEnvVar(key: keyof z.infer<typeof clientEnvSchema>): string {
+  // Access process.env directly - Next.js will replace NEXT_PUBLIC_* vars at build time
+  const value = process.env[key];
+  
+  // Only validate in browser runtime, not during SSR or build
+  if (typeof window !== 'undefined') {
+    if (!value || value.trim() === '') {
+      throw new Error(
+        `❌ Environment variable validation failed!\n\n` +
+        `Missing required variable: ${key}\n\n` +
+        `Please check your .env.local file and ensure all required variables are set.\n` +
+        `See README.md or .env.example for the list of required variables.`
+      );
     }
-    throw error;
+
+    // Validate format if it's a URL
+    if (key === 'NEXT_PUBLIC_SUPABASE_URL' || key === 'NEXT_PUBLIC_SITE_URL') {
+      try {
+        new URL(value);
+      } catch {
+        throw new Error(`${key} must be a valid URL`);
+      }
+    }
   }
+
+  // Return the value (may be empty during build, but Next.js will replace it)
+  return value || '';
 }
 
 /**
- * Validated client-safe environment variables
- * This will throw an error at startup if validation fails
+ * Lazy-validated client-safe environment variables
+ * Values are validated only when accessed, not at module load time
  */
-export const env = validateClientEnv();
+export const env = {
+  get NEXT_PUBLIC_SUPABASE_URL() {
+    return validateEnvVar('NEXT_PUBLIC_SUPABASE_URL');
+  },
+  get NEXT_PUBLIC_SUPABASE_ANON_KEY() {
+    return validateEnvVar('NEXT_PUBLIC_SUPABASE_ANON_KEY');
+  },
+  get NEXT_PUBLIC_SITE_URL() {
+    return process.env.NEXT_PUBLIC_SITE_URL || undefined;
+  },
+} as const;
 
 /**
  * Type-safe client environment variable access

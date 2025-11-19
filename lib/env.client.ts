@@ -35,11 +35,17 @@ function validateEnvVar(key: keyof z.infer<typeof clientEnvSchema>): string {
   // Only validate in browser runtime, not during SSR or build
   if (typeof window !== 'undefined') {
     if (!value || value.trim() === '') {
+      // Detect if we're in production (Vercel)
+      const isProduction = window.location.hostname !== 'localhost' && !window.location.hostname.includes('127.0.0.1');
+      const envGuidance = isProduction
+        ? `For production (Vercel): Add ${key} in Vercel Dashboard → Project Settings → Environment Variables → Production`
+        : `For local development: Add ${key} to your .env.local file`;
+      
       throw new Error(
         `❌ Environment variable validation failed!\n\n` +
         `Missing required variable: ${key}\n\n` +
-        `Please check your .env.local file and ensure all required variables are set.\n` +
-        `See README.md or .env.example for the list of required variables.`
+        `${envGuidance}\n\n` +
+        `See README.md for the list of required variables.`
       );
     }
 

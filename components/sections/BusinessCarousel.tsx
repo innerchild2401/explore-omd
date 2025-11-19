@@ -88,7 +88,7 @@ export default function BusinessCarousel({
           style={{ touchAction: 'manipulation' }}
           prefetch={true}
         >
-          <div className={`group ${cardBaseClass} ${cardHoverClass} w-80 flex-shrink-0 transition-shadow`}>
+          <div className={`group ${cardBaseClass} ${cardHoverClass} w-[280px] flex-shrink-0 transition-shadow`}>
             {/* Image */}
             <div className="relative h-48 overflow-hidden">
               <OptimizedImage
@@ -202,7 +202,7 @@ export default function BusinessCarousel({
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true }}
         transition={{ duration: 0.5, delay: index * 0.1 }}
-        className="flex-shrink-0 min-w-[288px]"
+        className="flex-shrink-0 w-[280px]"
       >
         <Link href={`/${omdSlug}/${type}s/${business.slug}`} className="block" prefetch>
           <div className="rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:shadow-md">
@@ -272,14 +272,12 @@ export default function BusinessCarousel({
             {businesses.map((business, index) => renderStoryCard(business, index))}
           </div>
         ) : isMapLayout ? (
-          <div className="flex gap-4 overflow-x-auto px-4 pb-4">
+          <div className="flex gap-4 overflow-x-auto pb-4">
             {businesses.map((business, index) => renderMapCard(business, index))}
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <div className="flex gap-6 pb-4 px-4">
-              {businesses.map((business, index) => renderClassicCard(business, index))}
-            </div>
+          <div className="flex gap-6 overflow-x-auto pb-4">
+            {businesses.map((business, index) => renderClassicCard(business, index))}
           </div>
         )}
 

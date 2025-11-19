@@ -25,36 +25,34 @@ const clientEnvSchema = z.object({
 });
 
 /**
- * Validate a single environment variable when accessed
- * Uses process.env directly - Next.js replaces NEXT_PUBLIC_* at build time
+ * Validate environment variable value
+ * Note: Must access process.env.NEXT_PUBLIC_* directly (not via variable)
+ * for Next.js static replacement to work at build time
  */
-function validateEnvVar(key: keyof z.infer<typeof clientEnvSchema>): string {
-  // Access process.env directly - Next.js will replace NEXT_PUBLIC_* vars at build time
-  const value = process.env[key];
-  
+function validateEnvValue(value: string | undefined, varName: string): string {
   // Only validate in browser runtime, not during SSR or build
   if (typeof window !== 'undefined') {
     if (!value || value.trim() === '') {
       // Detect if we're in production (Vercel)
       const isProduction = window.location.hostname !== 'localhost' && !window.location.hostname.includes('127.0.0.1');
       const envGuidance = isProduction
-        ? `For production (Vercel): Add ${key} in Vercel Dashboard → Project Settings → Environment Variables → Production`
-        : `For local development: Add ${key} to your .env.local file`;
+        ? `For production (Vercel): Add ${varName} in Vercel Dashboard → Project Settings → Environment Variables → Production`
+        : `For local development: Add ${varName} to your .env.local file`;
       
       throw new Error(
         `❌ Environment variable validation failed!\n\n` +
-        `Missing required variable: ${key}\n\n` +
+        `Missing required variable: ${varName}\n\n` +
         `${envGuidance}\n\n` +
         `See README.md for the list of required variables.`
       );
     }
 
     // Validate format if it's a URL
-    if (key === 'NEXT_PUBLIC_SUPABASE_URL' || key === 'NEXT_PUBLIC_SITE_URL') {
+    if (varName === 'NEXT_PUBLIC_SUPABASE_URL' || varName === 'NEXT_PUBLIC_SITE_URL') {
       try {
         new URL(value);
       } catch {
-        throw new Error(`${key} must be a valid URL`);
+        throw new Error(`${varName} must be a valid URL`);
       }
     }
   }
@@ -65,16 +63,20 @@ function validateEnvVar(key: keyof z.infer<typeof clientEnvSchema>): string {
 
 /**
  * Lazy-validated client-safe environment variables
- * Values are validated only when accessed, not at module load time
+ * IMPORTANT: Access process.env.NEXT_PUBLIC_* directly (not via variable)
+ * so Next.js can statically replace them at build time
  */
 export const env = {
   get NEXT_PUBLIC_SUPABASE_URL() {
-    return validateEnvVar('NEXT_PUBLIC_SUPABASE_URL');
+    // Direct access - Next.js will replace this at build time
+    return validateEnvValue(process.env.NEXT_PUBLIC_SUPABASE_URL, 'NEXT_PUBLIC_SUPABASE_URL');
   },
   get NEXT_PUBLIC_SUPABASE_ANON_KEY() {
-    return validateEnvVar('NEXT_PUBLIC_SUPABASE_ANON_KEY');
+    // Direct access - Next.js will replace this at build time
+    return validateEnvValue(process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY, 'NEXT_PUBLIC_SUPABASE_ANON_KEY');
   },
   get NEXT_PUBLIC_SITE_URL() {
+    // Direct access - Next.js will replace this at build time
     return process.env.NEXT_PUBLIC_SITE_URL || undefined;
   },
 } as const;

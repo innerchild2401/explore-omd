@@ -88,7 +88,7 @@ export default function BusinessCarousel({
           style={{ touchAction: 'manipulation' }}
           prefetch={true}
         >
-          <div className={`group ${cardBaseClass} ${cardHoverClass} min-w-[320px] flex-shrink-0 transition-shadow`}>
+          <div className={`group ${cardBaseClass} ${cardHoverClass} w-80 flex-shrink-0 transition-shadow`}>
             {/* Image */}
             <div className="relative h-48 overflow-hidden">
               <OptimizedImage
@@ -276,8 +276,8 @@ export default function BusinessCarousel({
             {businesses.map((business, index) => renderMapCard(business, index))}
           </div>
         ) : (
-          <div className="overflow-x-auto px-4">
-            <div className="flex gap-6 pb-4">
+          <div className="overflow-x-auto">
+            <div className="flex gap-6 pb-4 px-4">
               {businesses.map((business, index) => renderClassicCard(business, index))}
             </div>
           </div>

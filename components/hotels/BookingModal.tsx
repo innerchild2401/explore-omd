@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
 
 interface BookingModalProps {
@@ -23,6 +23,21 @@ export default function BookingModal({ isOpen, onClose, hotelId, roomId, roomNam
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
+
+  // Prevent body scroll when modal is open
+  useEffect(() => {
+    if (isOpen) {
+      // Save the current overflow value
+      const originalOverflow = document.body.style.overflow;
+      // Prevent scrolling
+      document.body.style.overflow = 'hidden';
+      
+      // Cleanup: restore original overflow when modal closes
+      return () => {
+        document.body.style.overflow = originalOverflow;
+      };
+    }
+  }, [isOpen]);
 
   const [formData, setFormData] = useState({
     first_name: '',

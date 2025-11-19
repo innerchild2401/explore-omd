@@ -73,12 +73,8 @@ export default function BusinessCarousel({
         : (business.images?.[0] as any)?.url || '/placeholder.jpg';
 
     return (
-      <motion.div
+      <div
         key={business.id}
-        initial={{ opacity: 0, x: 50 }}
-        whileInView={{ opacity: 1, x: 0 }}
-        viewport={{ once: true }}
-        transition={{ duration: 0.5, delay: index * 0.1 }}
         className="flex-shrink-0"
         style={{ pointerEvents: 'auto' }}
       >
@@ -144,7 +140,7 @@ export default function BusinessCarousel({
             </div>
           </div>
         </Link>
-      </motion.div>
+      </div>
     );
   };
 
@@ -155,12 +151,8 @@ export default function BusinessCarousel({
         : (business.images?.[0] as any)?.url || '/placeholder.jpg';
 
     return (
-      <motion.div
+      <div
         key={business.id}
-        initial={{ opacity: 0, y: 30 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true }}
-        transition={{ duration: 0.5, delay: index * 0.1 }}
       >
         <Link href={`/${omdSlug}/${type}s/${business.slug}`} className="block" prefetch={true}>
           <div className="relative overflow-hidden rounded-3xl border border-white/10 bg-white/5 p-4 sm:p-6 transition">
@@ -185,7 +177,7 @@ export default function BusinessCarousel({
             </div>
           </div>
         </Link>
-      </motion.div>
+      </div>
     );
   };
 
@@ -196,12 +188,8 @@ export default function BusinessCarousel({
         : (business.images?.[0] as any)?.url || '/placeholder.jpg';
 
     return (
-      <motion.div
+      <div
         key={business.id}
-        initial={{ opacity: 0, y: 20 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true }}
-        transition={{ duration: 0.5, delay: index * 0.1 }}
         className="flex-shrink-0 w-[280px]"
       >
         <Link href={`/${omdSlug}/${type}s/${business.slug}`} className="block" prefetch>
@@ -242,7 +230,7 @@ export default function BusinessCarousel({
             </div>
           </div>
         </Link>
-      </motion.div>
+      </div>
     );
   };
 
@@ -272,11 +260,11 @@ export default function BusinessCarousel({
             {businesses.map((business, index) => renderStoryCard(business, index))}
           </div>
         ) : isMapLayout ? (
-          <div className="flex gap-4 overflow-x-auto pb-4">
+          <div className="flex gap-4 overflow-x-auto pb-4 -mx-4 px-4">
             {businesses.map((business, index) => renderMapCard(business, index))}
           </div>
         ) : (
-          <div className="flex gap-6 overflow-x-auto pb-4">
+          <div className="flex gap-6 overflow-x-auto pb-4 -mx-4 px-4">
             {businesses.map((business, index) => renderClassicCard(business, index))}
           </div>
         )}

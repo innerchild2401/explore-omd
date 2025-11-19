@@ -54,7 +54,7 @@ export default async function ExplorePage({ params }: ExplorePageProps) {
 
       {/* Welcome Section */}
       {exploreSection && (
-        <section className="bg-gradient-to-b from-blue-50 to-white py-12 md:py-14">
+        <section className="bg-gradient-to-b from-blue-50 to-white py-8 md:py-10">
           <div className="mx-auto max-w-4xl px-4 text-center">
             <h1 className="mb-4 text-5xl font-bold text-gray-900">
               {exploreSection.content.title || `Explore ${omd.name}`}
@@ -75,7 +75,7 @@ export default async function ExplorePage({ params }: ExplorePageProps) {
 
       {/* No Welcome Section Fallback */}
       {!exploreSection && (
-        <section className="bg-gradient-to-b from-blue-50 to-white py-12 md:py-14">
+        <section className="bg-gradient-to-b from-blue-50 to-white py-8 md:py-10">
           <div className="mx-auto max-w-4xl px-4 text-center">
             <h1 className="mb-4 text-5xl font-bold text-gray-900">
               Explore {omd.name}

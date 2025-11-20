@@ -52,11 +52,55 @@ export default function BookingModal({ isOpen, onClose, hotelId, roomId, roomNam
     special_requests: ''
   });
 
+  // Get today's date in YYYY-MM-DD format
+  const getTodayString = () => {
+    const today = new Date();
+    return today.toISOString().split('T')[0];
+  };
+
+  // Get minimum check-out date (check-in + 1 day)
+  const getMinCheckOutDate = () => {
+    if (!formData.check_in_date) return getTodayString();
+    const checkIn = new Date(formData.check_in_date);
+    checkIn.setDate(checkIn.getDate() + 1);
+    return checkIn.toISOString().split('T')[0];
+  };
+
+  // Auto-update check-out date when check-in changes
+  useEffect(() => {
+    if (formData.check_in_date) {
+      const checkIn = new Date(formData.check_in_date);
+      const checkOut = new Date(formData.check_out_date);
+      
+      // If check-out is before or equal to check-in, update it to check-in + 1 day
+      if (!formData.check_out_date || checkOut <= checkIn) {
+        const newCheckOut = new Date(checkIn);
+        newCheckOut.setDate(newCheckOut.getDate() + 1);
+        setFormData(prev => ({
+          ...prev,
+          check_out_date: newCheckOut.toISOString().split('T')[0]
+        }));
+      }
+    }
+  }, [formData.check_in_date]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError('');
     setSuccess(false);
+
+    // Validate dates
+    if (formData.check_in_date && formData.check_out_date) {
+      const checkIn = new Date(formData.check_in_date);
+      const checkOut = new Date(formData.check_out_date);
+      
+      if (checkOut <= checkIn) {
+        setError('Check-out date must be after check-in date');
+        setLoading(false);
+        return;
+      }
+    }
 
     try {
       // First, check if guest profile exists or create it
@@ -357,6 +401,7 @@ export default function BookingModal({ isOpen, onClose, hotelId, roomId, roomNam
                   type="date"
                   id="check_in_date"
                   required
+                  min={getTodayString()}
                   value={formData.check_in_date}
                   onChange={(e) => setFormData({ ...formData, check_in_date: e.target.value })}
                   className="w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 focus:border-blue-500 focus:outline-none"
@@ -370,8 +415,22 @@ export default function BookingModal({ isOpen, onClose, hotelId, roomId, roomNam
                   type="date"
                   id="check_out_date"
                   required
+                  min={getMinCheckOutDate()}
                   value={formData.check_out_date}
-                  onChange={(e) => setFormData({ ...formData, check_out_date: e.target.value })}
+                  onChange={(e) => {
+                    const selectedDate = e.target.value;
+                    // Validate that selected date is after check-in
+                    if (formData.check_in_date && selectedDate) {
+                      const checkIn = new Date(formData.check_in_date);
+                      const checkOut = new Date(selectedDate);
+                      if (checkOut <= checkIn) {
+                        setError('Check-out date must be after check-in date');
+                        return;
+                      }
+                    }
+                    setError('');
+                    setFormData({ ...formData, check_out_date: selectedDate });
+                  }}
                   className="w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 focus:border-blue-500 focus:outline-none"
                 />
               </div>

@@ -102,17 +102,15 @@ export default async function AutoTopPage({ params }: TopPageProps) {
     notFound();
   }
 
-  // Parse slug to get page configuration
-  const { pageType, businessType, timePeriod } = parseSlug(slug);
+  // Build URL slug from params
+  const urlSlug = slug.join('/');
 
-  // Get page configuration
+  // Get page configuration by URL slug (this is the unique identifier)
   const { data: page, error: pageError } = await supabase
     .from('auto_top_pages')
     .select('*')
     .eq('omd_id', omd.id)
-    .eq('page_type', pageType)
-    .eq('business_type', businessType)
-    .eq('time_period', timePeriod || null)
+    .eq('url_slug', urlSlug)
     .eq('is_active', true)
     .single();
 
@@ -191,10 +189,11 @@ export default async function AutoTopPage({ params }: TopPageProps) {
 
   // Fill template placeholders
   const fillTemplate = (template: string): string => {
+    const businessTypeText = page.business_type === 'all' ? 'locații' : page.business_type === 'hotel' ? 'hoteluri' : page.business_type === 'restaurant' ? 'restaurante' : 'experiențe';
     let filled = template
       .replace('{count}', page.count.toString())
       .replace('{destination}', omd.name)
-      .replace('{business_type}', businessType === 'all' ? 'locații' : businessType === 'hotel' ? 'hoteluri' : businessType === 'restaurant' ? 'restaurante' : 'experiențe');
+      .replace('{business_type}', businessTypeText);
 
     // Add business names if available
     if (rankedBusinesses.length >= 1) {
@@ -235,7 +234,7 @@ export default async function AutoTopPage({ params }: TopPageProps) {
     .eq('omd_id', omd.id)
     .eq('is_active', true)
     .neq('id', page.id)
-    .eq('business_type', businessType)
+    .eq('business_type', page.business_type)
     .limit(5);
 
   return (
@@ -465,15 +464,14 @@ export async function generateMetadata({ params }: TopPageProps): Promise<Metada
     return { title: 'Page Not Found' };
   }
 
-  const { pageType, businessType, timePeriod } = parseSlug(slug);
+  // Build URL slug from params
+  const urlSlug = slug.join('/');
 
   const { data: page } = await supabase
     .from('auto_top_pages')
     .select('title_template, meta_description_template')
     .eq('omd_id', omd.id)
-    .eq('page_type', pageType)
-    .eq('business_type', businessType)
-    .eq('time_period', timePeriod || null)
+    .eq('url_slug', urlSlug)
     .eq('is_active', true)
     .single();
 

@@ -5,6 +5,7 @@ import ContactLink from '@/components/analytics/ContactLink';
 import RestaurantImageGallery from '@/components/restaurants/RestaurantImageGallery';
 import BackButton from '@/components/ui/BackButton';
 import TopPagesSection from '@/components/business/TopPagesSection';
+import LandingPagesSection from '@/components/business/LandingPagesSection';
 import { formatPrice } from '@/lib/utils';
 
 interface RestaurantPageProps {
@@ -332,6 +333,12 @@ export default async function RestaurantPage({ params }: RestaurantPageProps) {
           omdName={omd.name}
           businessId={business.id}
           businessType="restaurant"
+        />
+
+        {/* Landing Pages Section - Internal Linking */}
+        <LandingPagesSection
+          omdSlug={omdSlug}
+          businessId={business.id}
         />
       </main>
     </div>

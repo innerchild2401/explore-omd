@@ -12,6 +12,7 @@ import { formatPrice } from '@/lib/utils';
 import ContactLink from '@/components/analytics/ContactLink';
 import BackButton from '@/components/ui/BackButton';
 import TopPagesSection from '@/components/business/TopPagesSection';
+import LandingPagesSection from '@/components/business/LandingPagesSection';
 
 export const revalidate = 60;
 
@@ -483,6 +484,12 @@ export default async function HotelDetailPage({ params, searchParams }: HotelPag
           omdName={omd.name}
           businessId={business.id}
           businessType="hotel"
+        />
+
+        {/* Landing Pages Section - Internal Linking */}
+        <LandingPagesSection
+          omdSlug={omdSlug}
+          businessId={business.id}
         />
       </div>
     </main>

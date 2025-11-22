@@ -5,6 +5,7 @@ import ImageGallery from '@/components/hotels/ImageGallery';
 import TrackPageView from '@/components/analytics/TrackPageView';
 import BackButton from '@/components/ui/BackButton';
 import TopPagesSection from '@/components/business/TopPagesSection';
+import LandingPagesSection from '@/components/business/LandingPagesSection';
 import { formatPrice } from '@/lib/utils';
 
 interface PageProps {
@@ -433,6 +434,12 @@ export default async function ExperienceDetailPage({ params, searchParams }: Pag
           omdName={omd.name}
           businessId={business.id}
           businessType="experience"
+        />
+
+        {/* Landing Pages Section - Internal Linking */}
+        <LandingPagesSection
+          omdSlug={omdSlug}
+          businessId={business.id}
         />
       </div>
     </div>

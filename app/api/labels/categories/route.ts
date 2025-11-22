@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server';
 import { log } from '@/lib/logger';
 import { validateRequest } from '@/lib/validation/validate';
 import { z } from 'zod';
+import { logLabelActivity, getClientIp, getUserAgent } from '@/lib/labels/activity-logger';
 
 const categorySchema = z.object({
   name: z.string().min(1, 'Category name is required'),
@@ -158,6 +159,27 @@ export async function POST(req: NextRequest) {
         { status: 500 }
       );
     }
+
+    // Log activity
+    await logLabelActivity({
+      actionType: 'category_created',
+      entityType: 'category',
+      entityId: data.id,
+      omdId: omdId,
+      userId: user.id,
+      userRole: profile.role,
+      categoryId: data.id,
+      newValues: data,
+      ipAddress: getClientIp(req),
+      userAgent: getUserAgent(req),
+    });
+
+    log.info('Label category created', {
+      categoryId: data.id,
+      categoryName: data.name,
+      userId: user.id,
+      omdId,
+    });
 
     return NextResponse.json({ category: data }, { status: 201 });
   } catch (error: unknown) {

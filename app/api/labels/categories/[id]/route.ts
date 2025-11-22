@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server';
 import { log } from '@/lib/logger';
 import { validateRequest } from '@/lib/validation/validate';
 import { z } from 'zod';
+import { logLabelActivity, getClientIp, getUserAgent } from '@/lib/labels/activity-logger';
 
 const updateCategorySchema = z.object({
   name: z.string().min(1).optional(),
@@ -97,7 +98,7 @@ export async function PUT(
     // Check if category exists and user has permission
     const { data: category } = await supabase
       .from('label_categories')
-      .select('omd_id')
+      .select('*')
       .eq('id', params.id)
       .single();
 
@@ -131,6 +132,27 @@ export async function PUT(
         { status: 500 }
       );
     }
+
+    // Log activity
+    await logLabelActivity({
+      actionType: 'category_updated',
+      entityType: 'category',
+      entityId: params.id,
+      omdId: category.omd_id,
+      userId: user.id,
+      userRole: profile.role,
+      categoryId: params.id,
+      oldValues: category,
+      newValues: data,
+      ipAddress: getClientIp(req),
+      userAgent: getUserAgent(req),
+    });
+
+    log.info('Label category updated', {
+      categoryId: params.id,
+      userId: user.id,
+      omdId: category.omd_id,
+    });
 
     return NextResponse.json({ category: data });
   } catch (error: unknown) {
@@ -175,7 +197,7 @@ export async function DELETE(
     // Check if category exists and user has permission
     const { data: category } = await supabase
       .from('label_categories')
-      .select('omd_id')
+      .select('*')
       .eq('id', params.id)
       .single();
 
@@ -207,6 +229,29 @@ export async function DELETE(
         { status: 500 }
       );
     }
+
+    // Log activity
+    await logLabelActivity({
+      actionType: 'category_deleted',
+      entityType: 'category',
+      entityId: params.id,
+      omdId: category.omd_id,
+      userId: user.id,
+      userRole: profile.role,
+      categoryId: params.id,
+      oldValues: category,
+      metadata: { labelsDeleted: count || 0 },
+      ipAddress: getClientIp(req),
+      userAgent: getUserAgent(req),
+    });
+
+    log.info('Label category deleted', {
+      categoryId: params.id,
+      categoryName: category.name,
+      userId: user.id,
+      omdId: category.omd_id,
+      labelsDeleted: count || 0,
+    });
 
     return NextResponse.json({
       success: true,

@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server';
 import { log } from '@/lib/logger';
 import { validateRequest } from '@/lib/validation/validate';
 import { z } from 'zod';
+import { logLabelActivity, getClientIp, getUserAgent } from '@/lib/labels/activity-logger';
 
 const addLabelsSchema = z.object({
   label_ids: z.array(z.string().uuid()).min(1, 'At least one label ID is required'),
@@ -244,6 +245,34 @@ export async function POST(
       );
     }
 
+    // Log activity for each label assigned
+    const actionType = label_ids.length > 1 ? 'label_bulk_assigned' : 'label_assigned_to_business';
+    for (const businessLabel of data || []) {
+      await logLabelActivity({
+        actionType: actionType,
+        entityType: 'business_label',
+        entityId: businessLabel.id,
+        relatedEntityId: params.id,
+        omdId: business.omd_id,
+        userId: user.id,
+        userRole: profile?.role || (isOwner ? 'business_owner' : undefined),
+        businessId: params.id,
+        labelId: businessLabel.label_id,
+        newValues: businessLabel,
+        metadata: label_ids.length > 1 ? { totalLabels: label_ids.length } : undefined,
+        ipAddress: getClientIp(req),
+        userAgent: getUserAgent(req),
+      });
+    }
+
+    log.info('Labels assigned to business', {
+      businessId: params.id,
+      labelIds: label_ids,
+      count: label_ids.length,
+      userId: user.id,
+      isOmdAwarded: !isOwner,
+    });
+
     return NextResponse.json({ labels: data || [] }, { status: 201 });
   } catch (error: unknown) {
     log.error('Unexpected error adding labels to business', error);
@@ -327,6 +356,14 @@ export async function DELETE(
       }
     }
 
+    // Get business label before deletion for logging
+    const { data: businessLabel } = await supabase
+      .from('business_labels')
+      .select('*')
+      .eq('business_id', params.id)
+      .eq('label_id', labelId)
+      .single();
+
     // Delete business label
     const { error } = await supabase
       .from('business_labels')
@@ -344,6 +381,31 @@ export async function DELETE(
         { status: 500 }
       );
     }
+
+    // Log activity
+    if (businessLabel) {
+      await logLabelActivity({
+        actionType: 'label_removed_from_business',
+        entityType: 'business_label',
+        entityId: businessLabel.id,
+        relatedEntityId: params.id,
+        omdId: business.omd_id,
+        userId: user.id,
+        userRole: profile?.role || (isOwner ? 'business_owner' : undefined),
+        businessId: params.id,
+        labelId: labelId,
+        oldValues: businessLabel,
+        ipAddress: getClientIp(req),
+        userAgent: getUserAgent(req),
+      });
+    }
+
+    log.info('Label removed from business', {
+      businessId: params.id,
+      labelId,
+      userId: user.id,
+      wasOmdAwarded: businessLabel?.is_omd_awarded || false,
+    });
 
     return NextResponse.json({ success: true, message: 'Label removed from business' });
   } catch (error: unknown) {

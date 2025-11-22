@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server';
 import { log } from '@/lib/logger';
 import { validateRequest } from '@/lib/validation/validate';
 import { z } from 'zod';
+import { logLabelActivity, getClientIp, getUserAgent } from '@/lib/labels/activity-logger';
 
 const updateLabelSchema = z.object({
   name: z.string().min(1).optional(),
@@ -107,7 +108,7 @@ export async function PUT(
     // Check if label exists and user has permission
     const { data: label } = await supabase
       .from('labels')
-      .select('omd_id')
+      .select('*')
       .eq('id', params.id)
       .single();
 
@@ -148,6 +149,29 @@ export async function PUT(
         { status: 500 }
       );
     }
+
+    // Log activity
+    await logLabelActivity({
+      actionType: 'label_updated',
+      entityType: 'label',
+      entityId: params.id,
+      omdId: label.omd_id,
+      userId: user.id,
+      userRole: profile.role,
+      labelId: params.id,
+      categoryId: label.category_id,
+      oldValues: label,
+      newValues: data,
+      ipAddress: getClientIp(req),
+      userAgent: getUserAgent(req),
+    });
+
+    log.info('Label updated', {
+      labelId: params.id,
+      labelName: data.name,
+      userId: user.id,
+      omdId: label.omd_id,
+    });
 
     return NextResponse.json({ label: data });
   } catch (error: unknown) {
@@ -192,7 +216,7 @@ export async function DELETE(
     // Check if label exists and user has permission
     const { data: label } = await supabase
       .from('labels')
-      .select('omd_id')
+      .select('*')
       .eq('id', params.id)
       .single();
 
@@ -224,6 +248,30 @@ export async function DELETE(
         { status: 500 }
       );
     }
+
+    // Log activity
+    await logLabelActivity({
+      actionType: 'label_deleted',
+      entityType: 'label',
+      entityId: params.id,
+      omdId: label.omd_id,
+      userId: user.id,
+      userRole: profile.role,
+      labelId: params.id,
+      categoryId: label.category_id,
+      oldValues: label,
+      metadata: { businessesAffected: count || 0 },
+      ipAddress: getClientIp(req),
+      userAgent: getUserAgent(req),
+    });
+
+    log.info('Label deleted', {
+      labelId: params.id,
+      labelName: label.name,
+      userId: user.id,
+      omdId: label.omd_id,
+      businessesAffected: count || 0,
+    });
 
     return NextResponse.json({
       success: true,

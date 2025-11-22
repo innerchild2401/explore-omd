@@ -4,6 +4,7 @@ import ContactLink from '@/components/analytics/ContactLink';
 import ImageGallery from '@/components/hotels/ImageGallery';
 import TrackPageView from '@/components/analytics/TrackPageView';
 import BackButton from '@/components/ui/BackButton';
+import TopPagesSection from '@/components/business/TopPagesSection';
 import { formatPrice } from '@/lib/utils';
 
 interface PageProps {
@@ -425,6 +426,14 @@ export default async function ExperienceDetailPage({ params, searchParams }: Pag
             </div>
           </div>
         </div>
+
+        {/* Top Pages Section - Internal Linking */}
+        <TopPagesSection
+          omdSlug={omdSlug}
+          omdName={omd.name}
+          businessId={business.id}
+          businessType="experience"
+        />
       </div>
     </div>
   );

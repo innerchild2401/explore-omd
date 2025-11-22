@@ -11,6 +11,7 @@ import TrackPageView from '@/components/analytics/TrackPageView';
 import { formatPrice } from '@/lib/utils';
 import ContactLink from '@/components/analytics/ContactLink';
 import BackButton from '@/components/ui/BackButton';
+import TopPagesSection from '@/components/business/TopPagesSection';
 
 export const revalidate = 60;
 
@@ -475,6 +476,14 @@ export default async function HotelDetailPage({ params, searchParams }: HotelPag
             </div>
           </div>
         </div>
+
+        {/* Top Pages Section - Internal Linking */}
+        <TopPagesSection
+          omdSlug={omdSlug}
+          omdName={omd.name}
+          businessId={business.id}
+          businessType="hotel"
+        />
       </div>
     </main>
   );

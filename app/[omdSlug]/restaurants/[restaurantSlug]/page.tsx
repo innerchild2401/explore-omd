@@ -4,6 +4,7 @@ import TrackPageView from '@/components/analytics/TrackPageView';
 import ContactLink from '@/components/analytics/ContactLink';
 import RestaurantImageGallery from '@/components/restaurants/RestaurantImageGallery';
 import BackButton from '@/components/ui/BackButton';
+import TopPagesSection from '@/components/business/TopPagesSection';
 import { formatPrice } from '@/lib/utils';
 
 interface RestaurantPageProps {
@@ -324,6 +325,14 @@ export default async function RestaurantPage({ params }: RestaurantPageProps) {
             )}
           </div>
         </div>
+
+        {/* Top Pages Section - Internal Linking */}
+        <TopPagesSection
+          omdSlug={omdSlug}
+          omdName={omd.name}
+          businessId={business.id}
+          businessType="restaurant"
+        />
       </main>
     </div>
   );

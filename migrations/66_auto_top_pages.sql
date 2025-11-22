@@ -38,7 +38,6 @@ CREATE INDEX idx_auto_top_pages_active ON auto_top_pages(omd_id, is_active);
 -- 2. AUTO TOP PAGE CONTENT (Cached Results)
 -- =============================================
 CREATE TABLE IF NOT EXISTS auto_top_page_content (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   auto_top_page_id UUID NOT NULL REFERENCES auto_top_pages(id) ON DELETE CASCADE,
   business_id UUID NOT NULL REFERENCES businesses(id) ON DELETE CASCADE,
   rank INTEGER NOT NULL, -- 1, 2, 3, 4, 5

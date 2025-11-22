@@ -16,7 +16,7 @@ interface SectionsListProps {
   canEditTemplate: boolean;
 }
 
-const ALLOWED_SECTION_TYPES = new Set(['hero', 'stays', 'restaurants', 'experiences', 'footer']);
+const ALLOWED_SECTION_TYPES = new Set(['hero', 'explore', 'stays', 'restaurants', 'experiences', 'footer']);
 
 export default function SectionsList({
   sections: initialSections,
@@ -91,6 +91,7 @@ export default function SectionsList({
   const getSectionIcon = (type: string) => {
     const icons: Record<string, string> = {
       hero: '🎯',
+      explore: '🔍',
       stays: '🏨',
       restaurants: '🍽️',
       experiences: '🎟️',
@@ -168,7 +169,7 @@ export default function SectionsList({
       )}
 
       <div className="mb-6 rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
-        Sections are currently limited to the fixed set <strong>Hero</strong>, <strong>Stay</strong>, <strong>Eat</strong>, <strong>Experience</strong>, and <strong>Footer</strong>. This prevents layout issues while templates evolve.
+        Sections are currently limited to the fixed set <strong>Hero</strong>, <strong>Explore</strong>, <strong>Stay</strong>, <strong>Eat</strong>, <strong>Experience</strong>, and <strong>Footer</strong>. This prevents layout issues while templates evolve.
       </div>
 
       {editingSection ? (

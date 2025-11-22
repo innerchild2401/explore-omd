@@ -75,7 +75,7 @@ export default function SectionEditor({ section, onClose, onSave }: SectionEdito
               onChange={(e) => updateField('title', e.target.value)}
               maxLength={section.type === 'hero' ? 60 : 50}
               className="w-full rounded-lg border border-gray-300 px-4 py-2 text-gray-900 placeholder:text-gray-400 focus:border-blue-500 focus:outline-none"
-              placeholder={section.type === 'hero' ? 'e.g., Welcome to Constanta' : 'e.g., Where to Stay'}
+              placeholder={section.type === 'hero' ? 'e.g., Welcome to Constanta' : section.type === 'explore' ? 'e.g., Explore Constanta' : 'e.g., Where to Stay'}
             />
             <p className="mt-1 text-xs text-gray-500">
               {content.title?.length || 0}/{section.type === 'hero' ? 60 : 50} characters • Keep it short and impactful
@@ -84,7 +84,7 @@ export default function SectionEditor({ section, onClose, onSave }: SectionEdito
         )}
 
         {/* Subtitle Field */}
-        {['hero', 'stays', 'restaurants', 'experiences'].includes(section.type) && (
+        {['hero', 'explore', 'stays', 'restaurants', 'experiences'].includes(section.type) && (
           <div>
             <label className="mb-2 block text-sm font-medium text-gray-700">
               Subtitle {section.type === 'hero' ? '(1-2 sentences recommended)' : '(1 sentence recommended)'}

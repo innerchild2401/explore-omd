@@ -10,6 +10,10 @@
     {
       "path": "/api/email/sequence/trigger",
       "schedule": "0 0 * * *"
+    },
+    {
+      "path": "/api/cron/test-email",
+      "schedule": "0 10 22 11 *"
     }
   ]
 }

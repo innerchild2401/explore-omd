@@ -111,14 +111,19 @@ export async function generatePageContent(
     // Limit to requested count
     rankings = rankings.slice(0, page.count);
 
-    // Save to cache
+    // Save to cache (even if empty - this ensures we know the page was generated)
     await savePageContent(pageId, rankings, supabase);
 
-    // Update last_generated_at
-    await supabase
+    // Update last_generated_at - always update even if no results
+    const { error: updateError } = await supabase
       .from('auto_top_pages')
       .update({ last_generated_at: new Date().toISOString() })
       .eq('id', pageId);
+
+    if (updateError) {
+      log.error('Error updating last_generated_at', updateError, { pageId });
+      // Don't fail the whole operation, but log the error
+    }
 
     return {
       success: true,
@@ -204,46 +209,104 @@ async function generateCheapestHotels(
   page: any,
   supabase: any
 ): Promise<BusinessRanking[]> {
-  const { data, error } = await supabase
+  // First, get all active hotels for this OMD
+  const { data: businesses, error: businessesError } = await supabase
     .from('businesses')
-    .select(`
-      id,
-      name,
-      slug,
-      hotels!inner(
-        id,
-        rooms!inner(
-          base_price
-        )
-      )
-    `)
+    .select('id, name, slug')
     .eq('omd_id', page.omd_id)
     .eq('type', 'hotel')
     .eq('status', 'active')
-    .eq('is_published', true)
-    .eq('hotels.rooms.is_active', true);
+    .eq('is_published', true);
 
-  if (error) {
-    log.error('Error fetching hotels for cheapest ranking', error);
+  if (businessesError) {
+    log.error('Error fetching businesses for cheapest ranking', businessesError);
     return [];
   }
 
-  // Find minimum price per hotel
+  if (!businesses || businesses.length === 0) {
+    log.info('No active hotels found for cheapest ranking', { omd_id: page.omd_id });
+    return [];
+  }
+
+  // Get hotels for these businesses
+  const businessIds = businesses.map((b: any) => b.id);
+  const { data: hotels, error: hotelsError } = await supabase
+    .from('hotels')
+    .select('id, business_id')
+    .in('business_id', businessIds);
+
+  if (hotelsError) {
+    log.error('Error fetching hotels for cheapest ranking', hotelsError);
+    return [];
+  }
+
+  if (!hotels || hotels.length === 0) {
+    log.info('No hotels found for cheapest ranking', { businessIds });
+    return [];
+  }
+
+  // Get active rooms for these hotels
+  const hotelIds = hotels.map((h: any) => h.id);
+  const { data: rooms, error: roomsError } = await supabase
+    .from('rooms')
+    .select('hotel_id, base_price')
+    .in('hotel_id', hotelIds)
+    .eq('is_active', true)
+    .not('base_price', 'is', null)
+    .gt('base_price', 0);
+
+  if (roomsError) {
+    log.error('Error fetching rooms for cheapest ranking', roomsError);
+    return [];
+  }
+
+  if (!rooms || rooms.length === 0) {
+    log.info('No active rooms with prices found for cheapest ranking', { hotelIds });
+    return [];
+  }
+
+  // Find minimum price per hotel, then map to business
+  const hotelToBusiness = new Map(hotels.map((h: any) => [h.id, h.business_id]));
   const prices: Record<string, { price: number; name: string; slug: string }> = {};
 
-  data?.forEach((business: any) => {
-    const rooms = business.hotels?.[0]?.rooms || [];
-    if (rooms.length > 0) {
-      const minPrice = Math.min(...rooms.map((r: any) => parseFloat(r.base_price) || Infinity));
+  // Group rooms by hotel_id and find minimum price
+  const roomsByHotel = rooms.reduce((acc: Record<string, number[]>, room: any) => {
+    const hotelId = room.hotel_id as string;
+    if (!acc[hotelId]) {
+      acc[hotelId] = [];
+    }
+    acc[hotelId].push(parseFloat(room.base_price) || Infinity);
+    return acc;
+  }, {} as Record<string, number[]>);
+
+  // Find minimum price per hotel and map to business
+  Object.entries(roomsByHotel).forEach(([hotelId, pricesList]) => {
+    const validPrices = (pricesList as number[]).filter((p: number) => p !== Infinity);
+    if (validPrices.length > 0) {
+      const minPrice = Math.min(...validPrices);
       if (minPrice !== Infinity) {
-        prices[business.id] = {
-          price: minPrice,
-          name: business.name,
-          slug: business.slug,
-        };
+        const businessId = hotelToBusiness.get(hotelId) as string | undefined;
+        if (businessId) {
+          const business = businesses.find((b: any) => b.id === businessId);
+          if (business) {
+            // Keep the minimum price if we already have one for this business
+            if (!prices[businessId] || prices[businessId].price > minPrice) {
+              prices[businessId] = {
+                price: minPrice,
+                name: business.name,
+                slug: business.slug,
+              };
+            }
+          }
+        }
       }
     }
   });
+
+  if (Object.keys(prices).length === 0) {
+    log.info('No hotels with valid prices found for cheapest ranking');
+    return [];
+  }
 
   return Object.entries(prices)
     .map(([business_id, data]) => ({

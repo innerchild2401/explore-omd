@@ -105,7 +105,7 @@ CREATE POLICY "Super admins can manage auto top pages"
 -- For now, we'll create a function to initialize them
 
 CREATE OR REPLACE FUNCTION initialize_auto_top_pages_for_omd(p_omd_id UUID)
-RETURNS void AS $$
+RETURNS void AS $func$
 DECLARE
   omd_name TEXT;
 BEGIN
@@ -514,5 +514,5 @@ BEGIN
   ) ON CONFLICT (omd_id, page_type, business_type, time_period) DO NOTHING;
 
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
+$func$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
 

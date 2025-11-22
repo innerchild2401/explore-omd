@@ -69,8 +69,8 @@ export default async function ExperienceDetailPage({ params, searchParams }: Pag
     typeof img === 'string' ? img : img?.url || ''
   );
 
-  // Format currency - use the utility function
-  const currency = experience.currency || 'RON';
+  // Format currency - always use RON for experiences
+  const currency = 'RON';
 
   return (
     <div className="min-h-screen bg-gray-50">

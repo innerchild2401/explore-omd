@@ -68,6 +68,11 @@ export default function AdminSidebar({ userRole, activeOmdId }: AdminSidebarProp
       icon: '🏷️',
     },
     {
+      label: 'Auto Top Pages',
+      href: '/admin/auto-top-pages',
+      icon: '📊',
+    },
+    {
       label: 'OMD Approvals',
       href: '/admin/omd-approvals',
       icon: '🏛️',

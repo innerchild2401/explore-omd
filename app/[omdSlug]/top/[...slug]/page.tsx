@@ -140,19 +140,36 @@ export default async function AutoTopPage({ params }: TopPageProps) {
 
   if (contentError || !content || content.length === 0) {
     // Page exists but no content yet - show message
+    const hasBeenGenerated = page.last_generated_at !== null;
+    const header = page.header_template
+      .replace('{count}', page.count.toString())
+      .replace('{destination}', omd.name);
+    
     return (
       <div className="min-h-screen bg-gray-50">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-12">
           <BackButton href={`/${omdSlug}`} label="Back to Home" />
           <div className="text-center py-16">
-            <h1 className="text-3xl font-bold text-gray-900 mb-4">
-              {page.header_template
-                .replace('{count}', page.count.toString())
-                .replace('{destination}', omd.name)}
-            </h1>
-            <p className="text-gray-600">
-              This page is being generated. Please check back soon.
-            </p>
+            <h1 className="text-3xl font-bold text-gray-900 mb-4">{header}</h1>
+            {hasBeenGenerated ? (
+              <div>
+                <p className="text-gray-600 mb-4">
+                  Nu s-au găsit locații care să corespundă criteriilor pentru această pagină.
+                </p>
+                <p className="text-sm text-gray-500">
+                  Această pagină a fost generată, dar nu există încă suficiente date pentru a afișa conținut.
+                </p>
+              </div>
+            ) : (
+              <div>
+                <p className="text-gray-600 mb-4">
+                  Această pagină nu a fost generată încă.
+                </p>
+                <p className="text-sm text-gray-500">
+                  Administratorii pot genera conținutul din panoul de administrare.
+                </p>
+              </div>
+            )}
           </div>
         </div>
       </div>

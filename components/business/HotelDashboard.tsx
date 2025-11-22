@@ -13,6 +13,7 @@ import PendingReservations from './PendingReservations';
 import ToastNotification from './ToastNotification';
 import BusinessSwitcher from './BusinessSwitcher';
 import AddBusinessModal from './AddBusinessModal';
+import BusinessLabelsManager from './BusinessLabelsManager';
 
 interface Business {
   id: string;
@@ -84,7 +85,7 @@ export default function HotelDashboard({
 }: HotelDashboardProps) {
   const router = useRouter();
   const supabase = createClient();
-  const [activeTab, setActiveTab] = useState<'info' | 'rooms' | 'availability' | 'bookings' | 'reservations' | 'analytics'>('info');
+  const [activeTab, setActiveTab] = useState<'info' | 'rooms' | 'availability' | 'bookings' | 'reservations' | 'analytics' | 'labels'>('info');
   const [showAddModal, setShowAddModal] = useState(false);
   const [isPublished, setIsPublished] = useState<boolean>(business.is_published ?? false);
   const [publishLoading, setPublishLoading] = useState(false);
@@ -219,6 +220,7 @@ export default function HotelDashboard({
               { id: 'bookings', label: 'Bookings', icon: '📝' },
               { id: 'reservations', label: 'Pending Reservations', icon: '⏳' },
               { id: 'analytics', label: 'Analytics', icon: '📊' },
+              { id: 'labels', label: 'Labels', icon: '🏷️' },
             ].map((tab) => (
               <button
                 key={tab.id}
@@ -328,6 +330,10 @@ export default function HotelDashboard({
             <h3 className="text-lg font-semibold text-gray-900">Analytics</h3>
             <p className="mt-2 text-gray-600">Coming soon...</p>
           </div>
+        )}
+
+        {activeTab === 'labels' && (
+          <BusinessLabelsManager businessId={business.id} businessType="hotel" />
         )}
       </main>
 

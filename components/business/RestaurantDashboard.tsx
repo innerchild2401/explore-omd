@@ -8,6 +8,7 @@ import RestaurantBasicInfo from './RestaurantBasicInfo';
 import MenuManager from './MenuManager';
 import BusinessSwitcher from './BusinessSwitcher';
 import AddBusinessModal from './AddBusinessModal';
+import BusinessLabelsManager from './BusinessLabelsManager';
 
 interface Business {
   id: string;
@@ -106,6 +107,7 @@ export default function RestaurantDashboard({
     { id: 'overview', label: 'Overview', icon: '📊' },
     { id: 'basic-info', label: 'Basic Info', icon: 'ℹ️' },
     { id: 'menu', label: 'Menu', icon: '🍽️' },
+    { id: 'labels', label: 'Labels', icon: '🏷️' },
   ];
 
   return (
@@ -359,6 +361,10 @@ export default function RestaurantDashboard({
               showToast('success', 'Menu updated successfully!');
             }}
           />
+        )}
+
+        {activeTab === 'labels' && (
+          <BusinessLabelsManager businessId={business.id} businessType="restaurant" />
         )}
       </div>
 

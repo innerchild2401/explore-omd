@@ -8,6 +8,7 @@ import ExperienceBasicInfo from './ExperienceBasicInfo';
 import TimeSlotManager from './TimeSlotManager';
 import BusinessSwitcher from './BusinessSwitcher';
 import AddBusinessModal from './AddBusinessModal';
+import BusinessLabelsManager from './BusinessLabelsManager';
 
 interface Business {
   id: string;
@@ -118,6 +119,7 @@ export default function ExperienceDashboard({
     { id: 'overview', label: 'Overview', icon: '📊' },
     { id: 'basic-info', label: 'Basic Info', icon: 'ℹ️' },
     { id: 'schedule', label: 'Schedule', icon: '📅' },
+    { id: 'labels', label: 'Labels', icon: '🏷️' },
   ];
 
   return (
@@ -383,6 +385,10 @@ export default function ExperienceDashboard({
               showToast('success', 'Schedule updated successfully!');
             }}
           />
+        )}
+
+        {activeTab === 'labels' && (
+          <BusinessLabelsManager businessId={business.id} businessType="experience" />
         )}
       </div>
 

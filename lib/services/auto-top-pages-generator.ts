@@ -4,7 +4,7 @@
  * Generates content for auto-generated ranking pages based on business data
  */
 
-import { createClient } from '@/lib/supabase/server';
+import { createServiceRoleClient } from '@/lib/supabase/server';
 import { log } from '@/lib/logger';
 
 export interface BusinessRanking {
@@ -29,7 +29,8 @@ export async function generatePageContent(
   pageId: string,
   omdId: string
 ): Promise<PageGenerationResult> {
-  const supabase = await createClient();
+  // Use service role client to bypass RLS for data aggregation
+  const supabase = createServiceRoleClient();
 
   try {
     // Get page configuration
@@ -51,6 +52,13 @@ export async function generatePageContent(
 
     // Generate rankings based on page type
     let rankings: BusinessRanking[] = [];
+    
+    log.info('Generating page content', { 
+      pageId, 
+      pageType: page.page_type, 
+      businessType: page.business_type,
+      omdId 
+    });
 
     switch (page.page_type) {
       case 'most-booked-hotels':
@@ -110,6 +118,13 @@ export async function generatePageContent(
 
     // Limit to requested count
     rankings = rankings.slice(0, page.count);
+    
+    log.info('Generated rankings', { 
+      pageId, 
+      pageType: page.page_type,
+      rankingsCount: rankings.length,
+      omdId 
+    });
 
     // Save to cache (even if empty - this ensures we know the page was generated)
     await savePageContent(pageId, rankings, supabase);
@@ -641,35 +656,80 @@ async function generateCheapestExperiences(
   page: any,
   supabase: any
 ): Promise<BusinessRanking[]> {
-  const { data, error } = await supabase
+  // First, get all active experiences for this OMD
+  const { data: businesses, error: businessesError } = await supabase
     .from('businesses')
-    .select(`
-      id,
-      name,
-      slug,
-      experiences!inner(price_from)
-    `)
+    .select('id, name, slug')
     .eq('omd_id', page.omd_id)
     .eq('type', 'experience')
     .eq('status', 'active')
-    .eq('is_published', true)
-    .not('experiences.price_from', 'is', null)
-    .order('experiences.price_from', { ascending: true })
-    .limit(page.count * 2);
+    .eq('is_published', true);
 
-  if (error) {
-    log.error('Error fetching cheapest experiences', error);
+  if (businessesError) {
+    log.error('Error fetching businesses for cheapest experiences', businessesError);
     return [];
   }
 
-  return (data || [])
-    .map((business: any, index: number) => ({
-      business_id: business.id,
-      business_name: business.name,
-      business_slug: business.slug,
-      metric_value: parseFloat(business.experiences?.[0]?.price_from) || 0,
-      rank: index + 1,
-    }));
+  if (!businesses || businesses.length === 0) {
+    log.info('No active experiences found for cheapest ranking', { omd_id: page.omd_id });
+    return [];
+  }
+
+  // Get experiences for these businesses
+  const businessIds = businesses.map((b: any) => b.id);
+  const { data: experiences, error: experiencesError } = await supabase
+    .from('experiences')
+    .select('business_id, price_from')
+    .in('business_id', businessIds)
+    .not('price_from', 'is', null)
+    .gt('price_from', 0);
+
+  if (experiencesError) {
+    log.error('Error fetching experiences for cheapest ranking', experiencesError);
+    return [];
+  }
+
+  if (!experiences || experiences.length === 0) {
+    log.info('No experiences with prices found for cheapest ranking', { businessIds });
+    return [];
+  }
+
+  // Map experiences to businesses and find minimum price per business
+  const prices: Record<string, { price: number; name: string; slug: string }> = {};
+
+  experiences.forEach((exp: any) => {
+    const businessId = exp.business_id as string;
+    const price = parseFloat(exp.price_from) || Infinity;
+    if (price !== Infinity) {
+      const business = businesses.find((b: any) => b.id === businessId);
+      if (business) {
+        // Keep the minimum price if we already have one for this business
+        if (!prices[businessId] || prices[businessId].price > price) {
+          prices[businessId] = {
+            price: price,
+            name: business.name,
+            slug: business.slug,
+          };
+        }
+      }
+    }
+  });
+
+  if (Object.keys(prices).length === 0) {
+    log.info('No experiences with valid prices found for cheapest ranking');
+    return [];
+  }
+
+  return Object.entries(prices)
+    .map(([business_id, data]) => ({
+      business_id,
+      business_name: data.name,
+      business_slug: data.slug,
+      metric_value: data.price,
+      rank: 0,
+    }))
+    .sort((a, b) => a.metric_value - b.metric_value)
+    .map((item, index) => ({ ...item, rank: index + 1 }));
 }
 
 /**

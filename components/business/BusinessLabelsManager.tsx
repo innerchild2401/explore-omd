@@ -152,8 +152,9 @@ export default function BusinessLabelsManager({
     }
   };
 
-  // Group labels by category
-  const labelsByCategory = availableLabels.reduce((acc, label) => {
+
+  // Get all labels (both current and available) grouped by category
+  const allLabelsByCategory = availableLabels.reduce((acc, label) => {
     const categoryName = label.label_categories?.name || 'Uncategorized';
     if (!acc[categoryName]) {
       acc[categoryName] = [];
@@ -162,9 +163,25 @@ export default function BusinessLabelsManager({
     return acc;
   }, {} as Record<string, Label[]>);
 
-  const availableLabelsNotSelected = availableLabels.filter(
-    (label) => !currentLabels.some((bl) => bl.label_id === label.id)
-  );
+  // Helper to check if a label is currently selected
+  const isLabelSelected = (labelId: string) => {
+    return currentLabels.some((bl) => bl.label_id === labelId);
+  };
+
+  // Helper to get business label info
+  const getBusinessLabel = (labelId: string) => {
+    return currentLabels.find((bl) => bl.label_id === labelId);
+  };
+
+  // Handle label toggle
+  const handleLabelToggle = async (labelId: string) => {
+    const isSelected = isLabelSelected(labelId);
+    if (isSelected) {
+      await handleRemoveLabel(labelId);
+    } else {
+      await handleAddLabel(labelId);
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -172,7 +189,7 @@ export default function BusinessLabelsManager({
         <h2 className="text-2xl font-bold text-gray-900">Labels</h2>
         <p className="mt-1 text-gray-600">
           Labels help your business get visibility and appear in special sections and auto-generated pages.
-          Select labels that accurately describe your business to improve discoverability.
+          Click labels to add or remove them. Selected labels are highlighted.
         </p>
       </div>
 
@@ -182,58 +199,14 @@ export default function BusinessLabelsManager({
         </div>
       )}
 
-      {/* Current Labels */}
-      <div className="rounded-lg bg-white p-6 shadow border border-gray-200">
-        <h3 className="mb-4 text-lg font-semibold text-gray-900">
-          Your Labels ({currentLabels.length})
-        </h3>
-        {currentLabels.length === 0 ? (
-          <p className="text-gray-500">You haven&apos;t selected any labels yet.</p>
-        ) : (
-          <div className="space-y-2">
-            {currentLabels.map((bl) => (
-              <div
-                key={bl.id}
-                className="flex items-center justify-between rounded-lg border border-gray-200 bg-gray-50 p-3"
-              >
-                <div className="flex items-center gap-2">
-                  <span className="font-medium text-gray-900">
-                    {bl.labels?.display_name || bl.labels?.name}
-                  </span>
-                  {bl.is_omd_awarded && (
-                    <span className="text-xs px-2 py-1 rounded bg-purple-100 text-purple-800">
-                      OMD Awarded
-                    </span>
-                  )}
-                  {bl.labels?.label_categories && (
-                    <span className="text-xs text-gray-500">
-                      ({bl.labels.label_categories.name})
-                    </span>
-                  )}
-                </div>
-                {!bl.is_omd_awarded && (
-                  <button
-                    onClick={() => handleRemoveLabel(bl.label_id)}
-                    disabled={loading}
-                    className="text-red-600 hover:text-red-700 font-medium text-sm"
-                  >
-                    Remove
-                  </button>
-                )}
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* Available Labels */}
-      <div className="rounded-lg bg-white p-6 shadow border border-gray-200">
-        <div className="mb-4 flex items-center justify-between">
-          <h3 className="text-lg font-semibold text-gray-900">Available Labels</h3>
+      {/* Category Filter */}
+      <div className="rounded-lg bg-white p-4 shadow border border-gray-200">
+        <div className="flex items-center gap-4">
+          <label className="text-sm font-medium text-gray-700">Filter by category:</label>
           <select
             value={selectedCategoryId || ''}
             onChange={(e) => setSelectedCategoryId(e.target.value || null)}
-            className="rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-blue-500 focus:outline-none"
+            className="rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
             <option value="">All Categories</option>
             {categories.map((cat) => (
@@ -242,54 +215,97 @@ export default function BusinessLabelsManager({
               </option>
             ))}
           </select>
+          <div className="ml-auto text-sm text-gray-600">
+            <span className="font-medium text-gray-900">{currentLabels.length}</span> selected
+          </div>
         </div>
+      </div>
 
-        {availableLabelsNotSelected.length === 0 ? (
-          <p className="text-gray-500">No additional labels available.</p>
+      {/* Labels by Category */}
+      <div className="rounded-lg bg-white p-6 shadow border border-gray-200">
+        {Object.keys(allLabelsByCategory).length === 0 ? (
+          <p className="text-gray-500">No labels available.</p>
         ) : (
-          <div className="space-y-4">
-            {Object.entries(labelsByCategory)
-              .filter(([_, labels]) =>
-                labels.some((label) =>
-                  availableLabelsNotSelected.some((al) => al.id === label.id)
-                )
-              )
-              .map(([categoryName, labels]) => (
+          <div className="space-y-6">
+            {Object.entries(allLabelsByCategory).map(([categoryName, labels]) => {
+              // Filter labels based on category filter
+              const filteredLabels = selectedCategoryId
+                ? labels.filter(
+                    (label) => label.label_categories?.id === selectedCategoryId
+                  )
+                : labels;
+
+              if (filteredLabels.length === 0) return null;
+
+              return (
                 <div key={categoryName}>
-                  <h4 className="mb-2 text-sm font-semibold text-gray-700">{categoryName}</h4>
-                  <div className="space-y-2">
-                    {labels
-                      .filter((label) =>
-                        availableLabelsNotSelected.some((al) => al.id === label.id)
-                      )
-                      .map((label) => (
-                        <div
+                  <h3 className="mb-3 text-base font-semibold text-gray-900">{categoryName}</h3>
+                  <div className="flex flex-wrap gap-2">
+                    {filteredLabels.map((label) => {
+                      const isSelected = isLabelSelected(label.id);
+                      const businessLabel = getBusinessLabel(label.id);
+                      const isOmdAwarded = businessLabel?.is_omd_awarded || false;
+
+                      return (
+                        <button
                           key={label.id}
-                          className="flex items-center justify-between rounded-lg border border-gray-200 bg-gray-50 p-3"
+                          onClick={() => !isOmdAwarded && handleLabelToggle(label.id)}
+                          disabled={loading || isOmdAwarded}
+                          title={label.description || undefined}
+                          className={`
+                            inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium
+                            transition-all duration-200
+                            ${
+                              isSelected
+                                ? 'bg-blue-600 text-white shadow-md hover:bg-blue-700'
+                                : 'bg-gray-100 text-gray-700 hover:bg-gray-200 border border-gray-300'
+                            }
+                            ${isOmdAwarded ? 'opacity-75 cursor-not-allowed' : 'cursor-pointer'}
+                            ${loading ? 'opacity-50 cursor-wait' : ''}
+                          `}
                         >
-                          <div>
-                            <span className="font-medium text-gray-900">
-                              {label.display_name || label.name}
+                          <span>{label.display_name || label.name}</span>
+                          {isOmdAwarded && (
+                            <span className="text-xs px-1.5 py-0.5 rounded-full bg-purple-200 text-purple-800">
+                              OMD
                             </span>
-                            {label.description && (
-                              <p className="mt-1 text-xs text-gray-600">{label.description}</p>
-                            )}
-                          </div>
-                          <button
-                            onClick={() => handleAddLabel(label.id)}
-                            disabled={loading}
-                            className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700 disabled:bg-blue-300"
-                          >
-                            Add
-                          </button>
-                        </div>
-                      ))}
+                          )}
+                          {isSelected && (
+                            <svg
+                              className="h-4 w-4"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M5 13l4 4L19 7"
+                              />
+                            </svg>
+                          )}
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
-              ))}
+              );
+            })}
           </div>
         )}
       </div>
+
+      {/* Info about OMD-awarded labels */}
+      {currentLabels.some((bl) => bl.is_omd_awarded) && (
+        <div className="rounded-lg bg-purple-50 border border-purple-200 p-4">
+          <p className="text-sm text-purple-800">
+            <span className="font-semibold">Note:</span> Labels marked with &quot;OMD&quot; are
+            awarded by your OMD administrator and cannot be removed. Contact your OMD administrator
+            if you believe a label is incorrect.
+          </p>
+        </div>
+      )}
     </div>
   );
 }

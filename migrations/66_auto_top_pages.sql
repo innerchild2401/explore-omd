@@ -323,7 +323,7 @@ BEGIN
     'Cele mai bune restaurante buget din {destination}. {business1}, {business2}, {business3} și altele.',
     'Top {count} Restaurante Buget în {destination}',
     'budget-restaurants',
-    '{"price_range": "$"}'::jsonb,
+    jsonb_build_object('price_range', '$'),
     5,
     true
   ) ON CONFLICT (omd_id, page_type, business_type, time_period) DO NOTHING;
@@ -339,7 +339,7 @@ BEGIN
     'Cele mai bune restaurante mid-range din {destination}. {business1}, {business2}, {business3} și altele.',
     'Top {count} Restaurante Mid-Range în {destination}',
     'mid-range-restaurants',
-    '{"price_range": "$$"}'::jsonb,
+    jsonb_build_object('price_range', '$$'),
     5,
     true
   ) ON CONFLICT (omd_id, page_type, business_type, time_period) DO NOTHING;
@@ -355,7 +355,7 @@ BEGIN
     'Cele mai bune restaurante fine dining din {destination}. {business1}, {business2}, {business3} și altele.',
     'Top {count} Restaurante Fine Dining în {destination}',
     'fine-dining-restaurants',
-    '{"price_range": ["$$$", "$$$$"]}'::jsonb,
+    jsonb_build_object('price_range', jsonb_build_array('$$$', '$$$$')),
     5,
     true
   ) ON CONFLICT (omd_id, page_type, business_type, time_period) DO NOTHING;

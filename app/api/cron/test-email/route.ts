@@ -8,8 +8,12 @@ import { log } from '@/lib/logger';
  * This route is called by Vercel Cron to test if cron jobs work.
  * Sends a test email to verify the cron system is functioning.
  * 
- * Security: Verifies CRON_SECRET in Authorization header
+ * Security: Verifies CRON_SECRET in Authorization header or x-vercel-cron header
  */
+
+// Force dynamic rendering to prevent caching issues with cron jobs
+export const dynamic = 'force-dynamic';
+
 export async function POST(req: NextRequest) {
   try {
     // Verify this is called by Vercel Cron (same pattern as /api/email/sequence/trigger)
@@ -17,6 +21,12 @@ export async function POST(req: NextRequest) {
     const cronHeader = req.headers.get('x-vercel-cron');
     const authHeader = req.headers.get('authorization');
     
+    // Log all headers for debugging BEFORE auth check
+    const allHeaders: Record<string, string | null> = {};
+    req.headers.forEach((value, key) => {
+      allHeaders[key] = value;
+    });
+
     // Allow if it's from Vercel cron OR has correct auth token
     // For local/dev, allow if no CRON_SECRET is set
     if (!cronHeader) {
@@ -24,11 +34,22 @@ export async function POST(req: NextRequest) {
         if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
           log.warn('Cron test email: Unauthorized access attempt', {
             hasAuthHeader: !!authHeader,
+            authHeaderValue: authHeader ? 'Bearer ***' : null,
             hasSecret: !!process.env.CRON_SECRET,
             hasVercelCron: false,
+            environment: process.env.NODE_ENV,
+            allHeaders: allHeaders, // Log headers to see what Vercel sends
           });
           return NextResponse.json(
-            { error: 'Unauthorized' },
+            { 
+              error: 'Unauthorized',
+              debug: {
+                hasVercelCronHeader: false,
+                hasAuthHeader: !!authHeader,
+                hasCronSecret: !!process.env.CRON_SECRET,
+                environment: process.env.NODE_ENV,
+              }
+            },
             { status: 401 }
           );
         }
@@ -36,11 +57,14 @@ export async function POST(req: NextRequest) {
       // If no CRON_SECRET is set, allow (for local development)
     }
 
-    log.info('Cron test email: Starting test email send', {
+    log.info('Cron test email: Authentication passed, starting email send', {
       timestamp: new Date().toISOString(),
       hasVercelCron: !!cronHeader,
+      vercelCronValue: cronHeader,
       hasAuthHeader: !!authHeader,
       environment: process.env.NODE_ENV,
+      hasCronSecret: !!process.env.CRON_SECRET,
+      headers: allHeaders, // Log all headers for debugging
     });
 
     // Send test email

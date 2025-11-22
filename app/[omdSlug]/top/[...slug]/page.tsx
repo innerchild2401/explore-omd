@@ -290,8 +290,12 @@ export default async function AutoTopPage({ params }: TopPageProps) {
         <div className="grid grid-cols-1 gap-6 sm:gap-8 sm:grid-cols-2 lg:grid-cols-3 w-full min-w-0 max-w-full">
           {rankedBusinesses.map((business: any, index: number) => {
             const mainImage = business.images?.[0];
+            // Handle both string and object formats for images
+            const imagePath = typeof mainImage === 'string' 
+              ? mainImage 
+              : (mainImage as any)?.url || null;
             const businessUrl = `/${omdSlug}/${business.type === 'hotel' ? 'hotels' : business.type === 'restaurant' ? 'restaurants' : 'experiences'}/${business.slug}`;
-            const imageUrl = getImageUrl(mainImage);
+            const imageUrl = getImageUrl(imagePath);
 
             return (
               <article

@@ -132,8 +132,7 @@ export async function POST(
       .single();
 
     // Validate request body
-    const body = await req.json();
-    const validation = await validateRequest(body, addLabelsSchema);
+    const validation = await validateRequest(req, addLabelsSchema);
 
     if (!validation.success) {
       return validation.response;

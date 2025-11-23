@@ -2,9 +2,11 @@ import { createClient } from '@/lib/supabase/server';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import OptimizedImage from '@/components/ui/OptimizedImage';
+import StructuredData from '@/components/seo/StructuredData';
 import { getImageUrl, formatPrice } from '@/lib/utils';
 import BackButton from '@/components/ui/BackButton';
 import { Metadata } from 'next';
+import { generateSeoMetadata, generateBreadcrumbSchema, getAbsoluteUrl } from '@/lib/seo/utils';
 
 export const revalidate = 3600; // Revalidate every hour
 
@@ -439,21 +441,20 @@ export default async function AutoTopPage({ params }: TopPageProps) {
         )}
 
         {/* Structured Data for SEO */}
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{
-            __html: JSON.stringify({
+        <StructuredData
+          data={[
+            {
               '@context': 'https://schema.org',
               '@type': 'ItemList',
               name: header,
               description: metaDescription,
-              itemListElement: rankedBusinesses.map((business: any, index: number) => ({
+              itemListElement: rankedBusinesses.map((business: any) => ({
                 '@type': 'ListItem',
                 position: business.rank,
                 item: {
                   '@type': business.type === 'hotel' ? 'Hotel' : business.type === 'restaurant' ? 'Restaurant' : 'TouristAttraction',
                   name: business.name,
-                  url: `https://${process.env.NEXT_PUBLIC_SITE_URL || 'destexplore.eu'}/${omdSlug}/${business.type === 'hotel' ? 'hotels' : business.type === 'restaurant' ? 'restaurants' : 'experiences'}/${business.slug}`,
+                  url: getAbsoluteUrl(`/${omdSlug}/${business.type === 'hotel' ? 'hotels' : business.type === 'restaurant' ? 'restaurants' : 'experiences'}/${business.slug}`),
                   ...(business.rating > 0 && {
                     aggregateRating: {
                       '@type': 'AggregateRating',
@@ -463,8 +464,12 @@ export default async function AutoTopPage({ params }: TopPageProps) {
                   }),
                 },
               })),
-            }),
-          }}
+            },
+            generateBreadcrumbSchema([
+              { name: omd.name, url: getAbsoluteUrl(`/${omdSlug}`) },
+              { name: header, url: getAbsoluteUrl(`/${omdSlug}/top/${urlSlug}`) },
+            ]),
+          ]}
         />
       </div>
     </div>
@@ -510,9 +515,14 @@ export async function generateMetadata({ params }: TopPageProps): Promise<Metada
     .replace('{business2}', '')
     .replace('{business3}', '');
 
-  return {
+  const path = `/${omdSlug}/top/${urlSlug}`;
+
+  return generateSeoMetadata({
     title,
     description,
-  };
+    path,
+    type: 'website',
+    siteName: omd.name,
+  });
 }
 

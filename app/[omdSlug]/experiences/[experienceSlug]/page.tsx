@@ -6,7 +6,9 @@ import TrackPageView from '@/components/analytics/TrackPageView';
 import BackButton from '@/components/ui/BackButton';
 import TopPagesSection from '@/components/business/TopPagesSection';
 import LandingPagesSection from '@/components/business/LandingPagesSection';
-import { formatPrice } from '@/lib/utils';
+import StructuredData from '@/components/seo/StructuredData';
+import { formatPrice, getImageUrl } from '@/lib/utils';
+import { generateSeoMetadata, generateExperienceSchema, generateBreadcrumbSchema, getAbsoluteUrl } from '@/lib/seo/utils';
 
 interface PageProps {
   params: { omdSlug: string; experienceSlug: string };
@@ -442,6 +444,79 @@ export default async function ExperienceDetailPage({ params, searchParams }: Pag
           businessId={business.id}
         />
       </div>
+
+      {/* Structured Data for SEO */}
+      <StructuredData
+        data={[
+          generateExperienceSchema({
+            name: business.name,
+            description: business.description || undefined,
+            url: getAbsoluteUrl(`/${omdSlug}/experiences/${experienceSlug}`),
+            address: business.location || undefined,
+            rating: business.rating || undefined,
+            priceFrom: experience.price_from || undefined,
+            category: experience.category || undefined,
+            images: business.images || undefined,
+            phone: business.contact?.phone || undefined,
+            email: business.contact?.email || undefined,
+          }),
+          generateBreadcrumbSchema([
+            { name: omd.name, url: getAbsoluteUrl(`/${omdSlug}`) },
+            { name: 'Experiences', url: getAbsoluteUrl(`/${omdSlug}/experiences`) },
+            { name: business.name, url: getAbsoluteUrl(`/${omdSlug}/experiences/${experienceSlug}`) },
+          ]),
+        ]}
+      />
     </div>
   );
+}
+
+export async function generateMetadata({ params }: PageProps) {
+  const { omdSlug, experienceSlug } = params;
+  const supabase = await createClient();
+
+  // Get OMD
+  const { data: omd } = await supabase
+    .from('omds')
+    .select('id, name, slug')
+    .eq('slug', omdSlug)
+    .single();
+
+  // Get business (experience)
+  const { data: business } = await supabase
+    .from('businesses')
+    .select('id, name, description, images, rating')
+    .eq('slug', experienceSlug)
+    .eq('omd_id', omd?.id)
+    .eq('type', 'experience')
+    .eq('status', 'active')
+    .eq('is_published', true)
+    .single();
+
+  // Get experience details
+  const { data: experience } = await supabase
+    .from('experiences')
+    .select('category, price_from')
+    .eq('business_id', business?.id || '')
+    .single();
+
+  if (!business || !omd) {
+    return {
+      title: 'Experience Not Found',
+    };
+  }
+
+  const title = `${business.name} - Experiences in ${omd.name}`;
+  const description = business.description || `Book ${business.name} in ${omd.name}. ${experience?.category ? `${experience.category} experience` : 'Quality experience'} with excellent service.`;
+  const path = `/${omdSlug}/experiences/${experienceSlug}`;
+  const mainImage = business.images?.[0] ? getImageUrl(business.images[0]) : null;
+
+  return generateSeoMetadata({
+    title,
+    description,
+    path,
+    image: mainImage,
+    type: 'website',
+    siteName: omd.name,
+  });
 }

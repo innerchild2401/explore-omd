@@ -6,6 +6,7 @@ import MapSection from '@/components/sections/MapSection';
 import FooterSection from '@/components/sections/FooterSection';
 import { DEFAULT_TEMPLATE, TemplateName } from '@/lib/omdTemplates';
 import BackButton from '@/components/ui/BackButton';
+import { generateSeoMetadata } from '@/lib/seo/utils';
 
 export const revalidate = 60;
 
@@ -173,9 +174,16 @@ export async function generateMetadata({ params }: ExplorePageProps) {
     };
   }
 
-  return {
-    title: `Explore ${omd.name} - Hotels, Restaurants & Experiences`,
-    description: `Discover all the amazing hotels, restaurants, and experiences in ${omd.name}`,
-  };
+  const title = `Explore ${omd.name} - Hotels, Restaurants & Experiences`;
+  const description = `Discover all the amazing hotels, restaurants, and experiences in ${omd.name}. Find the perfect accommodation, dining, and activities for your visit.`;
+  const path = `/${omdSlug}/explore`;
+
+  return generateSeoMetadata({
+    title,
+    description,
+    path,
+    type: 'website',
+    siteName: omd.name,
+  });
 }
 

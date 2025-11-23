@@ -6,7 +6,9 @@ import RestaurantImageGallery from '@/components/restaurants/RestaurantImageGall
 import BackButton from '@/components/ui/BackButton';
 import TopPagesSection from '@/components/business/TopPagesSection';
 import LandingPagesSection from '@/components/business/LandingPagesSection';
-import { formatPrice } from '@/lib/utils';
+import StructuredData from '@/components/seo/StructuredData';
+import { formatPrice, getImageUrl } from '@/lib/utils';
+import { generateSeoMetadata, generateRestaurantSchema, generateBreadcrumbSchema, getAbsoluteUrl } from '@/lib/seo/utils';
 
 interface RestaurantPageProps {
   params: {
@@ -341,6 +343,82 @@ export default async function RestaurantPage({ params }: RestaurantPageProps) {
           businessId={business.id}
         />
       </main>
+
+      {/* Structured Data for SEO */}
+      <StructuredData
+        data={[
+          generateRestaurantSchema({
+            name: business.name,
+            description: business.description || undefined,
+            url: getAbsoluteUrl(`/${omdSlug}/restaurants/${restaurantSlug}`),
+            address: business.location || undefined,
+            rating: business.rating || undefined,
+            priceRange: restaurant.price_range || undefined,
+            cuisineType: restaurant.cuisine_type || undefined,
+            images: business.images || undefined,
+            phone: business.contact?.phone || undefined,
+            email: business.contact?.email || undefined,
+          }),
+          generateBreadcrumbSchema([
+            { name: omd.name, url: getAbsoluteUrl(`/${omdSlug}`) },
+            { name: 'Restaurants', url: getAbsoluteUrl(`/${omdSlug}/restaurants`) },
+            { name: business.name, url: getAbsoluteUrl(`/${omdSlug}/restaurants/${restaurantSlug}`) },
+          ]),
+        ]}
+      />
     </div>
   );
+}
+
+export async function generateMetadata({ params }: RestaurantPageProps) {
+  const { omdSlug, restaurantSlug } = await params;
+  const supabase = await createClient();
+
+  // Get OMD
+  const { data: omd } = await supabase
+    .from('omds')
+    .select('id, name, slug')
+    .eq('slug', omdSlug)
+    .single();
+
+  // Get restaurant with business info
+  const { data: restaurant } = await supabase
+    .from('restaurants')
+    .select(`
+      *,
+      businesses!inner(
+        id,
+        name,
+        description,
+        images,
+        rating,
+        location
+      )
+    `)
+    .eq('businesses.slug', restaurantSlug)
+    .eq('businesses.omd_id', omd?.id)
+    .eq('businesses.is_published', true)
+    .eq('businesses.status', 'active')
+    .single();
+
+  if (!restaurant || !omd) {
+    return {
+      title: 'Restaurant Not Found',
+    };
+  }
+
+  const business = restaurant.businesses;
+  const title = `${business.name} - Restaurants in ${omd.name}`;
+  const description = business.description || `Dine at ${business.name} in ${omd.name}. ${restaurant.cuisine_type ? `${restaurant.cuisine_type} cuisine` : 'Quality restaurant'} with excellent service.`;
+  const path = `/${omdSlug}/restaurants/${restaurantSlug}`;
+  const mainImage = business.images?.[0] ? getImageUrl(business.images[0]) : null;
+
+  return generateSeoMetadata({
+    title,
+    description,
+    path,
+    image: mainImage,
+    type: 'website',
+    siteName: omd.name,
+  });
 }

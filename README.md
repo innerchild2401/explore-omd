@@ -30,13 +30,18 @@ npm install
 ```
 
 2. Set up environment variables:
-Copy the `.env.local` file and add your keys:
+Copy the `.env.example` file to `.env.local` and add your keys:
 ```
 NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
 SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
 OPENAI_API_KEY=your_openai_api_key
+
+# Optional but recommended for SEO:
+NEXT_PUBLIC_SITE_URL=http://localhost:3000
 ```
+
+**For production on Vercel:** Add `NEXT_PUBLIC_SITE_URL` in Vercel dashboard with your production domain (e.g., `https://destexplore.eu`). See `SEO_ENV_SETUP.md` for details.
 
 3. Run the development server:
 ```bash

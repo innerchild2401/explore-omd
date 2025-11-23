@@ -2,9 +2,11 @@ import { createClient } from '@/lib/supabase/server';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import OptimizedImage from '@/components/ui/OptimizedImage';
+import StructuredData from '@/components/seo/StructuredData';
 import { getImageUrl, formatPrice } from '@/lib/utils';
 import BackButton from '@/components/ui/BackButton';
 import { Metadata } from 'next';
+import { generateSeoMetadata, generateCollectionPageSchema, generateBreadcrumbSchema, getAbsoluteUrl } from '@/lib/seo/utils';
 
 export const revalidate = 3600; // Revalidate every hour
 
@@ -45,10 +47,15 @@ export async function generateMetadata({ params }: LandingPageProps): Promise<Me
     };
   }
 
-  return {
+  const path = `/${omdSlug}/labels/${slug}`;
+
+  return generateSeoMetadata({
     title: page.title,
     description: page.meta_description,
-  };
+    path,
+    type: 'website',
+    siteName: omd.name,
+  });
 }
 
 export default async function LandingPage({ params }: LandingPageProps) {
@@ -292,6 +299,25 @@ export default async function LandingPage({ params }: LandingPageProps) {
             )}
           </>
         )}
+
+        {/* Structured Data for SEO */}
+        <StructuredData
+          data={[
+            generateCollectionPageSchema({
+              name: page.header_text,
+              description: page.meta_description || undefined,
+              url: getAbsoluteUrl(`/${omdSlug}/labels/${slug}`),
+              items: businesses.map((business: any) => ({
+                name: business.name,
+                url: getAbsoluteUrl(`/${omdSlug}/${business.type === 'hotel' ? 'hotels' : business.type === 'restaurant' ? 'restaurants' : 'experiences'}/${business.slug}`),
+              })),
+            }),
+            generateBreadcrumbSchema([
+              { name: omd.name, url: getAbsoluteUrl(`/${omdSlug}`) },
+              { name: page.header_text, url: getAbsoluteUrl(`/${omdSlug}/labels/${slug}`) },
+            ]),
+          ]}
+        />
       </div>
     </div>
   );

@@ -335,24 +335,24 @@ export default function BlogPostEditor({ post, authorId }: BlogPostEditorProps) 
                     <div className="mb-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                       <button
                         onClick={() => applyFormatting(index, 'bold')}
-                        className="px-2 py-1 text-sm bg-gray-100 hover:bg-gray-200 rounded"
+                        className="px-3 py-1.5 text-sm font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 rounded border border-gray-300"
                         title="Bold (Ctrl+B)"
                       >
-                        <strong>B</strong>
+                        <strong className="text-gray-900">B</strong>
                       </button>
                       <button
                         onClick={() => applyFormatting(index, 'italic')}
-                        className="px-2 py-1 text-sm bg-gray-100 hover:bg-gray-200 rounded italic"
+                        className="px-3 py-1.5 text-sm font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 rounded border border-gray-300 italic"
                         title="Italic (Ctrl+I)"
                       >
-                        I
+                        <span className="text-gray-900">I</span>
                       </button>
                       <button
                         onClick={() => applyFormatting(index, 'link')}
-                        className="px-2 py-1 text-sm bg-gray-100 hover:bg-gray-200 rounded"
+                        className="px-3 py-1.5 text-sm font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 rounded border border-gray-300"
                         title="Link"
                       >
-                        🔗
+                        <span className="text-gray-900">🔗</span>
                       </button>
                     </div>
                     <textarea
@@ -368,8 +368,8 @@ export default function BlogPostEditor({ post, authorId }: BlogPostEditorProps) 
                       className="w-full text-lg leading-relaxed text-gray-900 outline-none min-h-[100px] py-2 resize-none border border-transparent hover:border-gray-200 rounded px-2"
                       rows={Math.max(3, block.content.split('\n').length)}
                     />
-                    <div className="mt-1 text-xs text-gray-400">
-                      Tip: Type <code className="bg-gray-100 px-1 rounded">* item</code> for bullets, <code className="bg-gray-100 px-1 rounded">1. item</code> for numbers, <code className="bg-gray-100 px-1 rounded"># Heading</code> for heading
+                    <div className="mt-1 text-xs text-gray-600">
+                      Tip: Type <code className="bg-gray-100 text-gray-900 px-1 rounded">* item</code> for bullets, <code className="bg-gray-100 text-gray-900 px-1 rounded">1. item</code> for numbers, <code className="bg-gray-100 text-gray-900 px-1 rounded"># Heading</code> for heading
                     </div>
                   </div>
                 )}
@@ -379,7 +379,7 @@ export default function BlogPostEditor({ post, authorId }: BlogPostEditorProps) 
                       <select
                         value={block.level}
                         onChange={(e) => changeHeadingLevel(index, parseInt(e.target.value) as 1 | 2 | 3)}
-                        className="text-xs border border-gray-300 rounded px-2 py-1"
+                        className="text-xs text-gray-900 bg-white border border-gray-300 rounded px-2 py-1"
                       >
                         <option value={1}>H1</option>
                         <option value={2}>H2</option>
@@ -429,7 +429,7 @@ export default function BlogPostEditor({ post, authorId }: BlogPostEditorProps) 
                       <select
                         value={block.style}
                         onChange={(e) => updateBlock(index, { ...block, style: e.target.value as 'ordered' | 'unordered' })}
-                        className="text-xs border border-gray-300 rounded px-2 py-1"
+                        className="text-xs text-gray-900 bg-white border border-gray-300 rounded px-2 py-1"
                       >
                         <option value="unordered">Bullets</option>
                         <option value="ordered">Numbers</option>
@@ -506,37 +506,37 @@ export default function BlogPostEditor({ post, authorId }: BlogPostEditorProps) 
             <div className="flex gap-2 flex-wrap pt-4 border-t">
               <button
                 onClick={() => addBlock('paragraph')}
-                className="px-4 py-2 text-sm bg-gray-100 hover:bg-gray-200 rounded-lg"
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg border border-gray-300"
               >
                 + Paragraph
               </button>
               <button
                 onClick={() => addBlock('heading')}
-                className="px-4 py-2 text-sm bg-gray-100 hover:bg-gray-200 rounded-lg"
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg border border-gray-300"
               >
                 + Heading
               </button>
               <button
                 onClick={() => addBlock('image')}
-                className="px-4 py-2 text-sm bg-gray-100 hover:bg-gray-200 rounded-lg"
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg border border-gray-300"
               >
                 + Image
               </button>
               <button
                 onClick={() => addBlock('quote')}
-                className="px-4 py-2 text-sm bg-gray-100 hover:bg-gray-200 rounded-lg"
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg border border-gray-300"
               >
                 + Quote
               </button>
               <button
                 onClick={() => addBlock('list')}
-                className="px-4 py-2 text-sm bg-gray-100 hover:bg-gray-200 rounded-lg"
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg border border-gray-300"
               >
                 + List
               </button>
               <button
                 onClick={() => addBlock('divider')}
-                className="px-4 py-2 text-sm bg-gray-100 hover:bg-gray-200 rounded-lg"
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg border border-gray-300"
               >
                 + Divider
               </button>

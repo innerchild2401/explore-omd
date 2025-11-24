@@ -23,6 +23,39 @@ export default async function BlogPage() {
 
   return (
     <main className="min-h-screen bg-white">
+      {/* Top Navigation Bar */}
+      <nav className="sticky top-0 z-50 border-b border-gray-200 bg-white/95 backdrop-blur-sm">
+        <div className="mx-auto max-w-7xl px-4 py-3">
+          <div className="flex items-center justify-between">
+            {/* Breadcrumb */}
+            <div className="flex items-center gap-2 text-sm text-gray-600">
+              <Link
+                href="https://destexplore.eu"
+                className="transition-colors hover:text-gray-900"
+              >
+                Dest Explore
+              </Link>
+              <span className="text-gray-400">/</span>
+              <span className="text-gray-900 font-medium">Blog</span>
+            </div>
+
+            {/* Visit Main Site */}
+            <Link
+              href="https://destexplore.eu"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 hover:text-gray-900"
+            >
+              <span className="hidden sm:inline">Vizitează Dest Explore</span>
+              <span className="sm:hidden">Acasă</span>
+              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+              </svg>
+            </Link>
+          </div>
+        </div>
+      </nav>
+
       {/* Header */}
       <section className="bg-gray-50 py-12">
         <div className="mx-auto max-w-7xl px-4">

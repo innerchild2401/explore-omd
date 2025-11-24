@@ -207,3 +207,4 @@ GRANT SELECT ON blog_tags TO public;
 GRANT SELECT ON blog_post_tags TO public;
 GRANT INSERT ON blog_post_views TO public;
 
+

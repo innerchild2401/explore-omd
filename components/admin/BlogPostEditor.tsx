@@ -1,9 +1,9 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
-import type { BlogPost, ContentBlock } from '@/types';
+import type { BlogPost, ContentBlock, Formatting } from '@/types';
 import ImageUpload from './ImageUpload';
 
 interface BlogPostEditorProps {
@@ -29,6 +29,10 @@ export default function BlogPostEditor({ post, authorId }: BlogPostEditorProps) 
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [autoSaveStatus, setAutoSaveStatus] = useState<'saved' | 'saving' | 'unsaved'>('saved');
+  const [savedPostId, setSavedPostId] = useState<string | null>(post?.id || null);
+  const [selectedBlockIndex, setSelectedBlockIndex] = useState<number | null>(null);
+  const [selection, setSelection] = useState<{ start: number; end: number } | null>(null);
+  const textareaRefs = useRef<(HTMLTextAreaElement | null)[]>([]);
 
   // Auto-generate slug from title
   useEffect(() => {
@@ -59,29 +63,34 @@ export default function BlogPostEditor({ post, authorId }: BlogPostEditorProps) 
         meta_description: metaDescription || null,
       };
 
-      if (post) {
+      if (savedPostId) {
         const { error } = await supabase
           .from('blog_posts')
           .update(postData)
-          .eq('id', post.id);
+          .eq('id', savedPostId);
         
         if (error) throw error;
       } else {
-        const { error } = await supabase
+        const { data, error } = await supabase
           .from('blog_posts')
-          .insert(postData);
+          .insert(postData)
+          .select()
+          .single();
         
         if (error) throw error;
+        setSavedPostId(data.id);
+        // Update URL without navigation
+        window.history.replaceState(null, '', `/admin/blog/${data.id}/edit`);
       }
     } catch (err: any) {
       console.error('Auto-save error:', err);
       setAutoSaveStatus('unsaved');
     }
-  }, [title, subtitle, slug, excerpt, featuredImage, featuredImageAlt, content, metaTitle, metaDescription, post, authorId, supabase]);
+  }, [title, subtitle, slug, excerpt, featuredImage, featuredImageAlt, content, metaTitle, metaDescription, savedPostId, authorId, supabase]);
 
-  // Auto-save draft every 5 seconds
+  // Auto-save draft every 5 seconds (for both new and existing posts)
   useEffect(() => {
-    if (!post || status !== 'draft') return;
+    if (status !== 'draft') return;
     
     const timer = setTimeout(async () => {
       if (title && slug) {
@@ -92,8 +101,7 @@ export default function BlogPostEditor({ post, authorId }: BlogPostEditorProps) 
     }, 5000);
 
     return () => clearTimeout(timer);
-  }, [title, subtitle, slug, excerpt, content, featuredImage, status, post, saveDraft]);
-
+  }, [title, subtitle, slug, excerpt, content, featuredImage, status, saveDraft]);
 
   const handleSave = async () => {
     if (!title || !slug) {
@@ -125,11 +133,11 @@ export default function BlogPostEditor({ post, authorId }: BlogPostEditorProps) 
         postData.scheduled_for = scheduledFor;
       }
 
-      if (post) {
+      if (savedPostId || post?.id) {
         const { error } = await supabase
           .from('blog_posts')
           .update(postData)
-          .eq('id', post.id);
+          .eq('id', savedPostId || post!.id);
         
         if (error) throw error;
       } else {
@@ -140,6 +148,7 @@ export default function BlogPostEditor({ post, authorId }: BlogPostEditorProps) 
           .single();
         
         if (error) throw error;
+        setSavedPostId(data.id);
         router.push(`/admin/blog/${data.id}/edit`);
         return;
       }
@@ -151,6 +160,104 @@ export default function BlogPostEditor({ post, authorId }: BlogPostEditorProps) 
     } finally {
       setSaving(false);
     }
+  };
+
+  // Auto-format text: detect lists, headings, etc.
+  const handleTextChange = (index: number, value: string, block: ContentBlock) => {
+    // Auto-detect list from * or - at start of line
+    if (block.type === 'paragraph') {
+      const lines = value.split('\n');
+      const firstLine = lines[0]?.trim();
+      
+      // Check if it starts with * or - (unordered list)
+      if (firstLine && (firstLine.startsWith('* ') || firstLine.startsWith('- '))) {
+        const items = lines
+          .map(line => line.replace(/^[\*\-\s]+/, '').trim())
+          .filter(item => item.length > 0);
+        if (items.length > 0) {
+          updateBlock(index, { type: 'list', style: 'unordered', items });
+          return;
+        }
+      }
+      
+      // Check if it starts with number (ordered list)
+      if (firstLine && /^\d+\.\s/.test(firstLine)) {
+        const items = lines
+          .map(line => line.replace(/^\d+\.\s*/, '').trim())
+          .filter(item => item.length > 0);
+        if (items.length > 0) {
+          updateBlock(index, { type: 'list', style: 'ordered', items });
+          return;
+        }
+      }
+      
+      // Check if it's a heading (starts with #)
+      if (firstLine && firstLine.startsWith('#')) {
+        const level = firstLine.match(/^#+/)?.[0].length || 1;
+        if (level <= 3) {
+          const headingText = firstLine.replace(/^#+\s*/, '').trim();
+          if (headingText) {
+            updateBlock(index, { type: 'heading', level: level as 1 | 2 | 3, content: headingText });
+            return;
+          }
+        }
+      }
+      
+      // Regular paragraph update
+      updateBlock(index, { type: 'paragraph', content: value });
+      return;
+    }
+    
+    // For other block types that have content
+    if (block.type === 'heading') {
+      updateBlock(index, { ...block, content: value });
+    } else if (block.type === 'quote') {
+      updateBlock(index, { ...block, content: value });
+    }
+  };
+
+  const applyFormatting = (index: number, formatType: 'bold' | 'italic' | 'link') => {
+    const block = content[index];
+    if (block.type !== 'paragraph') return;
+    
+    const textarea = textareaRefs.current[index];
+    if (!textarea) return;
+    
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const selectedText = block.content.substring(start, end);
+    
+    if (!selectedText && formatType !== 'link') return;
+    
+    let formattedText = '';
+    let newStart = start;
+    let newEnd = end;
+    
+    if (formatType === 'bold') {
+      formattedText = `**${selectedText}**`;
+      newEnd = start + formattedText.length;
+    } else if (formatType === 'italic') {
+      formattedText = `*${selectedText}*`;
+      newEnd = start + formattedText.length;
+    } else if (formatType === 'link') {
+      const url = prompt('Enter URL:');
+      if (!url) return;
+      formattedText = `[${selectedText || 'link'}](${url})`;
+      newEnd = start + formattedText.length;
+    }
+    
+    const newContent = 
+      block.content.substring(0, start) + 
+      formattedText + 
+      block.content.substring(end);
+    
+    updateBlock(index, { ...block, content: newContent });
+    
+    // Restore selection
+    setTimeout(() => {
+      textarea.focus();
+      textarea.setSelectionRange(newStart, newEnd);
+    }, 0);
   };
 
   const addBlock = (type: ContentBlock['type']) => {
@@ -176,6 +283,13 @@ export default function BlogPostEditor({ post, authorId }: BlogPostEditorProps) 
     if (content.length === 1) return; // Keep at least one block
     const newContent = content.filter((_, i) => i !== index);
     setContent(newContent);
+  };
+
+  const changeHeadingLevel = (index: number, level: 1 | 2 | 3) => {
+    const block = content[index];
+    if (block.type === 'heading') {
+      updateBlock(index, { ...block, level });
+    }
   };
 
   return (
@@ -216,24 +330,72 @@ export default function BlogPostEditor({ post, authorId }: BlogPostEditorProps) 
             {content.map((block, index) => (
               <div key={index} className="group relative">
                 {block.type === 'paragraph' && (
-                  <textarea
-                    value={block.content}
-                    onChange={(e) => updateBlock(index, { ...block, content: e.target.value })}
-                    placeholder="Start writing..."
-                    className="w-full text-lg leading-relaxed text-gray-900 outline-none min-h-[100px] py-2 resize-none"
-                    rows={Math.max(3, block.content.split('\n').length)}
-                  />
+                  <div>
+                    {/* Formatting Toolbar */}
+                    <div className="mb-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button
+                        onClick={() => applyFormatting(index, 'bold')}
+                        className="px-2 py-1 text-sm bg-gray-100 hover:bg-gray-200 rounded"
+                        title="Bold (Ctrl+B)"
+                      >
+                        <strong>B</strong>
+                      </button>
+                      <button
+                        onClick={() => applyFormatting(index, 'italic')}
+                        className="px-2 py-1 text-sm bg-gray-100 hover:bg-gray-200 rounded italic"
+                        title="Italic (Ctrl+I)"
+                      >
+                        I
+                      </button>
+                      <button
+                        onClick={() => applyFormatting(index, 'link')}
+                        className="px-2 py-1 text-sm bg-gray-100 hover:bg-gray-200 rounded"
+                        title="Link"
+                      >
+                        🔗
+                      </button>
+                    </div>
+                    <textarea
+                      ref={(el) => { textareaRefs.current[index] = el; }}
+                      value={block.content}
+                      onChange={(e) => handleTextChange(index, e.target.value, block)}
+                      onSelect={(e) => {
+                        const target = e.target as HTMLTextAreaElement;
+                        setSelection({ start: target.selectionStart, end: target.selectionEnd });
+                        setSelectedBlockIndex(index);
+                      }}
+                      placeholder="Start writing... (Tip: Use * for bullets, 1. for numbered list, # for heading)"
+                      className="w-full text-lg leading-relaxed text-gray-900 outline-none min-h-[100px] py-2 resize-none border border-transparent hover:border-gray-200 rounded px-2"
+                      rows={Math.max(3, block.content.split('\n').length)}
+                    />
+                    <div className="mt-1 text-xs text-gray-400">
+                      Tip: Type <code className="bg-gray-100 px-1 rounded">* item</code> for bullets, <code className="bg-gray-100 px-1 rounded">1. item</code> for numbers, <code className="bg-gray-100 px-1 rounded"># Heading</code> for heading
+                    </div>
+                  </div>
                 )}
                 {block.type === 'heading' && (
-                  <input
-                    type="text"
-                    value={block.content}
-                    onChange={(e) => updateBlock(index, { ...block, content: e.target.value })}
-                    placeholder={`Heading ${block.level}`}
-                    className={`w-full font-bold text-gray-900 outline-none ${
-                      block.level === 1 ? 'text-4xl' : block.level === 2 ? 'text-3xl' : 'text-2xl'
-                    }`}
-                  />
+                  <div>
+                    <div className="mb-2 flex gap-2 items-center">
+                      <select
+                        value={block.level}
+                        onChange={(e) => changeHeadingLevel(index, parseInt(e.target.value) as 1 | 2 | 3)}
+                        className="text-xs border border-gray-300 rounded px-2 py-1"
+                      >
+                        <option value={1}>H1</option>
+                        <option value={2}>H2</option>
+                        <option value={3}>H3</option>
+                      </select>
+                    </div>
+                    <input
+                      type="text"
+                      value={block.content}
+                      onChange={(e) => updateBlock(index, { ...block, content: e.target.value })}
+                      placeholder={`Heading ${block.level}`}
+                      className={`w-full font-bold text-gray-900 outline-none border border-transparent hover:border-gray-200 rounded px-2 py-1 ${
+                        block.level === 1 ? 'text-4xl' : block.level === 2 ? 'text-3xl' : 'text-2xl'
+                      }`}
+                    />
+                  </div>
                 )}
                 {block.type === 'image' && (
                   <div className="space-y-2">
@@ -263,9 +425,19 @@ export default function BlogPostEditor({ post, authorId }: BlogPostEditorProps) 
                 )}
                 {block.type === 'list' && (
                   <div className="space-y-2">
+                    <div className="mb-2 flex gap-2 items-center">
+                      <select
+                        value={block.style}
+                        onChange={(e) => updateBlock(index, { ...block, style: e.target.value as 'ordered' | 'unordered' })}
+                        className="text-xs border border-gray-300 rounded px-2 py-1"
+                      >
+                        <option value="unordered">Bullets</option>
+                        <option value="ordered">Numbers</option>
+                      </select>
+                    </div>
                     {block.items.map((item, itemIndex) => (
-                      <div key={itemIndex} className="flex gap-2">
-                        <span className="text-blue-600 font-bold">
+                      <div key={itemIndex} className="flex gap-2 items-center">
+                        <span className="text-blue-600 font-bold w-6">
                           {block.style === 'ordered' ? `${itemIndex + 1}.` : '•'}
                         </span>
                         <input
@@ -277,14 +449,26 @@ export default function BlogPostEditor({ post, authorId }: BlogPostEditorProps) 
                             updateBlock(index, { ...block, items: newItems });
                           }}
                           placeholder="List item"
-                          className="flex-1 text-lg text-gray-900 outline-none"
+                          className="flex-1 text-lg text-gray-900 outline-none border border-transparent hover:border-gray-200 rounded px-2 py-1"
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              e.preventDefault();
+                              const newItems = [...block.items];
+                              newItems.splice(itemIndex + 1, 0, '');
+                              updateBlock(index, { ...block, items: newItems });
+                            } else if (e.key === 'Backspace' && item === '' && block.items.length > 1) {
+                              e.preventDefault();
+                              const newItems = block.items.filter((_, i) => i !== itemIndex);
+                              updateBlock(index, { ...block, items: newItems });
+                            }
+                          }}
                         />
                         <button
                           onClick={() => {
                             const newItems = block.items.filter((_, i) => i !== itemIndex);
                             updateBlock(index, { ...block, items: newItems.length > 0 ? newItems : [''] });
                           }}
-                          className="text-red-500 hover:text-red-700"
+                          className="text-red-500 hover:text-red-700 opacity-0 group-hover:opacity-100 transition-opacity"
                         >
                           ×
                         </button>
@@ -310,6 +494,7 @@ export default function BlogPostEditor({ post, authorId }: BlogPostEditorProps) 
                     onClick={() => deleteBlock(index)}
                     className="text-red-500 hover:text-red-700 p-2"
                     disabled={content.length === 1}
+                    title="Delete block"
                   >
                     ×
                   </button>
@@ -318,7 +503,7 @@ export default function BlogPostEditor({ post, authorId }: BlogPostEditorProps) 
             ))}
 
             {/* Add Block Menu */}
-            <div className="flex gap-2 flex-wrap">
+            <div className="flex gap-2 flex-wrap pt-4 border-t">
               <button
                 onClick={() => addBlock('paragraph')}
                 className="px-4 py-2 text-sm bg-gray-100 hover:bg-gray-200 rounded-lg"
@@ -366,6 +551,11 @@ export default function BlogPostEditor({ post, authorId }: BlogPostEditorProps) 
             <div className="text-sm text-gray-600">
               Status: {autoSaveStatus === 'saving' ? 'Saving...' : autoSaveStatus === 'saved' ? 'Saved' : 'Unsaved changes'}
             </div>
+            {savedPostId && (
+              <div className="mt-1 text-xs text-gray-500">
+                Draft saved (ID: {savedPostId.slice(0, 8)}...)
+              </div>
+            )}
           </div>
 
           {/* Publish Settings */}
@@ -487,4 +677,3 @@ export default function BlogPostEditor({ post, authorId }: BlogPostEditorProps) 
     </div>
   );
 }
-

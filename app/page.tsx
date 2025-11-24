@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import { useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
 import { getImageUrl } from '@/lib/utils';
+import BlogSection from '@/components/blog/BlogSection';
 
 type DemoDestination = {
   id: string;
@@ -639,6 +640,9 @@ export default function HomePage() {
           </div>
         </div>
       </section>
+
+      {/* Blog Section */}
+      <BlogSection />
 
       {/* Contact Form Section */}
       <section id="contact" className="bg-white py-20">

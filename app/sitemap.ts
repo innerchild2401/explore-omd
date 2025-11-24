@@ -18,6 +18,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 1.0,
   });
 
+  // Add blog listing page
+  sitemapEntries.push({
+    url: `${baseUrl}/blog`,
+    lastModified: new Date(),
+    changeFrequency: 'daily',
+    priority: 0.8,
+  });
+
   try {
     // Get all active OMDs
     const { data: omds, error: omdsError } = await supabase
@@ -154,6 +162,27 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
           }
         }
       }
+
+    // Get all published blog posts
+    const { data: blogPosts, error: blogPostsError } = await supabase
+      .from('blog_posts')
+      .select('slug, updated_at, published_at')
+      .eq('status', 'published');
+
+    if (!blogPostsError && blogPosts && blogPosts.length > 0) {
+      for (const post of blogPosts) {
+        const postLastModified = post.updated_at || post.published_at
+          ? new Date(post.updated_at || post.published_at!)
+          : new Date();
+        
+        sitemapEntries.push({
+          url: `${baseUrl}/blog/${post.slug}`,
+          lastModified: postLastModified,
+          changeFrequency: 'weekly',
+          priority: 0.7,
+        });
+      }
+    }
   } catch (error) {
     console.error('Error generating sitemap:', error);
   }

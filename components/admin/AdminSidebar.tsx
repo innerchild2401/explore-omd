@@ -95,6 +95,12 @@ export default function AdminSidebar({ userRole, activeOmdId }: AdminSidebarProp
       icon: '👥',
       adminOnly: true,
     },
+    {
+      label: 'Blog',
+      href: '/admin/blog',
+      icon: '📝',
+      adminOnly: true,
+    },
   ];
 
   const platformMenuItems: MenuItem[] = [
@@ -102,6 +108,11 @@ export default function AdminSidebar({ userRole, activeOmdId }: AdminSidebarProp
       label: 'Dashboard',
       href: '/admin',
       icon: '🧭',
+    },
+    {
+      label: 'Blog',
+      href: '/admin/blog',
+      icon: '📝',
     },
     {
       label: 'OMD Approvals',

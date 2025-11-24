@@ -229,3 +229,57 @@ export type EmailTemplateType =
   | 'reminder'
   | 'promotional';
 
+// Blog types
+export interface BlogPost {
+  id: string;
+  author_id: string;
+  title: string;
+  subtitle?: string | null;
+  slug: string;
+  content: ContentBlock[];
+  excerpt?: string | null;
+  featured_image?: string | null;
+  featured_image_alt?: string | null;
+  status: 'draft' | 'scheduled' | 'published' | 'archived';
+  published_at?: string | null;
+  scheduled_for?: string | null;
+  meta_title?: string | null;
+  meta_description?: string | null;
+  canonical_url?: string | null;
+  view_count: number;
+  reading_time?: number | null;
+  word_count?: number | null;
+  is_featured: boolean;
+  is_pinned: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface BlogTag {
+  id: string;
+  name: string;
+  slug: string;
+  description?: string | null;
+  color?: string | null;
+  created_at: string;
+}
+
+export type ContentBlock = 
+  | { type: 'paragraph'; content: string; formatting?: Formatting[] }
+  | { type: 'heading'; level: 1 | 2 | 3; content: string }
+  | { type: 'image'; url: string; alt: string; caption?: string; width?: 'full' | 'content' }
+  | { type: 'video'; url: string; platform: 'youtube' | 'vimeo' | 'direct'; caption?: string }
+  | { type: 'quote'; content: string; attribution?: string }
+  | { type: 'code'; language: string; code: string }
+  | { type: 'list'; style: 'ordered' | 'unordered'; items: string[] }
+  | { type: 'embed'; platform: 'twitter' | 'instagram' | 'custom'; url: string; embed_code?: string }
+  | { type: 'divider' }
+  | { type: 'callout'; style: 'info' | 'warning' | 'success'; content: string };
+
+export interface Formatting {
+  type: 'bold' | 'italic' | 'link';
+  start: number;
+  end: number;
+  url?: string; // For links
+}
+

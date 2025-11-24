@@ -166,11 +166,18 @@ export default function BlogPostEditor({ post, authorId }: BlogPostEditorProps) 
   const handleTextChange = (index: number, value: string, block: ContentBlock) => {
     // Auto-detect list from * or - at start of line
     if (block.type === 'paragraph') {
-      const lines = value.split('\n');
-      const firstLine = lines[0]?.trim();
+      const lines = value.split('\n').map(l => l.trim()).filter(l => l.length > 0);
       
-      // Check if it starts with * or - (unordered list)
-      if (firstLine && (firstLine.startsWith('* ') || firstLine.startsWith('- '))) {
+      if (lines.length === 0) {
+        updateBlock(index, { type: 'paragraph', content: value });
+        return;
+      }
+      
+      const firstLine = lines[0];
+      
+      // Check if ALL lines start with * or - (unordered list)
+      const allBullets = lines.every(line => line.startsWith('* ') || line.startsWith('- '));
+      if (allBullets && lines.length >= 1) {
         const items = lines
           .map(line => line.replace(/^[\*\-\s]+/, '').trim())
           .filter(item => item.length > 0);
@@ -180,8 +187,9 @@ export default function BlogPostEditor({ post, authorId }: BlogPostEditorProps) 
         }
       }
       
-      // Check if it starts with number (ordered list)
-      if (firstLine && /^\d+\.\s/.test(firstLine)) {
+      // Check if ALL lines start with number (ordered list)
+      const allNumbered = lines.every(line => /^\d+\.\s/.test(line));
+      if (allNumbered && lines.length >= 1) {
         const items = lines
           .map(line => line.replace(/^\d+\.\s*/, '').trim())
           .filter(item => item.length > 0);
@@ -191,8 +199,8 @@ export default function BlogPostEditor({ post, authorId }: BlogPostEditorProps) 
         }
       }
       
-      // Check if it's a heading (starts with #)
-      if (firstLine && firstLine.startsWith('#')) {
+      // Check if it's a heading (starts with #) - only if single line
+      if (lines.length === 1 && firstLine.startsWith('#')) {
         const level = firstLine.match(/^#+/)?.[0].length || 1;
         if (level <= 3) {
           const headingText = firstLine.replace(/^#+\s*/, '').trim();
@@ -285,6 +293,129 @@ export default function BlogPostEditor({ post, authorId }: BlogPostEditorProps) 
     setContent(newContent);
   };
 
+  // Smart split: Break a paragraph into multiple blocks based on content
+  const smartSplitBlock = (index: number) => {
+    const block = content[index];
+    if (block.type !== 'paragraph') return;
+    
+    const text = block.content;
+    const lines = text.split('\n');
+    const newBlocks: ContentBlock[] = [];
+    let currentParagraph: string[] = [];
+    let currentList: string[] = [];
+    let currentListStyle: 'ordered' | 'unordered' | null = null;
+    
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i].trim();
+      const nextLine = lines[i + 1]?.trim() || '';
+      
+      // Empty line - flush current content
+      if (line === '') {
+        if (currentList.length > 0) {
+          newBlocks.push({ type: 'list', style: currentListStyle!, items: currentList });
+          currentList = [];
+          currentListStyle = null;
+        }
+        if (currentParagraph.length > 0) {
+          newBlocks.push({ type: 'paragraph', content: currentParagraph.join('\n') });
+          currentParagraph = [];
+        }
+        continue;
+      }
+      
+      // Check for heading
+      if (line.startsWith('#')) {
+        // Flush previous content
+        if (currentList.length > 0) {
+          newBlocks.push({ type: 'list', style: currentListStyle!, items: currentList });
+          currentList = [];
+          currentListStyle = null;
+        }
+        if (currentParagraph.length > 0) {
+          newBlocks.push({ type: 'paragraph', content: currentParagraph.join('\n') });
+          currentParagraph = [];
+        }
+        
+        const level = line.match(/^#+/)?.[0].length || 1;
+        const headingText = line.replace(/^#+\s*/, '').trim();
+        if (headingText && level <= 3) {
+          newBlocks.push({ type: 'heading', level: level as 1 | 2 | 3, content: headingText });
+        }
+        continue;
+      }
+      
+      // Check for list item
+      if (line.startsWith('* ') || line.startsWith('- ')) {
+        // Flush paragraph
+        if (currentParagraph.length > 0) {
+          newBlocks.push({ type: 'paragraph', content: currentParagraph.join('\n') });
+          currentParagraph = [];
+        }
+        
+        // Start or continue unordered list
+        if (currentListStyle !== 'unordered') {
+          if (currentList.length > 0 && currentListStyle) {
+            newBlocks.push({ type: 'list', style: currentListStyle, items: currentList });
+          }
+          currentList = [];
+          currentListStyle = 'unordered';
+        }
+        currentList.push(line.replace(/^[\*\-\s]+/, '').trim());
+        continue;
+      }
+      
+      // Check for numbered list
+      if (/^\d+\.\s/.test(line)) {
+        // Flush paragraph
+        if (currentParagraph.length > 0) {
+          newBlocks.push({ type: 'paragraph', content: currentParagraph.join('\n') });
+          currentParagraph = [];
+        }
+        
+        // Start or continue ordered list
+        if (currentListStyle !== 'ordered') {
+          if (currentList.length > 0 && currentListStyle) {
+            newBlocks.push({ type: 'list', style: currentListStyle, items: currentList });
+          }
+          currentList = [];
+          currentListStyle = 'ordered';
+        }
+        currentList.push(line.replace(/^\d+\.\s*/, '').trim());
+        continue;
+      }
+      
+      // Regular paragraph text
+      // If we have a list, flush it first
+      if (currentList.length > 0 && currentListStyle) {
+        newBlocks.push({ type: 'list', style: currentListStyle, items: currentList });
+        currentList = [];
+        currentListStyle = null;
+      }
+      currentParagraph.push(line);
+    }
+    
+    // Flush remaining content
+    if (currentList.length > 0 && currentListStyle) {
+      newBlocks.push({ type: 'list', style: currentListStyle, items: currentList });
+    }
+    if (currentParagraph.length > 0) {
+      newBlocks.push({ type: 'paragraph', content: currentParagraph.join('\n') });
+    }
+    
+    // If no blocks created, keep original
+    if (newBlocks.length === 0) {
+      newBlocks.push({ type: 'paragraph', content: text });
+    }
+    
+    // Replace the original block with new blocks
+    const newContent = [
+      ...content.slice(0, index),
+      ...newBlocks,
+      ...content.slice(index + 1)
+    ];
+    setContent(newContent);
+  };
+
   const changeHeadingLevel = (index: number, level: 1 | 2 | 3) => {
     const block = content[index];
     if (block.type === 'heading') {
@@ -368,8 +499,19 @@ export default function BlogPostEditor({ post, authorId }: BlogPostEditorProps) 
                       className="w-full text-lg leading-relaxed text-gray-900 outline-none min-h-[100px] py-2 resize-none border border-transparent hover:border-gray-200 rounded px-2"
                       rows={Math.max(3, block.content.split('\n').length)}
                     />
-                    <div className="mt-1 text-xs text-gray-600">
-                      Tip: Type <code className="bg-gray-100 text-gray-900 px-1 rounded">* item</code> for bullets, <code className="bg-gray-100 text-gray-900 px-1 rounded">1. item</code> for numbers, <code className="bg-gray-100 text-gray-900 px-1 rounded"># Heading</code> for heading
+                    <div className="mt-2 flex items-center justify-between">
+                      <div className="text-xs text-gray-600">
+                        Tip: Type <code className="bg-gray-100 text-gray-900 px-1 rounded">* item</code> for bullets, <code className="bg-gray-100 text-gray-900 px-1 rounded">1. item</code> for numbers, <code className="bg-gray-100 text-gray-900 px-1 rounded"># Heading</code> for heading
+                      </div>
+                      {block.content.split('\n').length > 3 && (
+                        <button
+                          onClick={() => smartSplitBlock(index)}
+                          className="px-3 py-1 text-xs font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 rounded border border-blue-200"
+                          title="Split into multiple blocks (paragraphs, headings, lists)"
+                        >
+                          Smart Split
+                        </button>
+                      )}
                     </div>
                   </div>
                 )}

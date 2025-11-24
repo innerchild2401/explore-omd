@@ -1,3 +1,4 @@
+import React from 'react';
 import type { ContentBlock } from '@/types';
 import { getImageUrl } from '@/lib/utils';
 import OptimizedImage from '@/components/ui/OptimizedImage';
@@ -88,11 +89,42 @@ function parseMarkdown(text: string): React.ReactNode[] {
 export default function ContentBlockRenderer({ block }: ContentBlockRendererProps) {
   switch (block.type) {
     case 'paragraph':
-      return (
-        <p className="text-lg leading-relaxed text-gray-900 my-6">
-          {parseMarkdown(block.content)}
-        </p>
-      );
+      // Split by double line breaks to create separate paragraphs
+      const paragraphs = block.content.split(/\n\s*\n/).filter(p => p.trim().length > 0);
+      
+      if (paragraphs.length > 1) {
+        // Multiple paragraphs - render each separately
+        return (
+          <>
+            {paragraphs.map((para, idx) => (
+              <p key={idx} className="text-lg leading-relaxed text-gray-900 my-6">
+                {parseMarkdown(para.trim())}
+              </p>
+            ))}
+          </>
+        );
+      } else {
+        // Single paragraph - preserve single line breaks as <br>
+        const lines = block.content.split('\n');
+        if (lines.length > 1) {
+          return (
+            <p className="text-lg leading-relaxed text-gray-900 my-6">
+              {lines.map((line, idx) => (
+                <React.Fragment key={idx}>
+                  {idx > 0 && <br />}
+                  {parseMarkdown(line)}
+                </React.Fragment>
+              ))}
+            </p>
+          );
+        } else {
+          return (
+            <p className="text-lg leading-relaxed text-gray-900 my-6">
+              {parseMarkdown(block.content)}
+            </p>
+          );
+        }
+      }
 
     case 'heading':
       const headingClass = 

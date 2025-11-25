@@ -556,7 +556,8 @@ export async function generateMetadata({ params }: HotelPageProps) {
   const title = `${business.name} - Hotels in ${omd.name}`;
   const description = business.description || `Book your stay at ${business.name} in ${omd.name}. ${hotel?.star_rating ? `${hotel.star_rating}-star hotel` : 'Quality accommodation'} with excellent amenities.`;
   const path = `/${omdSlug}/hotels/${hotelSlug}`;
-  const mainImage = business.images?.[0] ? getImageUrl(business.images[0]) : null;
+  const firstImage = business.images?.[0];
+  const mainImage = firstImage && typeof firstImage === 'string' ? getImageUrl(firstImage) : null;
 
   return generateSeoMetadata({
     title,

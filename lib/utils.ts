@@ -50,12 +50,15 @@ export function truncate(text: string, length: number): string {
 export function getImageUrl(path: string | null | undefined, bucket: string = 'public'): string {
   if (!path) return '/placeholder.jpg';
   
+  // Ensure path is a string
+  const pathStr = String(path);
+  
   // If it's already a full URL, return it
-  if (path.startsWith('http')) return path;
+  if (pathStr.startsWith('http')) return pathStr;
   
   // Otherwise, construct Supabase storage URL
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  return `${supabaseUrl}/storage/v1/object/public/${bucket}/${path}`;
+  return `${supabaseUrl}/storage/v1/object/public/${bucket}/${pathStr}`;
 }
 
 export function calculateNights(checkIn: string, checkOut: string): number {

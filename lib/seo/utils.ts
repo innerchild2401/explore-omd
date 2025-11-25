@@ -12,8 +12,8 @@ import { env } from '@/lib/env';
  * Get the base URL for the site
  */
 export function getBaseUrl(): string {
-  if (env.NEXT_PUBLIC_SITE_URL) {
-    return env.NEXT_PUBLIC_SITE_URL;
+  if (env.NEXT_PUBLIC_SITE_URL && typeof env.NEXT_PUBLIC_SITE_URL === 'string') {
+    return String(env.NEXT_PUBLIC_SITE_URL).trim();
   }
   
   // Fallback for development
@@ -28,7 +28,10 @@ export function getBaseUrl(): string {
 /**
  * Generate absolute URL from path
  */
-export function getAbsoluteUrl(path: string): string {
+export function getAbsoluteUrl(path: string | null | undefined): string {
+  if (!path || typeof path !== 'string') {
+    return getBaseUrl();
+  }
   const baseUrl = getBaseUrl();
   const cleanPath = path.startsWith('/') ? path : `/${path}`;
   return `${baseUrl}${cleanPath}`;
@@ -39,7 +42,7 @@ export function getAbsoluteUrl(path: string): string {
  * Falls back to a default OG image if none provided
  */
 export function getOgImageUrl(imagePath?: string | null, title?: string): string {
-  if (imagePath) {
+  if (imagePath && typeof imagePath === 'string' && imagePath.trim()) {
     // If it's already a full URL, return it
     if (imagePath.startsWith('http')) {
       return imagePath;
@@ -79,7 +82,8 @@ export function generateSeoMetadata({
   modifiedTime?: string;
   authors?: string[];
 }): Metadata {
-  const url = getAbsoluteUrl(path);
+  const safePath = typeof path === 'string' ? path : '/';
+  const url = getAbsoluteUrl(safePath);
   const ogImage = getOgImageUrl(image, title);
   const defaultSiteName = siteName || 'Dest Explore';
 
@@ -146,7 +150,7 @@ export function generateOrganizationSchema(omd: {
     '@type': 'Organization',
     name: omd.name,
     url: `${baseUrl}/${omd.slug}`,
-    ...(omd.logo && {
+    ...(omd.logo && typeof omd.logo === 'string' && {
       logo: omd.logo.startsWith('http') ? omd.logo : getAbsoluteUrl(omd.logo),
     }),
     ...(omd.description && { description: omd.description }),
@@ -196,9 +200,12 @@ export function generateHotelSchema(hotel: {
     }),
     ...(hotel.priceRange && { priceRange: hotel.priceRange }),
     ...(hotel.images && hotel.images.length > 0 && {
-      image: hotel.images.slice(0, 5).map((img) =>
-        img.startsWith('http') ? img : getAbsoluteUrl(img)
-      ),
+      image: hotel.images
+        .filter((img): img is string => typeof img === 'string' && Boolean(img))
+        .slice(0, 5)
+        .map((img) =>
+          img.startsWith('http') ? img : getAbsoluteUrl(img)
+        ),
     }),
   };
 
@@ -265,9 +272,12 @@ export function generateRestaurantSchema(restaurant: {
     ...(restaurant.priceRange && { priceRange: restaurant.priceRange }),
     ...(restaurant.cuisineType && { servesCuisine: restaurant.cuisineType }),
     ...(restaurant.images && restaurant.images.length > 0 && {
-      image: restaurant.images.slice(0, 5).map((img) =>
-        img.startsWith('http') ? img : getAbsoluteUrl(img)
-      ),
+      image: restaurant.images
+        .filter((img): img is string => typeof img === 'string' && Boolean(img))
+        .slice(0, 5)
+        .map((img) =>
+          img.startsWith('http') ? img : getAbsoluteUrl(img)
+        ),
     }),
   };
 
@@ -333,9 +343,12 @@ export function generateExperienceSchema(experience: {
     }),
     ...(experience.category && { category: experience.category }),
     ...(experience.images && experience.images.length > 0 && {
-      image: experience.images.slice(0, 5).map((img) =>
-        img.startsWith('http') ? img : getAbsoluteUrl(img)
-      ),
+      image: experience.images
+        .filter((img): img is string => typeof img === 'string' && Boolean(img))
+        .slice(0, 5)
+        .map((img) =>
+          img.startsWith('http') ? img : getAbsoluteUrl(img)
+        ),
     }),
   };
 

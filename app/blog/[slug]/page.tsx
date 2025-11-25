@@ -4,8 +4,11 @@ import { format } from 'date-fns';
 import { getImageUrl } from '@/lib/utils';
 import OptimizedImage from '@/components/ui/OptimizedImage';
 import ContentBlockRenderer from '@/components/blog/ContentBlockRenderer';
+import SocialShareButtons from '@/components/blog/SocialShareButtons';
 import Link from 'next/link';
+import { generateSeoMetadata, getAbsoluteUrl, getBaseUrl } from '@/lib/seo/utils';
 import type { BlogPost } from '@/types';
+import type { Metadata } from 'next';
 
 export const revalidate = 60;
 
@@ -13,6 +16,39 @@ interface PageProps {
   params: {
     slug: string;
   };
+}
+
+export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+  const { slug } = params;
+  const supabase = await createClient();
+
+  const { data: post } = await supabase
+    .from('blog_posts')
+    .select('title, subtitle, meta_title, meta_description, excerpt, featured_image, published_at')
+    .eq('slug', slug)
+    .eq('status', 'published')
+    .single();
+
+  if (!post) {
+    return {
+      title: 'Post Not Found',
+    };
+  }
+
+  const title = post.meta_title || post.title;
+  const description = post.meta_description || post.excerpt || post.subtitle || '';
+  const image = post.featured_image ? getImageUrl(post.featured_image) : null;
+  const url = getAbsoluteUrl(`/blog/${slug}`);
+
+  return generateSeoMetadata({
+    title,
+    description,
+    path: `/blog/${slug}`,
+    image,
+    type: 'article',
+    publishedTime: post.published_at || undefined,
+    siteName: 'Dest Explore',
+  });
 }
 
 export default async function BlogPostPage({ params }: PageProps) {
@@ -99,15 +135,22 @@ export default async function BlogPostPage({ params }: PageProps) {
               {blogPost.subtitle}
             </p>
           )}
-          <div className="flex items-center gap-4 text-sm text-gray-500">
-            {blogPost.published_at && (
-              <span>
-                {format(new Date(blogPost.published_at), 'd MMMM yyyy')}
-              </span>
-            )}
-            {blogPost.reading_time && (
-              <span>{blogPost.reading_time} min citire</span>
-            )}
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+            <div className="flex items-center gap-4 text-sm text-gray-500">
+              {blogPost.published_at && (
+                <span>
+                  {format(new Date(blogPost.published_at), 'd MMMM yyyy')}
+                </span>
+              )}
+              {blogPost.reading_time && (
+                <span>{blogPost.reading_time} min citire</span>
+              )}
+            </div>
+            <SocialShareButtons
+              url={`${getBaseUrl()}/blog/${slug}`}
+              title={blogPost.title}
+              description={blogPost.excerpt || blogPost.subtitle || undefined}
+            />
           </div>
         </header>
 
@@ -134,30 +177,43 @@ export default async function BlogPostPage({ params }: PageProps) {
 
         {/* Bottom Navigation */}
         <footer className="mt-16 pt-8 border-t border-gray-200">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            {/* Back to Blog */}
-            <Link
-              href="/blog"
-              className="inline-flex items-center gap-2 text-gray-600 transition-colors hover:text-gray-900"
-            >
-              <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-              </svg>
-              <span className="font-medium">Înapoi la toate articolele</span>
-            </Link>
+          <div className="space-y-6">
+            {/* Social Share Buttons */}
+            <div className="flex flex-col items-center sm:items-start">
+              <p className="text-sm font-medium text-gray-700 mb-3">Distribuie acest articol:</p>
+              <SocialShareButtons
+                url={`${getBaseUrl()}/blog/${slug}`}
+                title={blogPost.title}
+                description={blogPost.excerpt || blogPost.subtitle || undefined}
+              />
+            </div>
 
-            {/* Visit Main Site */}
-            <Link
-              href="https://destexplore.eu"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 text-blue-600 transition-colors hover:text-blue-700"
-            >
-              <span className="font-medium">Vizitează Dest Explore</span>
-              <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-              </svg>
-            </Link>
+            {/* Navigation Links */}
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              {/* Back to Blog */}
+              <Link
+                href="/blog"
+                className="inline-flex items-center gap-2 text-gray-600 transition-colors hover:text-gray-900"
+              >
+                <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                </svg>
+                <span className="font-medium">Înapoi la toate articolele</span>
+              </Link>
+
+              {/* Visit Main Site */}
+              <Link
+                href="https://destexplore.eu"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 text-blue-600 transition-colors hover:text-blue-700"
+              >
+                <span className="font-medium">Vizitează Dest Explore</span>
+                <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                </svg>
+              </Link>
+            </div>
           </div>
         </footer>
       </article>

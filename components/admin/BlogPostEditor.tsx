@@ -113,18 +113,52 @@ export default function BlogPostEditor({ post, authorId }: BlogPostEditorProps) 
     setError('');
 
     try {
+      // Auto-generate SEO metadata when publishing (if not already set)
+      let finalMetaTitle = metaTitle;
+      let finalMetaDescription = metaDescription;
+      let finalExcerpt = excerpt;
+
+      if (status === 'published' && (!metaTitle || !metaDescription || !excerpt)) {
+        try {
+          const seoResponse = await fetch('/api/blog/generate-seo', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              title,
+              content,
+              language: 'ro', // Default to Romanian
+            }),
+          });
+
+          if (seoResponse.ok) {
+            const seoData = await seoResponse.json();
+            finalMetaTitle = seoData.meta_title || metaTitle;
+            finalMetaDescription = seoData.meta_description || metaDescription;
+            finalExcerpt = seoData.excerpt || excerpt;
+            
+            // Update state so user can see what was generated
+            setMetaTitle(finalMetaTitle);
+            setMetaDescription(finalMetaDescription);
+            setExcerpt(finalExcerpt);
+          }
+        } catch (seoError) {
+          // If SEO generation fails, continue with existing values
+          console.warn('Failed to generate SEO metadata:', seoError);
+        }
+      }
+
       const postData: any = {
         author_id: authorId,
         title,
         subtitle: subtitle || null,
         slug,
-        excerpt: excerpt || null,
+        excerpt: finalExcerpt || null,
         featured_image: featuredImage || null,
         featured_image_alt: featuredImageAlt || null,
         content,
         status,
-        meta_title: metaTitle || null,
-        meta_description: metaDescription || null,
+        meta_title: finalMetaTitle || null,
+        meta_description: finalMetaDescription || null,
       };
 
       if (status === 'published') {

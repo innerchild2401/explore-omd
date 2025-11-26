@@ -5,6 +5,7 @@ import { getImageUrl } from '@/lib/utils';
 import OptimizedImage from '@/components/ui/OptimizedImage';
 import ContentBlockRenderer from '@/components/blog/ContentBlockRenderer';
 import SocialShareButtons from '@/components/blog/SocialShareButtons';
+import TrackBlogView from '@/components/blog/TrackBlogView';
 import Link from 'next/link';
 import { generateSeoMetadata, getAbsoluteUrl, getBaseUrl } from '@/lib/seo/utils';
 import type { BlogPost } from '@/types';
@@ -67,23 +68,13 @@ export default async function BlogPostPage({ params }: PageProps) {
     notFound();
   }
 
-  // Increment view count (fire and forget)
-  void (async () => {
-    try {
-      await supabase.from('blog_post_views').insert({ post_id: post.id });
-      await supabase
-        .from('blog_posts')
-        .update({ view_count: (post.view_count || 0) + 1 })
-        .eq('id', post.id);
-    } catch {
-      // Silently fail
-    }
-  })();
-
   const blogPost = post as BlogPost;
 
   return (
     <main className="min-h-screen bg-white">
+      {/* Track blog post view */}
+      <TrackBlogView postId={blogPost.id} />
+      
       {/* Top Navigation Bar */}
       <nav className="sticky top-0 z-50 border-b border-gray-200 bg-white/95 backdrop-blur-sm">
         <div className="mx-auto max-w-7xl px-4 py-3">
